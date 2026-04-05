@@ -208,3 +208,4 @@ __marimo__/
 
 data/captchas/*
 !data/captchas/.gitkeep
+data/output/*
