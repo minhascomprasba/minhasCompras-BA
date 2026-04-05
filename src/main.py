@@ -1,5 +1,7 @@
 import os
 
+from dotenv import load_dotenv
+
 from .database.connection import engine
 from .database.models import Base
 from .phase1.auth_flow import run_phase1_auth_flow
@@ -18,7 +20,15 @@ def _get_env_int(name: str, default: int) -> int:
         return default
 
 
+def _get_required_env_str(name: str) -> str:
+    value = os.getenv(name, "").strip()
+    if not value:
+        raise ValueError(f"Variavel obrigatoria ausente: {name}")
+    return value
+
+
 def main() -> None:
+    load_dotenv()
     Base.metadata.create_all(bind=engine)
 
     driver = run_phase1_auth_flow()
@@ -28,7 +38,8 @@ def main() -> None:
     html_content = driver.page_source
     products = ProductParser.parse(html_content)
     ProductParser.to_dataframe_and_save(products)
-    bulk_insert_produtos(products)
+    codigo_nota_fiscal = _get_required_env_str("NFE_ACCESS_KEY")
+    bulk_insert_produtos(products, codigo_nota_fiscal)
 
 
 if __name__ == "__main__":
