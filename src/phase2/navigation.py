@@ -12,6 +12,8 @@ from .selectors import PRODUTOS_TAB_BUTTON_ID, VISUALIZAR_ABAS_BUTTON_ID
 
 PHASE1_PAGE_PATH = "NFCEC_consulta_chave_acesso.aspx"
 PHASE2_TABS_PAGE_PATH = "NFCEC_consulta_abas.aspx"
+PRODUCT_TABLE_SELECTOR = ".table_produtos"
+PRODUCT_DESCRIPTION_SELECTOR = ".fixo-prod-serv-descricao span"
 
 
 
@@ -96,3 +98,28 @@ def Maps_to_products_tab(driver: WebDriver, timeout: int) -> None:
         raise
 
     logger.info("Fase 2 concluida com sucesso.")
+
+
+def wait_for_products_content(driver: WebDriver, timeout: int) -> int:
+    logger = setup_logger(log_file="logs/phase2.log", logger_name="phase2")
+
+    try:
+        WebDriverWait(driver, timeout).until(
+            lambda current_driver: (
+                len(current_driver.find_elements(By.CSS_SELECTOR, PRODUCT_TABLE_SELECTOR)) > 0
+                or len(current_driver.find_elements(By.CSS_SELECTOR, PRODUCT_DESCRIPTION_SELECTOR)) > 0
+            )
+        )
+    except TimeoutException as exc:
+        logger.error(
+            "Timeout aguardando renderizacao dos produtos apos abrir a aba. URL atual: %s",
+            driver.current_url,
+        )
+        raise RuntimeError(
+            "Produtos nao foram renderizados a tempo apos clique na aba de produtos. "
+            "Verifique latencia da pagina ou mudanca de DOM."
+        ) from exc
+
+    product_count = len(driver.find_elements(By.CSS_SELECTOR, PRODUCT_TABLE_SELECTOR))
+    logger.info("Conteudo de produtos estabilizado no DOM. Blocos encontrados: %s", product_count)
+    return product_count
