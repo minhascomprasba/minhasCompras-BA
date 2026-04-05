@@ -16,6 +16,8 @@ def build_chrome_driver(headless: bool = False) -> webdriver.Chrome:
     options.add_argument("--disable-background-timer-throttling")
     options.add_argument("--disable-renderer-backgrounding")
     options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--ignore-certificate-errors")
+    options.add_argument("--ignore-ssl-errors")
 
     if headless:
         options.add_argument("--headless=new")
