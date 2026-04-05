@@ -4,8 +4,8 @@ import logging
 from pathlib import Path
 
 
-def setup_logger(log_file: str = "logs/phase1.log") -> logging.Logger:
-    logger = logging.getLogger("phase1")
+def setup_logger(log_file: str = "logs/phase1.log", logger_name: str = "phase1") -> logging.Logger:
+    logger = logging.getLogger(logger_name)
     if logger.handlers:
         return logger
 

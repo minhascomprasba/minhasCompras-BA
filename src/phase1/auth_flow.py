@@ -61,7 +61,7 @@ def _did_auth_succeed(driver: WebDriver, timeout_seconds: int, initial_url: str)
         return False
 
 
-def run_phase1_auth_flow() -> None:
+def run_phase1_auth_flow() -> WebDriver:
     load_dotenv()
     logger = setup_logger()
 
@@ -109,7 +109,7 @@ def run_phase1_auth_flow() -> None:
 
             if _did_auth_succeed(driver, timeout_seconds=5, initial_url=initial_url):
                 logger.info("Autenticacao concluida com sucesso. Navegador sera mantido aberto.")
-                return
+                return driver
 
             logger.warning("Tentativa %s falhou. Captcha possivelmente invalido.", attempt)
 
