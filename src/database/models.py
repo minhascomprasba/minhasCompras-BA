@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from enum import Enum
 
 from sqlalchemy import DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -21,6 +22,31 @@ class NotaFiscal(Base):
         back_populates="nota_fiscal",
         cascade="all, delete-orphan",
     )
+
+
+class ImportStatus(str, Enum):
+    WAITING_CAPTCHA = "WAITING_CAPTCHA"
+    PROCESSING = "PROCESSING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    EXPIRED = "EXPIRED"
+
+
+class NfceImport(Base):
+    __tablename__ = "nfce_imports"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    access_key: Mapped[str] = mapped_column(String(44), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    captcha_image_path: Mapped[str | None] = mapped_column(String, nullable=True)
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    error_message: Mapped[str | None] = mapped_column(String, nullable=True)
+    nota_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    items_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 class ProdutoExtraido(Base):
