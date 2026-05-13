@@ -1,7 +1,7 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { notasService } from '../services/notasService';
 import type { GetNotasParams, GetNotaItensParams } from '../types';
-import type { AppError } from '../../../shared/api/errors';
+// import type { AppError } from '../../../shared/api/errors';
 
 export function useNotas(params: GetNotasParams) {
   return useQuery({
