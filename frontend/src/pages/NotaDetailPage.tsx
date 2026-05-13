@@ -36,8 +36,13 @@ export function NotaDetailPage() {
         </div>
       ) : nota ? (
         <div className="glass-panel" style={{ marginBottom: '3rem', textAlign: 'center' }}>
-          <h1 style={{ fontSize: '3rem', marginBottom: '0.5rem', background: 'linear-gradient(to right, #818cf8, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          <h1 style={{ fontSize: '3rem', marginBottom: '0.5rem', background: 'linear-gradient(to right, #818cf8, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem' }}>
             Nota #{nota.id}
+            {nota.valor_total_nota !== undefined && (
+              <span style={{ fontSize: '2rem', color: 'var(--success)', background: 'var(--bg-main)', padding: '0.25rem 1rem', borderRadius: 'var(--radius-md)', WebkitTextFillColor: 'initial' }}>
+                {nota.valor_total_nota.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              </span>
+            )}
           </h1>
           <p style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>
             <strong style={{ color: 'var(--text-primary)' }}>Chave de Acesso:</strong> <span style={{ fontFamily: 'var(--mono)' }}>{nota.codigo_acesso}</span>

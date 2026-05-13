@@ -3,6 +3,9 @@ export interface PaginatedResponse<T> {
   page: number;
   page_size: number;
   total: number;
+  resumo?: {
+    total_gasto_periodo: number;
+  };
 }
 
 export interface Nota {
@@ -10,6 +13,7 @@ export interface Nota {
   codigo_acesso: string;
   created_at: string;
   itens_count?: number;
+  valor_total_nota?: number;
 }
 
 export interface NotaItem {
