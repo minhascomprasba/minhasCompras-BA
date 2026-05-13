@@ -25,7 +25,7 @@ export function HomePage() {
       <h1>Minhas Compras BA - Frontend v1</h1>
       <p>Sistema de importação de notas fiscais</p>
 
-      <div style={{ marginTop: '2rem', marginBottom: '2rem' }}>
+      <div style={{ marginTop: '2rem', marginBottom: '2rem', display: 'flex', gap: '1rem' }}>
         <Link to="/importar" style={{ 
           display: 'inline-block', 
           backgroundColor: '#2563eb', 
@@ -36,6 +36,18 @@ export function HomePage() {
           fontWeight: 'bold'
         }}>
           Nova Importação
+        </Link>
+        <Link to="/notas" style={{ 
+          display: 'inline-block', 
+          backgroundColor: '#f1f5f9', 
+          color: '#0f172a', 
+          border: '1px solid #cbd5e1',
+          padding: '0.75rem 1.5rem', 
+          textDecoration: 'none', 
+          borderRadius: '4px',
+          fontWeight: 'bold'
+        }}>
+          Ver Histórico de Notas
         </Link>
       </div>
 

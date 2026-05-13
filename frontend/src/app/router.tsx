@@ -3,9 +3,8 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { HomePage } from '../pages/HomePage';
 import { ImportPage } from '../pages/ImportPage';
 import { ImportStatusPage } from '../pages/ImportStatusPage';
-
-const NotasPage = () => <div>Notas Page</div>;
-const NotaDetailPage = () => <div>Nota Detail Page</div>;
+import { NotasPage } from '../pages/NotasPage';
+import { NotaDetailPage } from '../pages/NotaDetailPage';
 
 const router = createBrowserRouter([
   {
