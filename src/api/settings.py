@@ -16,6 +16,9 @@ def _get_env_int(name: str, default: int) -> int:
     except ValueError:
         return default
 
+JWT_SECRET = os.getenv("JWT_SECRET", "super-secret-key-change-in-production")
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRATION_HOURS = _get_env_int("JWT_EXPIRATION_HOURS", 24)
 
 API_PREFIX = "/api/v1"
 SEFAZ_URL = os.getenv(

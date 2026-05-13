@@ -106,3 +106,30 @@ class PaginatedItemsResponse(BaseModel):
     page: int
     page_size: int
     total: int
+
+class UserRegisterRequest(BaseModel):
+    email: str = Field(..., max_length=255)
+    password: str = Field(...)
+
+class UserLoginRequest(BaseModel):
+    email: str
+    password: str
+
+class UserResponse(BaseModel):
+    id: int
+    email: str
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse
+
+class ResumoPeriodo(BaseModel):
+    total_gasto_periodo: float
+
+class PaginatedNotasResponse(BaseModel):
+    data: list[NotaListItem]
+    page: int
+    page_size: int
+    total: int
+    resumo: ResumoPeriodo | None = None

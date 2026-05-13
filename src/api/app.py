@@ -6,12 +6,15 @@ from fastapi.responses import JSONResponse
 
 from src.api.errors import ApiError
 from src.api.routers import router
+from src.api.auth import auth_router
 from src.api.schemas import ErrorResponse
 from src.database.connection import engine
 from src.database.models import Base
+from src.api import settings
 
 app = FastAPI(title="minhasCompras-BA API", version="1.0.0")
 app.include_router(router)
+app.include_router(auth_router, prefix=settings.API_PREFIX)
 
 
 @app.on_event("startup")

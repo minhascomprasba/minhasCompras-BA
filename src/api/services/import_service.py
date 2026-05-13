@@ -111,7 +111,7 @@ def cleanup_expired_import_sessions() -> None:
         session.close()
 
 
-def start_import(access_key: str) -> dict[str, object]:
+def start_import(access_key: str, usuario_id: int) -> dict[str, object]:
     cleanup_expired_import_sessions()
     normalized_key = _validate_access_key(access_key)
     import_id = _build_import_id()
@@ -132,6 +132,7 @@ def start_import(access_key: str) -> dict[str, object]:
     try:
         record = NfceImport(
             id=import_id,
+            usuario_id=usuario_id,
             access_key=normalized_key,
             status=ImportStatus.WAITING_CAPTCHA.value,
             captcha_image_path=captcha_path.as_posix(),
@@ -162,11 +163,11 @@ def start_import(access_key: str) -> dict[str, object]:
     }
 
 
-def _get_import_or_fail(import_id: str) -> NfceImport:
+def _get_import_or_fail(import_id: str, usuario_id: int) -> NfceImport:
     session = SessionLocal()
     try:
         record = session.get(NfceImport, import_id)
-        if record is None:
+        if record is None or record.usuario_id != usuario_id:
             raise NotFoundError("IMPORT_NOT_FOUND", "Importacao nao encontrada.", {"import_id": import_id})
         session.expunge(record)
         return record
@@ -174,9 +175,9 @@ def _get_import_or_fail(import_id: str) -> NfceImport:
         session.close()
 
 
-def get_import_status(import_id: str) -> dict[str, object]:
+def get_import_status(import_id: str, usuario_id: int) -> dict[str, object]:
     cleanup_expired_import_sessions()
-    record = _get_import_or_fail(import_id)
+    record = _get_import_or_fail(import_id, usuario_id)
     return {
         "import_id": record.id,
         "status": record.status,
@@ -189,9 +190,9 @@ def get_import_status(import_id: str) -> dict[str, object]:
     }
 
 
-def get_captcha_image_path(import_id: str) -> Path:
+def get_captcha_image_path(import_id: str, usuario_id: int) -> Path:
     cleanup_expired_import_sessions()
-    record = _get_import_or_fail(import_id)
+    record = _get_import_or_fail(import_id, usuario_id)
 
     if record.status != ImportStatus.WAITING_CAPTCHA.value:
         raise ConflictError(
@@ -225,7 +226,7 @@ def get_captcha_image_path(import_id: str) -> Path:
     return runtime.captcha_path
 
 
-def submit_captcha(import_id: str, captcha_code: str) -> dict[str, object]:
+def submit_captcha(import_id: str, captcha_code: str, usuario_id: int) -> dict[str, object]:
     cleanup_expired_import_sessions()
     now = _utcnow()
 
@@ -240,7 +241,7 @@ def submit_captcha(import_id: str, captcha_code: str) -> dict[str, object]:
     should_close_runtime = False
     try:
         record = session.get(NfceImport, import_id)
-        if record is None:
+        if record is None or record.usuario_id != usuario_id:
             raise NotFoundError("IMPORT_NOT_FOUND", "Importacao nao encontrada.", {"import_id": import_id})
 
         if record.status != ImportStatus.WAITING_CAPTCHA.value:
@@ -322,7 +323,7 @@ def submit_captcha(import_id: str, captcha_code: str) -> dict[str, object]:
         Maps_to_products_tab(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
         wait_for_products_content(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
         products = ProductParser.parse(runtime.driver.page_source)
-        items_count, nota_id = bulk_insert_produtos_with_nota_id(products, record.access_key)
+        items_count, nota_id = bulk_insert_produtos_with_nota_id(products, record.access_key, usuario_id)
 
         finished_at = _utcnow()
         record.status = ImportStatus.COMPLETED.value
@@ -360,7 +361,7 @@ def submit_captcha(import_id: str, captcha_code: str) -> dict[str, object]:
                     pass
 
 
-def list_imports(page: int, page_size: int, status: str | None) -> dict[str, object]:
+def list_imports(page: int, page_size: int, status: str | None, usuario_id: int) -> dict[str, object]:
     cleanup_expired_import_sessions()
 
     query_status = status.strip().upper() if status else None
@@ -376,8 +377,8 @@ def list_imports(page: int, page_size: int, status: str | None) -> dict[str, obj
 
     session = SessionLocal()
     try:
-        base_query = select(NfceImport)
-        count_query = select(func.count()).select_from(NfceImport)
+        base_query = select(NfceImport).where(NfceImport.usuario_id == usuario_id)
+        count_query = select(func.count()).select_from(NfceImport).where(NfceImport.usuario_id == usuario_id)
 
         if query_status:
             base_query = base_query.where(NfceImport.status == query_status)
@@ -406,24 +407,29 @@ def list_imports(page: int, page_size: int, status: str | None) -> dict[str, obj
         session.close()
 
 
-def list_notas(page: int, page_size: int, from_date: datetime | None, to_date: datetime | None) -> dict[str, object]:
+def list_notas(page: int, page_size: int, from_date: datetime | None, to_date: datetime | None, usuario_id: int) -> dict[str, object]:
     if page_size > 100:
         page_size = 100
 
     session = SessionLocal()
     try:
-        base_query = select(NotaFiscal)
-        count_query = select(func.count()).select_from(NotaFiscal)
+        base_query = select(NotaFiscal).where(NotaFiscal.usuario_id == usuario_id)
+        count_query = select(func.count()).select_from(NotaFiscal).where(NotaFiscal.usuario_id == usuario_id)
+        sum_query = select(func.sum(NotaFiscal.valor_total_nota)).select_from(NotaFiscal).where(NotaFiscal.usuario_id == usuario_id)
 
         if from_date is not None:
             base_query = base_query.where(NotaFiscal.created_at >= from_date)
             count_query = count_query.where(NotaFiscal.created_at >= from_date)
+            sum_query = sum_query.where(NotaFiscal.created_at >= from_date)
 
         if to_date is not None:
             base_query = base_query.where(NotaFiscal.created_at <= to_date)
             count_query = count_query.where(NotaFiscal.created_at <= to_date)
+            sum_query = sum_query.where(NotaFiscal.created_at <= to_date)
 
         total = session.execute(count_query).scalar_one()
+        total_gasto = session.execute(sum_query).scalar() or 0.0
+
         notas = session.execute(
             base_query.order_by(NotaFiscal.created_at.desc())
             .offset((page - 1) * page_size)
@@ -441,33 +447,40 @@ def list_notas(page: int, page_size: int, from_date: datetime | None, to_date: d
                     "codigo_acesso": nota.codigo_acesso,
                     "created_at": nota.created_at,
                     "itens_count": itens_count,
+                    "valor_total_nota": nota.valor_total_nota,
                 }
             )
 
-        return {"data": data, "page": page, "page_size": page_size, "total": total}
+        return {
+            "data": data,
+            "page": page,
+            "page_size": page_size,
+            "total": total,
+            "resumo": {"total_gasto_periodo": float(total_gasto)}
+        }
     finally:
         session.close()
 
 
-def get_nota(nota_id: int) -> dict[str, object]:
+def get_nota(nota_id: int, usuario_id: int) -> dict[str, object]:
     session = SessionLocal()
     try:
         nota = session.get(NotaFiscal, nota_id)
-        if nota is None:
+        if nota is None or nota.usuario_id != usuario_id:
             raise NotFoundError("NOTA_NOT_FOUND", "Nota fiscal nao encontrada.", {"nota_id": str(nota_id)})
-        return {"id": nota.id, "codigo_acesso": nota.codigo_acesso, "created_at": nota.created_at}
+        return {"id": nota.id, "codigo_acesso": nota.codigo_acesso, "created_at": nota.created_at, "valor_total_nota": nota.valor_total_nota}
     finally:
         session.close()
 
 
-def list_items(nota_id: int, page: int, page_size: int) -> dict[str, object]:
+def list_items(nota_id: int, page: int, page_size: int, usuario_id: int) -> dict[str, object]:
     if page_size > 100:
         page_size = 100
 
     session = SessionLocal()
     try:
         nota = session.get(NotaFiscal, nota_id)
-        if nota is None:
+        if nota is None or nota.usuario_id != usuario_id:
             raise NotFoundError("NOTA_NOT_FOUND", "Nota fiscal nao encontrada.", {"nota_id": str(nota_id)})
 
         total = session.execute(

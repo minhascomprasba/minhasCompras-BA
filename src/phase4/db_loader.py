@@ -102,7 +102,7 @@ def bulk_insert_produtos(produtos: list[dict[str, Any]], codigo_nota_fiscal: str
         session.close()
 
 
-def bulk_insert_produtos_with_nota_id(produtos: list[dict[str, Any]], codigo_nota_fiscal: str) -> tuple[int, int]:
+def bulk_insert_produtos_with_nota_id(produtos: list[dict[str, Any]], codigo_nota_fiscal: str, usuario_id: int) -> tuple[int, int]:
     logger = setup_logger(log_file="logs/phase4.log", logger_name="phase4")
 
     codigo_nota_fiscal = codigo_nota_fiscal.strip()
@@ -123,7 +123,7 @@ def bulk_insert_produtos_with_nota_id(produtos: list[dict[str, Any]], codigo_not
         ).scalar_one_or_none()
 
         if nota_fiscal is None:
-            nota_fiscal = NotaFiscal(codigo_acesso=codigo_nota_fiscal)
+            nota_fiscal = NotaFiscal(codigo_acesso=codigo_nota_fiscal, usuario_id=usuario_id, valor_total_nota=0.0)
             session.add(nota_fiscal)
             session.flush()
 
@@ -132,31 +132,36 @@ def bulk_insert_produtos_with_nota_id(produtos: list[dict[str, Any]], codigo_not
         )
 
         records: list[ProdutoExtraido] = []
+        total_nota = 0.0
         for index, produto in enumerate(produtos, start=1):
             try:
+                vt = _coerce_required_float(produto.get("valor_total"), "valor_total")
+                total_nota += vt
                 record = ProdutoExtraido(
                     id_nota_fiscal=nota_fiscal.id,
                     descricao=_coerce_required_str(produto.get("descricao"), "descricao"),
                     quantidade=_coerce_required_float(produto.get("quantidade"), "quantidade"),
-                    valor_total=_coerce_required_float(produto.get("valor_total"), "valor_total"),
+                    valor_total=vt,
                     unidade_comercial=_coerce_optional_str(produto.get("unidade_comercial")),
                     codigo_ean_comercial=_coerce_optional_str(produto.get("codigo_ean_comercial")),
                 )
                 records.append(record)
             except ValueError as exc:
                 raise ValueError(f"Produto invalido na posicao {index}: {exc}") from exc
+                
+        nota_fiscal.valor_total_nota = total_nota
 
         session.add_all(records)
         session.commit()
         logger.info(
-            "Fase 4: %s produtos persistidos para nota fiscal %s no SQLite.",
+            "Fase 4: %s produtos persistidos para nota fiscal %s no banco.",
             len(records),
             codigo_nota_fiscal,
         )
         return len(records), nota_fiscal.id
     except SQLAlchemyError:
         session.rollback()
-        logger.exception("Fase 4: erro transacional durante insercao no SQLite.")
+        logger.exception("Fase 4: erro transacional durante insercao no banco.")
         raise
     finally:
         session.close()
