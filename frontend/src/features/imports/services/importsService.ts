@@ -1,5 +1,5 @@
 import { apiClient } from '../../../shared/api/client';
-import type { StartImportRequest, StartImportResponse, SubmitCaptchaRequest, SubmitCaptchaResponse } from '../types';
+import type { StartImportRequest, StartImportResponse, SubmitCaptchaRequest, SubmitCaptchaResponse, GetImportStatusResponse } from '../types';
 
 export const importsService = {
   async startImport(data: StartImportRequest): Promise<StartImportResponse> {
@@ -9,6 +9,11 @@ export const importsService = {
 
   async submitCaptcha(importId: string, data: SubmitCaptchaRequest): Promise<SubmitCaptchaResponse> {
     const response = await apiClient.post<SubmitCaptchaResponse>(`/imports/nfce/${importId}/captcha`, data);
+    return response.data;
+  },
+
+  async getImportStatus(importId: string): Promise<GetImportStatusResponse> {
+    const response = await apiClient.get<GetImportStatusResponse>(`/imports/nfce/${importId}`);
     return response.data;
   },
   

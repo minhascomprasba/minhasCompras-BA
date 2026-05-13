@@ -17,3 +17,14 @@ export interface SubmitCaptchaResponse {
   import_id: string;
   status: 'PROCESSING';
 }
+
+export interface GetImportStatusResponse {
+  import_id: string;
+  status: 'WAITING_CAPTCHA' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'EXPIRED';
+  nota_id?: number;
+  items_count?: number;
+  error_message?: string | null;
+  created_at: string;
+  updated_at: string;
+  finished_at?: string | null;
+}
