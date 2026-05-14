@@ -16,10 +16,10 @@ export const importsService = {
     const response = await apiClient.get<GetImportStatusResponse>(`/imports/nfce/${importId}`);
     return response.data;
   },
-  
-  // Helper to build the captcha image URL correctly pointing to our API
-  getCaptchaImageUrl(importId: string): string {
-    const baseURL = apiClient.defaults.baseURL || '';
-    return `${baseURL}/imports/nfce/${importId}/captcha-image`;
+  async getCaptchaImageBlob(importId: string): Promise<Blob> {
+    const response = await apiClient.get<Blob>(`/imports/nfce/${importId}/captcha-image`, {
+      responseType: 'blob',
+    });
+    return response.data;
   }
 };

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,6 +24,9 @@ export function ImportPage() {
   const navigate = useNavigate();
   const [importId, setImportId] = useState<string | null>(null);
   const [captchaRefreshKey, setCaptchaRefreshKey] = useState(0);
+  const [captchaImageSrc, setCaptchaImageSrc] = useState<string | null>(null);
+  const [captchaImageError, setCaptchaImageError] = useState<string>('');
+  const [isCaptchaLoading, setIsCaptchaLoading] = useState(false);
 
   const startImportMutation = useStartImport();
   const submitCaptchaMutation = useSubmitCaptcha(importId || '');
@@ -38,10 +41,77 @@ export function ImportPage() {
     defaultValues: { captcha_code: '' },
   });
 
+  useEffect(() => {
+    if (!importId) {
+      setCaptchaImageSrc((prevSrc) => {
+        if (prevSrc) {
+          URL.revokeObjectURL(prevSrc);
+        }
+        return null;
+      });
+      setCaptchaImageError('');
+      setIsCaptchaLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadCaptcha = async () => {
+      setIsCaptchaLoading(true);
+      setCaptchaImageError('');
+      try {
+        const blob = await importsService.getCaptchaImageBlob(importId);
+        if (cancelled) {
+          return;
+        }
+
+        const nextSrc = URL.createObjectURL(blob);
+        setCaptchaImageSrc((prevSrc) => {
+          if (prevSrc) {
+            URL.revokeObjectURL(prevSrc);
+          }
+          return nextSrc;
+        });
+      } catch {
+        if (!cancelled) {
+          setCaptchaImageError('Nao foi possivel carregar o captcha. Tente atualizar.');
+          setCaptchaImageSrc((prevSrc) => {
+            if (prevSrc) {
+              URL.revokeObjectURL(prevSrc);
+            }
+            return null;
+          });
+        }
+      } finally {
+        if (!cancelled) {
+          setIsCaptchaLoading(false);
+        }
+      }
+    };
+
+    loadCaptcha();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [importId, captchaRefreshKey]);
+
+  useEffect(() => {
+    return () => {
+      setCaptchaImageSrc((prevSrc) => {
+        if (prevSrc) {
+          URL.revokeObjectURL(prevSrc);
+        }
+        return null;
+      });
+    };
+  }, []);
+
   const onKeySubmit = (data: AccessKeyFormData) => {
     startImportMutation.mutate(data, {
       onSuccess: (response) => {
         setImportId(response.import_id);
+        setCaptchaRefreshKey(0);
       },
     });
   };
@@ -104,11 +174,17 @@ export function ImportPage() {
           <p>Resolva o captcha para autorizar a consulta da nota na SEFAZ.</p>
 
           <div style={{ background: 'var(--bg-main)', padding: '1rem', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'center', marginBottom: '1.5rem', border: '1px solid var(--border-color)' }}>
-            <img 
-              src={`${importsService.getCaptchaImageUrl(importId)}?t=${captchaRefreshKey}`} 
-              alt="Captcha" 
-              style={{ maxHeight: '80px', objectFit: 'contain', filter: 'invert(1) hue-rotate(180deg) brightness(1.2)' }}
-            />
+            {isCaptchaLoading ? (
+              <span>Carregando captcha...</span>
+            ) : captchaImageSrc ? (
+              <img
+                src={captchaImageSrc}
+                alt="Captcha"
+                style={{ maxHeight: '80px', objectFit: 'contain', filter: 'invert(1) hue-rotate(180deg) brightness(1.2)' }}
+              />
+            ) : (
+              <span>{captchaImageError || 'Captcha indisponivel.'}</span>
+            )}
           </div>
 
           <form onSubmit={captchaForm.handleSubmit(onCaptchaSubmit)}>
@@ -133,7 +209,7 @@ export function ImportPage() {
             )}
 
             <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-              <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => { setImportId(null); keyForm.reset(); startImportMutation.reset(); }} disabled={submitCaptchaMutation.isPending}>
+              <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => { setImportId(null); setCaptchaRefreshKey(0); keyForm.reset(); startImportMutation.reset(); captchaForm.reset(); }} disabled={submitCaptchaMutation.isPending}>
                 Voltar
               </button>
               <button type="submit" className="btn btn-primary" style={{ flex: 2 }} disabled={submitCaptchaMutation.isPending}>
