@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -25,10 +25,11 @@ class Usuario(Base):
 
 class NotaFiscal(Base):
     __tablename__ = "notas_fiscais"
+    __table_args__ = (UniqueConstraint("usuario_id", "codigo_acesso", name="uq_notas_fiscais_usuario_codigo_acesso"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), nullable=False, index=True)
-    codigo_acesso: Mapped[str] = mapped_column(String(44), unique=True, nullable=False, index=True)
+    codigo_acesso: Mapped[str] = mapped_column(String(44), nullable=False, index=True)
     valor_total_nota: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
