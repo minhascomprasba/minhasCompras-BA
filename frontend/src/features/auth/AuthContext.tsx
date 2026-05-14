@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { authService } from './authService';
 import type { User } from './authService';
 
@@ -16,15 +17,18 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   const login = (token: string, userData: User) => {
     localStorage.setItem('auth_token', token);
     setUser(userData);
+    queryClient.clear();
   };
 
   const logout = () => {
     localStorage.removeItem('auth_token');
     setUser(null);
+    queryClient.clear();
   };
 
   useEffect(() => {

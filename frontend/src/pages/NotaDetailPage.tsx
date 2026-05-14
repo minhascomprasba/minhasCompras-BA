@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useNota, useNotaItens } from '../features/notas/hooks/useNotasQueries';
+import { useAuth } from '../features/auth/AuthContext';
 
 export function NotaDetailPage() {
   const { notaId } = useParams<{ notaId: string }>();
   const id = Number(notaId);
+  const { user } = useAuth();
 
   const [page, setPage] = useState(1);
   const [pageSize] = useState(50);
 
-  const { data: nota, isLoading: isNotaLoading, isError: isNotaError, error: notaError } = useNota(id);
-  const { data: itensData, isLoading: isItensLoading, isError: isItensError, error: itensError } = useNotaItens(id, { page, page_size: pageSize });
+  const { data: nota, isLoading: isNotaLoading, isError: isNotaError, error: notaError } = useNota(user?.id ?? null, id);
+  const { data: itensData, isLoading: isItensLoading, isError: isItensError, error: itensError } = useNotaItens(user?.id ?? null, id, { page, page_size: pageSize });
 
   if (isNaN(id)) {
     return <div className="container" style={{ textAlign: 'center' }}>ID da nota inválido.</div>;

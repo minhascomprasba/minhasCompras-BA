@@ -43,22 +43,12 @@ export function ImportPage() {
 
   useEffect(() => {
     if (!importId) {
-      setCaptchaImageSrc((prevSrc) => {
-        if (prevSrc) {
-          URL.revokeObjectURL(prevSrc);
-        }
-        return null;
-      });
-      setCaptchaImageError('');
-      setIsCaptchaLoading(false);
       return;
     }
 
     let cancelled = false;
 
     const loadCaptcha = async () => {
-      setIsCaptchaLoading(true);
-      setCaptchaImageError('');
       try {
         const blob = await importsService.getCaptchaImageBlob(importId);
         if (cancelled) {
@@ -75,12 +65,7 @@ export function ImportPage() {
       } catch {
         if (!cancelled) {
           setCaptchaImageError('Nao foi possivel carregar o captcha. Tente atualizar.');
-          setCaptchaImageSrc((prevSrc) => {
-            if (prevSrc) {
-              URL.revokeObjectURL(prevSrc);
-            }
-            return null;
-          });
+          setCaptchaImageSrc(null);
         }
       } finally {
         if (!cancelled) {
@@ -98,18 +83,23 @@ export function ImportPage() {
 
   useEffect(() => {
     return () => {
-      setCaptchaImageSrc((prevSrc) => {
-        if (prevSrc) {
-          URL.revokeObjectURL(prevSrc);
-        }
-        return null;
-      });
+      if (captchaImageSrc) {
+        URL.revokeObjectURL(captchaImageSrc);
+      }
     };
-  }, []);
+  }, [captchaImageSrc]);
 
   const onKeySubmit = (data: AccessKeyFormData) => {
     startImportMutation.mutate(data, {
       onSuccess: (response) => {
+        setIsCaptchaLoading(true);
+        setCaptchaImageSrc((prevSrc) => {
+          if (prevSrc) {
+            URL.revokeObjectURL(prevSrc);
+          }
+          return null;
+        });
+        setCaptchaImageError('');
         setImportId(response.import_id);
         setCaptchaRefreshKey(0);
       },
@@ -123,9 +113,18 @@ export function ImportPage() {
       onSuccess: () => navigate(`/importacoes/${importId}`),
       onError: (error) => {
         if (error.code === 'INVALID_CAPTCHA') {
+          setIsCaptchaLoading(true);
+          setCaptchaImageError('');
           captchaForm.reset();
           setCaptchaRefreshKey(prev => prev + 1);
         } else if (error.code === 'CAPTCHA_EXPIRED' || error.code === 'MAX_CAPTCHA_ATTEMPTS_REACHED') {
+          setCaptchaImageSrc((prevSrc) => {
+            if (prevSrc) {
+              URL.revokeObjectURL(prevSrc);
+            }
+            return null;
+          });
+          setCaptchaImageError('');
           setImportId(null);
           keyForm.reset();
         }
@@ -209,7 +208,7 @@ export function ImportPage() {
             )}
 
             <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-              <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => { setImportId(null); setCaptchaRefreshKey(0); keyForm.reset(); startImportMutation.reset(); captchaForm.reset(); }} disabled={submitCaptchaMutation.isPending}>
+              <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => { setCaptchaImageSrc((prevSrc) => { if (prevSrc) { URL.revokeObjectURL(prevSrc); } return null; }); setCaptchaImageError(''); setImportId(null); setCaptchaRefreshKey(0); keyForm.reset(); startImportMutation.reset(); captchaForm.reset(); }} disabled={submitCaptchaMutation.isPending}>
                 Voltar
               </button>
               <button type="submit" className="btn btn-primary" style={{ flex: 2 }} disabled={submitCaptchaMutation.isPending}>

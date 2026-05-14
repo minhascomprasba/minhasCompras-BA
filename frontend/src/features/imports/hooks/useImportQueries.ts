@@ -3,9 +3,9 @@ import { importsService } from '../services/importsService';
 import type { GetImportStatusResponse } from '../types';
 import type { AppError } from '../../../shared/api/errors';
 
-export function useImportStatusPolling(importId: string) {
+export function useImportStatusPolling(importId: string, userId: number | null) {
   return useQuery<GetImportStatusResponse, AppError>({
-    queryKey: ['importStatus', importId],
+    queryKey: ['importStatus', userId, importId],
     queryFn: () => importsService.getImportStatus(importId),
     // Polling logic:
     // refetchInterval receives the current data (or undefined initially)
@@ -25,6 +25,6 @@ export function useImportStatusPolling(importId: string) {
     },
     // Don't retry automatically on error during polling to avoid spam, or retry once.
     retry: 1,
-    enabled: !!importId, // Only run if we have an ID
+    enabled: !!importId && !!userId, // Only run if we have ID and authenticated user
   });
 }

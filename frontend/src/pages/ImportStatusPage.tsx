@@ -1,9 +1,11 @@
 import { useParams, Link } from 'react-router-dom';
 import { useImportStatusPolling } from '../features/imports/hooks/useImportQueries';
+import { useAuth } from '../features/auth/AuthContext';
 
 export function ImportStatusPage() {
   const { importId } = useParams<{ importId: string }>();
-  const { data, isLoading, isError, error } = useImportStatusPolling(importId || '');
+  const { user } = useAuth();
+  const { data, isLoading, isError, error } = useImportStatusPolling(importId || '', user?.id ?? null);
 
   if (!importId) {
     return <div className="container" style={{ textAlign: 'center' }}>ID da importação não fornecido.</div>;

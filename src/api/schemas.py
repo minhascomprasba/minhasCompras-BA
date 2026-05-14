@@ -72,13 +72,7 @@ class NotaListItem(BaseModel):
     codigo_acesso: str
     created_at: datetime
     itens_count: int
-
-
-class PaginatedNotasResponse(BaseModel):
-    data: list[NotaListItem]
-    page: int
-    page_size: int
-    total: int
+    valor_total_nota: float
 
 
 class NotaDetailResponse(BaseModel):
@@ -87,6 +81,7 @@ class NotaDetailResponse(BaseModel):
     id: int
     codigo_acesso: str
     created_at: datetime
+    valor_total_nota: float
 
 
 class ItemListItem(BaseModel):

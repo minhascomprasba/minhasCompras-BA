@@ -19,7 +19,7 @@ export function NotasPage() {
     ...(dateTo && { to: dateTo }),
   };
 
-  const { data, isLoading, isError, error } = useNotas(queryParams);
+  const { data, isLoading, isError, error } = useNotas(user?.id ?? null, queryParams);
 
   const handleDateFilter = (e: React.FormEvent) => {
     e.preventDefault();

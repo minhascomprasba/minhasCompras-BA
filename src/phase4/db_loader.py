@@ -119,7 +119,10 @@ def bulk_insert_produtos_with_nota_id(produtos: list[dict[str, Any]], codigo_not
     session = SessionLocal()
     try:
         nota_fiscal = session.execute(
-            select(NotaFiscal).where(NotaFiscal.codigo_acesso == codigo_nota_fiscal)
+            select(NotaFiscal).where(
+                NotaFiscal.codigo_acesso == codigo_nota_fiscal,
+                NotaFiscal.usuario_id == usuario_id,
+            )
         ).scalar_one_or_none()
 
         if nota_fiscal is None:
