@@ -9,7 +9,9 @@ import { AppError } from '../shared/api/errors';
 
 const loginSchema = z.object({
   email: z.string().email('E-mail inválido'),
-  password: z.string().min(1, 'A senha é obrigatória'),
+  password: z.string()
+    .min(8, 'A senha deve ter no mínimo 8 caracteres')
+    .max(128, 'A senha deve ter no máximo 128 caracteres'),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -33,7 +35,13 @@ export function LoginPage() {
       navigate('/notas');
     } catch (err: any) {
       if (err instanceof AppError) {
-        setError(err.message);
+        if (err.code === 'INVALID_PASSWORD' && err.details?.rule === 'min_length') {
+          setError('A senha deve ter no mínimo 8 caracteres.');
+        } else if (err.code === 'INVALID_PASSWORD' && err.details?.rule === 'max_length') {
+          setError('A senha deve ter no máximo 128 caracteres.');
+        } else {
+          setError(err.message);
+        }
       } else {
         setError('Ocorreu um erro ao fazer login. Tente novamente.');
       }
@@ -70,7 +78,7 @@ export function LoginPage() {
             <input 
               type="password" 
               className={`form-input ${errors.password ? 'error' : ''}`}
-              placeholder="••••••••"
+              placeholder="Entre 8 e 128 caracteres"
               {...register('password')}
             />
             {errors.password && <span className="form-error-text">{errors.password.message}</span>}

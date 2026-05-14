@@ -1,4 +1,3 @@
-import re
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from src.database.connection import SessionLocal
@@ -8,6 +7,23 @@ from src.api.errors import ValidationError, ApiError
 from src.api.security import get_password_hash, verify_password, create_access_token, get_current_user_id
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
+PASSWORD_MIN_LENGTH = 8
+PASSWORD_MAX_LENGTH = 128
+
+
+def _validate_password_rules(password: str) -> None:
+    if len(password) < PASSWORD_MIN_LENGTH:
+        raise ValidationError(
+            "INVALID_PASSWORD",
+            "A senha deve ter no minimo 8 caracteres.",
+            {"field": "password", "rule": "min_length", "min_length": PASSWORD_MIN_LENGTH},
+        )
+    if len(password) > PASSWORD_MAX_LENGTH:
+        raise ValidationError(
+            "INVALID_PASSWORD",
+            "A senha deve ter no maximo 128 caracteres.",
+            {"field": "password", "rule": "max_length", "max_length": PASSWORD_MAX_LENGTH},
+        )
 
 def get_db():
     db = SessionLocal()
@@ -18,19 +34,20 @@ def get_db():
 
 @auth_router.post("/register", response_model=TokenResponse, status_code=201)
 def register(payload: UserRegisterRequest, db: Session = Depends(get_db)):
-    # Validate password rules: 8 chars, 1 num, 1 symbol
-    if len(payload.password) < 8:
-        raise ValidationError("INVALID_PASSWORD", "A senha deve ter no mínimo 8 caracteres.", {"field": "password"})
-    if not re.search(r"\d", payload.password):
-        raise ValidationError("INVALID_PASSWORD", "A senha deve ter no mínimo 1 número.", {"field": "password"})
-    if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", payload.password):
-        raise ValidationError("INVALID_PASSWORD", "A senha deve ter no mínimo 1 símbolo especial.", {"field": "password"})
+    _validate_password_rules(payload.password)
     
     existing_user = db.query(Usuario).filter(Usuario.email == payload.email).first()
     if existing_user:
         raise ApiError("EMAIL_IN_USE", "Este e-mail já está em uso.", status_code=400)
     
-    hashed = get_password_hash(payload.password)
+    try:
+        hashed = get_password_hash(payload.password)
+    except ValueError as exc:
+        raise ValidationError(
+            "INVALID_PASSWORD",
+            "Nao foi possivel processar a senha informada.",
+            {"field": "password", "reason": "hash_error"},
+        ) from exc
     new_user = Usuario(email=payload.email, password_hash=hashed)
     db.add(new_user)
     db.commit()
@@ -44,8 +61,22 @@ def register(payload: UserRegisterRequest, db: Session = Depends(get_db)):
 
 @auth_router.post("/login", response_model=TokenResponse)
 def login(payload: UserLoginRequest, db: Session = Depends(get_db)):
+    _validate_password_rules(payload.password)
+
     user = db.query(Usuario).filter(Usuario.email == payload.email).first()
-    if not user or not verify_password(payload.password, user.password_hash):
+    if not user:
+        raise ApiError("INVALID_CREDENTIALS", "E-mail ou senha inválidos.", status_code=401)
+
+    try:
+        is_valid_password = verify_password(payload.password, user.password_hash)
+    except ValueError as exc:
+        raise ValidationError(
+            "INVALID_PASSWORD",
+            "Nao foi possivel validar a senha informada.",
+            {"field": "password", "reason": "verify_error"},
+        ) from exc
+
+    if not is_valid_password:
         raise ApiError("INVALID_CREDENTIALS", "E-mail ou senha inválidos.", status_code=401)
     
     token = create_access_token(user.id)

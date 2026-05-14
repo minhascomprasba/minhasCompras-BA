@@ -109,11 +109,11 @@ class PaginatedItemsResponse(BaseModel):
 
 class UserRegisterRequest(BaseModel):
     email: str = Field(..., max_length=255)
-    password: str = Field(...)
+    password: str = Field(..., min_length=8, max_length=128)
 
 class UserLoginRequest(BaseModel):
-    email: str
-    password: str
+    email: str = Field(..., max_length=255)
+    password: str = Field(..., min_length=8, max_length=128)
 
 class UserResponse(BaseModel):
     id: int
