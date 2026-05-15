@@ -1,0 +1,513 @@
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from pathlib import Path
+from threading import Lock
+from uuid import uuid4
+
+from selenium.webdriver.remote.webdriver import WebDriver
+from sqlalchemy import func, select
+
+from src.api import settings
+from src.api.errors import ConflictError, NotFoundError, ValidationError
+from src.database.connection import SessionLocal
+from src.database.models import ImportStatus, NfceImport, NotaFiscal, ProdutoExtraido
+from src.phase1.auth_flow import refresh_captcha_image, start_auth_session, submit_captcha_attempt
+from src.phase2.navigation import Maps_to_products_tab, wait_for_products_content
+from src.phase3.parser import ProductParser
+from src.phase4.db_loader import bulk_insert_produtos_with_nota_id
+
+
+@dataclass
+class RuntimeSession:
+    driver: WebDriver
+    captcha_path: Path
+    expires_at: datetime
+
+
+class ImportRuntimeStore:
+    def __init__(self) -> None:
+        self._sessions: dict[str, RuntimeSession] = {}
+        self._lock = Lock()
+
+    def set(self, import_id: str, session: RuntimeSession) -> None:
+        with self._lock:
+            self._sessions[import_id] = session
+
+    def pop(self, import_id: str) -> RuntimeSession | None:
+        with self._lock:
+            return self._sessions.pop(import_id, None)
+
+    def get(self, import_id: str) -> RuntimeSession | None:
+        with self._lock:
+            return self._sessions.get(import_id)
+
+    def pop_expired(self, now: datetime) -> list[tuple[str, RuntimeSession]]:
+        expired: list[tuple[str, RuntimeSession]] = []
+        with self._lock:
+            for import_id, session in list(self._sessions.items()):
+                if session.expires_at <= now:
+                    expired.append((import_id, session))
+                    del self._sessions[import_id]
+        return expired
+
+
+runtime_store = ImportRuntimeStore()
+
+
+def _validate_access_key(access_key: str) -> str:
+    normalized = access_key.strip()
+    if not re.fullmatch(r"\d{44}", normalized):
+        raise ValidationError(
+            code="INVALID_ACCESS_KEY",
+            message="A chave deve conter 44 digitos numericos.",
+            details={"field": "access_key"},
+        )
+    return normalized
+
+
+def _build_import_id() -> str:
+    return f"imp_{uuid4().hex[:12]}"
+
+
+def _utcnow() -> datetime:
+    return datetime.utcnow()
+
+
+def _mask_access_key(access_key: str) -> str:
+    if len(access_key) < 6:
+        return "***"
+    return f"{access_key[:3]}...{access_key[-3:]}"
+
+
+def cleanup_expired_import_sessions() -> None:
+    now = _utcnow()
+    expired = runtime_store.pop_expired(now)
+    if not expired:
+        return
+
+    session = SessionLocal()
+    try:
+        for import_id, runtime in expired:
+            try:
+                runtime.driver.quit()
+            except Exception:
+                pass
+
+            record = session.get(NfceImport, import_id)
+            if record is None:
+                continue
+            if record.status in (ImportStatus.COMPLETED.value, ImportStatus.FAILED.value, ImportStatus.EXPIRED.value):
+                continue
+            record.status = ImportStatus.EXPIRED.value
+            record.error_message = "Captcha expirado. Inicie uma nova importacao."
+            record.updated_at = now
+            record.finished_at = now
+
+        session.commit()
+    finally:
+        session.close()
+
+
+def start_import(access_key: str, usuario_id: int) -> dict[str, object]:
+    cleanup_expired_import_sessions()
+    normalized_key = _validate_access_key(access_key)
+    import_id = _build_import_id()
+    now = _utcnow()
+    expires_at = now + timedelta(seconds=settings.CAPTCHA_TTL_SECONDS)
+
+    captcha_path = Path("data/captchas") / f"{import_id}.png"
+    driver = start_auth_session(
+        access_key=normalized_key,
+        timeout_seconds=settings.PAGE_TIMEOUT_SECONDS,
+        headless=settings.HEADLESS,
+        captcha_output_path=captcha_path,
+    )
+
+    runtime_store.set(import_id, RuntimeSession(driver=driver, captcha_path=captcha_path, expires_at=expires_at))
+
+    session = SessionLocal()
+    try:
+        record = NfceImport(
+            id=import_id,
+            usuario_id=usuario_id,
+            access_key=normalized_key,
+            status=ImportStatus.WAITING_CAPTCHA.value,
+            captcha_image_path=captcha_path.as_posix(),
+            attempts=0,
+            error_message=None,
+            nota_id=None,
+            items_count=None,
+            expires_at=expires_at,
+            created_at=now,
+            updated_at=now,
+            finished_at=None,
+        )
+        session.add(record)
+        session.commit()
+    except Exception:
+        runtime = runtime_store.pop(import_id)
+        if runtime is not None:
+            runtime.driver.quit()
+        raise
+    finally:
+        session.close()
+
+    return {
+        "import_id": import_id,
+        "status": ImportStatus.WAITING_CAPTCHA.value,
+        "captcha_image_url": f"{settings.API_PREFIX}/imports/nfce/{import_id}/captcha-image",
+        "expires_at": expires_at,
+    }
+
+
+def _get_import_or_fail(import_id: str, usuario_id: int) -> NfceImport:
+    session = SessionLocal()
+    try:
+        record = session.get(NfceImport, import_id)
+        if record is None or record.usuario_id != usuario_id:
+            raise NotFoundError("IMPORT_NOT_FOUND", "Importacao nao encontrada.", {"import_id": import_id})
+        session.expunge(record)
+        return record
+    finally:
+        session.close()
+
+
+def get_import_status(import_id: str, usuario_id: int) -> dict[str, object]:
+    cleanup_expired_import_sessions()
+    record = _get_import_or_fail(import_id, usuario_id)
+    return {
+        "import_id": record.id,
+        "status": record.status,
+        "nota_id": record.nota_id,
+        "items_count": record.items_count,
+        "error_message": record.error_message,
+        "created_at": record.created_at,
+        "updated_at": record.updated_at,
+        "finished_at": record.finished_at,
+    }
+
+
+def get_captcha_image_path(import_id: str, usuario_id: int) -> Path:
+    cleanup_expired_import_sessions()
+    record = _get_import_or_fail(import_id, usuario_id)
+
+    if record.status != ImportStatus.WAITING_CAPTCHA.value:
+        raise ConflictError(
+            code="INVALID_IMPORT_STATUS",
+            message="Captcha indisponivel para o estado atual da importacao.",
+            details={"status": record.status},
+        )
+
+    if record.expires_at <= _utcnow():
+        raise ConflictError(
+            code="CAPTCHA_EXPIRED",
+            message="Captcha expirado. Inicie uma nova importacao.",
+            details={"import_id": import_id},
+        )
+
+    runtime = runtime_store.get(import_id)
+    if runtime is None:
+        raise ConflictError(
+            code="SESSION_EXPIRED",
+            message="Sessao de importacao expirada. Inicie uma nova importacao.",
+            details={"import_id": import_id},
+        )
+
+    if not runtime.captcha_path.exists():
+        raise NotFoundError(
+            code="CAPTCHA_NOT_FOUND",
+            message="Imagem de captcha nao encontrada.",
+            details={"import_id": import_id},
+        )
+
+    return runtime.captcha_path
+
+
+def submit_captcha(import_id: str, captcha_code: str, usuario_id: int) -> dict[str, object]:
+    cleanup_expired_import_sessions()
+    now = _utcnow()
+
+    if not captcha_code.strip():
+        raise ValidationError(
+            code="INVALID_CAPTCHA_CODE",
+            message="captcha_code deve ser informado.",
+            details={"field": "captcha_code"},
+        )
+
+    session = SessionLocal()
+    should_close_runtime = False
+    try:
+        record = session.get(NfceImport, import_id)
+        if record is None or record.usuario_id != usuario_id:
+            raise NotFoundError("IMPORT_NOT_FOUND", "Importacao nao encontrada.", {"import_id": import_id})
+
+        if record.status != ImportStatus.WAITING_CAPTCHA.value:
+            raise ConflictError(
+                code="INVALID_IMPORT_STATUS",
+                message="Importacao nao aceita captcha no estado atual.",
+                details={"status": record.status},
+            )
+
+        if record.expires_at <= now:
+            record.status = ImportStatus.EXPIRED.value
+            record.error_message = "Captcha expirado. Inicie uma nova importacao."
+            record.updated_at = now
+            record.finished_at = now
+            session.commit()
+            should_close_runtime = True
+            raise ConflictError(
+                code="CAPTCHA_EXPIRED",
+                message="Captcha expirado. Inicie uma nova importacao.",
+                details={"import_id": import_id},
+            )
+
+        if record.attempts >= settings.MAX_CAPTCHA_ATTEMPTS:
+            record.status = ImportStatus.FAILED.value
+            record.error_message = "Limite de tentativas de captcha atingido."
+            record.updated_at = now
+            record.finished_at = now
+            session.commit()
+            should_close_runtime = True
+            raise ConflictError(
+                code="MAX_CAPTCHA_ATTEMPTS_REACHED",
+                message="Limite de tentativas de captcha atingido.",
+                details={"max_attempts": str(settings.MAX_CAPTCHA_ATTEMPTS)},
+            )
+
+        runtime = runtime_store.get(import_id)
+        if runtime is None:
+            raise ConflictError(
+                code="SESSION_EXPIRED",
+                message="Sessao de importacao expirada. Inicie uma nova importacao.",
+                details={"import_id": import_id},
+            )
+
+        record.attempts += 1
+        session.commit()
+
+        did_auth = submit_captcha_attempt(
+            driver=runtime.driver,
+            captcha_code=captcha_code,
+            timeout_seconds=settings.PAGE_TIMEOUT_SECONDS,
+        )
+
+        if not did_auth:
+            if record.attempts >= settings.MAX_CAPTCHA_ATTEMPTS:
+                record.status = ImportStatus.FAILED.value
+                record.error_message = "Limite de tentativas de captcha atingido."
+                failure_at = _utcnow()
+                record.updated_at = failure_at
+                record.finished_at = failure_at
+                session.commit()
+                should_close_runtime = True
+                raise ConflictError(
+                    code="MAX_CAPTCHA_ATTEMPTS_REACHED",
+                    message="Limite de tentativas de captcha atingido.",
+                    details={"max_attempts": str(settings.MAX_CAPTCHA_ATTEMPTS)},
+                )
+
+            refresh_captcha_image(runtime.driver, settings.PAGE_TIMEOUT_SECONDS, runtime.captcha_path)
+            raise ConflictError(
+                code="INVALID_CAPTCHA",
+                message="Captcha invalido. Tente novamente.",
+                details={"attempts": str(record.attempts)},
+            )
+
+        record.status = ImportStatus.PROCESSING.value
+        record.updated_at = _utcnow()
+        session.commit()
+
+        Maps_to_products_tab(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
+        wait_for_products_content(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
+        products = ProductParser.parse(runtime.driver.page_source)
+        items_count, nota_id = bulk_insert_produtos_with_nota_id(products, record.access_key, usuario_id)
+
+        finished_at = _utcnow()
+        record.status = ImportStatus.COMPLETED.value
+        record.nota_id = nota_id
+        record.items_count = items_count
+        record.error_message = None
+        record.updated_at = finished_at
+        record.finished_at = finished_at
+        session.commit()
+        should_close_runtime = True
+
+        return {"import_id": import_id, "status": ImportStatus.PROCESSING.value}
+    except (NotFoundError, ConflictError, ValidationError):
+        raise
+    except Exception as exc:
+        if session.is_active:
+            record = session.get(NfceImport, import_id)
+            if record is not None:
+                failure_time = _utcnow()
+                record.status = ImportStatus.FAILED.value
+                record.error_message = str(exc)
+                record.updated_at = failure_time
+                record.finished_at = failure_time
+                session.commit()
+        should_close_runtime = True
+        raise
+    finally:
+        session.close()
+        if should_close_runtime:
+            runtime_to_close = runtime_store.pop(import_id)
+            if runtime_to_close is not None:
+                try:
+                    runtime_to_close.driver.quit()
+                except Exception:
+                    pass
+
+
+def list_imports(page: int, page_size: int, status: str | None, usuario_id: int) -> dict[str, object]:
+    cleanup_expired_import_sessions()
+
+    query_status = status.strip().upper() if status else None
+    if query_status and query_status not in {item.value for item in ImportStatus}:
+        raise ValidationError(
+            code="INVALID_STATUS_FILTER",
+            message="Status informado para filtro e invalido.",
+            details={"field": "status"},
+        )
+
+    if page_size > 100:
+        page_size = 100
+
+    session = SessionLocal()
+    try:
+        base_query = select(NfceImport).where(NfceImport.usuario_id == usuario_id)
+        count_query = select(func.count()).select_from(NfceImport).where(NfceImport.usuario_id == usuario_id)
+
+        if query_status:
+            base_query = base_query.where(NfceImport.status == query_status)
+            count_query = count_query.where(NfceImport.status == query_status)
+
+        total = session.execute(count_query).scalar_one()
+
+        rows = session.execute(
+            base_query.order_by(NfceImport.created_at.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        ).scalars()
+
+        data = [
+            {
+                "import_id": row.id,
+                "access_key_masked": _mask_access_key(row.access_key),
+                "status": row.status,
+                "created_at": row.created_at,
+            }
+            for row in rows
+        ]
+
+        return {"data": data, "page": page, "page_size": page_size, "total": total}
+    finally:
+        session.close()
+
+
+def list_notas(page: int, page_size: int, from_date: datetime | None, to_date: datetime | None, usuario_id: int) -> dict[str, object]:
+    if page_size > 100:
+        page_size = 100
+
+    session = SessionLocal()
+    try:
+        base_query = select(NotaFiscal).where(NotaFiscal.usuario_id == usuario_id)
+        count_query = select(func.count()).select_from(NotaFiscal).where(NotaFiscal.usuario_id == usuario_id)
+        sum_query = select(func.sum(NotaFiscal.valor_total_nota)).select_from(NotaFiscal).where(NotaFiscal.usuario_id == usuario_id)
+
+        if from_date is not None:
+            base_query = base_query.where(NotaFiscal.created_at >= from_date)
+            count_query = count_query.where(NotaFiscal.created_at >= from_date)
+            sum_query = sum_query.where(NotaFiscal.created_at >= from_date)
+
+        if to_date is not None:
+            base_query = base_query.where(NotaFiscal.created_at <= to_date)
+            count_query = count_query.where(NotaFiscal.created_at <= to_date)
+            sum_query = sum_query.where(NotaFiscal.created_at <= to_date)
+
+        total = session.execute(count_query).scalar_one()
+        total_gasto = session.execute(sum_query).scalar() or 0.0
+
+        notas = session.execute(
+            base_query.order_by(NotaFiscal.created_at.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        ).scalars()
+
+        data = []
+        for nota in notas:
+            itens_count = session.execute(
+                select(func.count()).select_from(ProdutoExtraido).where(ProdutoExtraido.id_nota_fiscal == nota.id)
+            ).scalar_one()
+            data.append(
+                {
+                    "id": nota.id,
+                    "codigo_acesso": nota.codigo_acesso,
+                    "created_at": nota.created_at,
+                    "itens_count": itens_count,
+                    "valor_total_nota": nota.valor_total_nota,
+                }
+            )
+
+        return {
+            "data": data,
+            "page": page,
+            "page_size": page_size,
+            "total": total,
+            "resumo": {"total_gasto_periodo": float(total_gasto)}
+        }
+    finally:
+        session.close()
+
+
+def get_nota(nota_id: int, usuario_id: int) -> dict[str, object]:
+    session = SessionLocal()
+    try:
+        nota = session.get(NotaFiscal, nota_id)
+        if nota is None or nota.usuario_id != usuario_id:
+            raise NotFoundError("NOTA_NOT_FOUND", "Nota fiscal nao encontrada.", {"nota_id": str(nota_id)})
+        return {"id": nota.id, "codigo_acesso": nota.codigo_acesso, "created_at": nota.created_at, "valor_total_nota": nota.valor_total_nota}
+    finally:
+        session.close()
+
+
+def list_items(nota_id: int, page: int, page_size: int, usuario_id: int) -> dict[str, object]:
+    if page_size > 100:
+        page_size = 100
+
+    session = SessionLocal()
+    try:
+        nota = session.get(NotaFiscal, nota_id)
+        if nota is None or nota.usuario_id != usuario_id:
+            raise NotFoundError("NOTA_NOT_FOUND", "Nota fiscal nao encontrada.", {"nota_id": str(nota_id)})
+
+        total = session.execute(
+            select(func.count()).select_from(ProdutoExtraido).where(ProdutoExtraido.id_nota_fiscal == nota_id)
+        ).scalar_one()
+
+        items = session.execute(
+            select(ProdutoExtraido)
+            .where(ProdutoExtraido.id_nota_fiscal == nota_id)
+            .order_by(ProdutoExtraido.id.asc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        ).scalars()
+
+        data = [
+            {
+                "id": item.id,
+                "id_nota_fiscal": item.id_nota_fiscal,
+                "descricao": item.descricao,
+                "quantidade": item.quantidade,
+                "valor_total": item.valor_total,
+                "unidade_comercial": item.unidade_comercial,
+                "codigo_ean_comercial": item.codigo_ean_comercial,
+            }
+            for item in items
+        ]
+
+        return {"data": data, "page": page, "page_size": page_size, "total": total}
+    finally:
+        session.close()
