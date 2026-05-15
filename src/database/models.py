@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -11,13 +11,29 @@ class Base(DeclarativeBase):
     pass
 
 
-class NotaFiscal(Base):
-    __tablename__ = "notas_fiscais"
+class Usuario(Base):
+    __tablename__ = "usuarios"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    codigo_acesso: Mapped[str] = mapped_column(String(44), unique=True, nullable=False, index=True)
+    email: Mapped[str] = mapped_column(String, unique=True, nullable=False, index=True)
+    password_hash: Mapped[str] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
+    notas: Mapped[list[NotaFiscal]] = relationship(back_populates="usuario")
+    imports: Mapped[list[NfceImport]] = relationship(back_populates="usuario")
+
+
+class NotaFiscal(Base):
+    __tablename__ = "notas_fiscais"
+    __table_args__ = (UniqueConstraint("usuario_id", "codigo_acesso", name="uq_notas_fiscais_usuario_codigo_acesso"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), nullable=False, index=True)
+    codigo_acesso: Mapped[str] = mapped_column(String(44), nullable=False, index=True)
+    valor_total_nota: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+    usuario: Mapped[Usuario] = relationship(back_populates="notas")
     produtos: Mapped[list[ProdutoExtraido]] = relationship(
         back_populates="nota_fiscal",
         cascade="all, delete-orphan",
@@ -36,6 +52,7 @@ class NfceImport(Base):
     __tablename__ = "nfce_imports"
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), nullable=False, index=True)
     access_key: Mapped[str] = mapped_column(String(44), nullable=False, index=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
     captcha_image_path: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -47,6 +64,8 @@ class NfceImport(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    usuario: Mapped[Usuario] = relationship(back_populates="imports")
 
 
 class ProdutoExtraido(Base):

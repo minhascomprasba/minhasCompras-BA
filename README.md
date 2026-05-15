@@ -1,183 +1,150 @@
 # minhasCompras-BA
 
-Projeto de automacao assistida para consulta de NFC-e no portal da SEFAZ Bahia, com pipeline em fases:
+Aplicacao web para importacao de NFC-e da SEFAZ BA com captcha manual, autenticacao de usuarios e historico privado de notas fiscais.
 
-1. Autenticacao assistida com captcha manual
-2. Navegacao para aba Produtos / Servicos
-3. Extracao estruturada de produtos para CSV
-4. Persistencia em SQLite com SQLAlchemy 2.0
+## Visao geral
 
-## Estado Atual do Projeto
+- Backend em FastAPI expoe API REST em `/api/v1`.
+- Frontend em React + Vite consome a API com JWT e cache via React Query.
+- Banco principal e PostgreSQL (Neon em producao).
+- Fluxo principal: usuario autentica, inicia importacao por chave de 44 digitos, resolve captcha, acompanha processamento e consulta notas/importacoes.
 
-Fluxo ponta a ponta implementado:
+## Arquitetura
 
-1. Abre a consulta da SEFAZ BA
-2. Preenche chave de acesso automaticamente
-3. Captura captcha para digitacao manual
-4. Submete consulta e navega para aba Produtos / Servicos
-5. Aguarda renderizacao dos produtos no DOM
-6. Extrai campos dos itens da nota
-7. Salva CSV em data/output/nota_fiscal.csv
-8. Persiste em banco SQLite em data/output/banco_nfce.db
+### 1) Backend (FastAPI)
 
-## Requisitos
+Arquivos principais:
 
-- Python 3.12+
-- Google Chrome instalado
+- `src/api/app.py`: bootstrap da aplicacao, registro de rotas e handlers de erro.
+- `src/api/routers.py`: endpoints de health, importacao, notas e itens.
+- `src/api/auth.py`: cadastro, login e `/auth/me`.
+- `src/api/security.py`: hash de senha (Argon2 via `pwdlib`) e JWT.
+- `src/api/services/import_service.py`: orquestracao do fluxo de importacao NFC-e.
 
-## Dependencias
+Pipeline de importacao (servico):
 
-Principais bibliotecas:
+1. `POST /imports/nfce` valida chave e abre sessao Selenium.
+2. Captura captcha e retorna `import_id`.
+3. Front envia captcha em `POST /imports/nfce/{import_id}/captcha`.
+4. Servico autentica no portal, navega para produtos, faz parsing e persiste dados.
+5. Front acompanha status em `GET /imports/nfce/{import_id}`.
 
-- selenium
-- python-dotenv
-- webdriver-manager
-- Pillow
-- beautifulsoup4
-- pandas
-- sqlalchemy
+Modulos de scraping usados pela API:
 
-Instalacao:
+- `src/phase1/auth_flow.py`
+- `src/phase2/navigation.py`
+- `src/phase3/parser.py`
+- `src/phase4/db_loader.py`
+
+Observacao: a versao CLI antiga foi removida. O projeto roda somente no modo API/web.
+
+### 2) Frontend (React + Vite)
+
+Arquivos principais:
+
+- `frontend/src/app/router.tsx`: rotas publicas e privadas.
+- `frontend/src/features/auth/AuthContext.tsx`: sessao, login/logout e limpeza de cache por usuario.
+- `frontend/src/shared/api/client.ts`: cliente Axios com `Authorization: Bearer`.
+- `frontend/src/features/notas/hooks/useNotasQueries.ts`: queries com `queryKey` escopado por `userId`.
+- `frontend/src/pages/ImportPage.tsx`: fluxo de captcha com fetch autenticado em blob.
+
+Principios atuais do front:
+
+- Toda chamada autenticada usa JWT do `localStorage`.
+- Cache do React Query e isolado por usuario para evitar vazamento visual entre sessoes.
+- Captcha e carregado via request autenticada (`blob`), nao por `<img src>` direto em endpoint protegido.
+
+### 3) Banco de dados (PostgreSQL)
+
+Conexao:
+
+- Configurada em `src/database/connection.py` via `DATABASE_URL`.
+
+Modelos principais (`src/database/models.py`):
+
+- `usuarios`
+  - `id`, `email` (unico), `password_hash`, `created_at`.
+- `notas_fiscais`
+  - `id`, `usuario_id` (FK), `codigo_acesso`, `valor_total_nota`, `created_at`.
+  - Constraint importante: `UNIQUE(usuario_id, codigo_acesso)`.
+- `produtos_extraidos`
+  - itens vinculados por `id_nota_fiscal`.
+- `nfce_imports`
+  - rastreia status da importacao (`WAITING_CAPTCHA`, `PROCESSING`, `COMPLETED`, `FAILED`, `EXPIRED`).
+
+## API principal
+
+Auth:
+
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/login`
+- `GET /api/v1/auth/me`
+
+Importacao NFC-e:
+
+- `POST /api/v1/imports/nfce`
+- `GET /api/v1/imports/nfce/{import_id}/captcha-image`
+- `POST /api/v1/imports/nfce/{import_id}/captcha`
+- `GET /api/v1/imports/nfce/{import_id}`
+- `GET /api/v1/imports/nfce`
+
+Notas:
+
+- `GET /api/v1/notas`
+- `GET /api/v1/notas/{nota_id}`
+- `GET /api/v1/notas/{nota_id}/itens`
+
+Infra:
+
+- `GET /api/v1/health`
+- `GET /api/v1/ready`
+
+## Variaveis de ambiente
+
+Base (`.env.example`):
+
+- `DATABASE_URL` (PostgreSQL em producao)
+- `JWT_SECRET`
+- `JWT_EXPIRATION_HOURS`
+- `SEFAZ_URL`
+- `PAGE_TIMEOUT_SECONDS`
+- `MAX_CAPTCHA_ATTEMPTS`
+- `CAPTCHA_TTL_SECONDS`
+- `HEADLESS`
+- `IMPORT_RATE_LIMIT_PER_MIN`
+
+Frontend:
+
+- `VITE_API_BASE_URL` (ex.: `https://seu-backend.onrender.com/api/v1`)
+
+## Execucao local
+
+### Backend
 
 ```bash
 pip install -r requirements.txt
+uvicorn src.api.app:app --host 0.0.0.0 --port 10000 --reload
 ```
 
-## Configuracao
-
-Crie o arquivo .env a partir de .env.example.
-
-Variaveis utilizadas:
-
-- SEFAZ_URL
-- NFE_ACCESS_KEY
-- PAGE_TIMEOUT_SECONDS
-- MAX_CAPTCHA_ATTEMPTS
-- HEADLESS
-
-Observacao importante:
-
-- NFE_ACCESS_KEY deve conter exatamente 44 digitos numericos.
-
-## Execucao
-
-Execute em modo modulo:
+### Frontend
 
 ```bash
-python -m src.main
+cd frontend
+npm install
+npm run dev
 ```
 
-## Estrutura de Pastas
+## Deploy
 
-```text
-src/
-  main.py
-  database/
-    connection.py
-    models.py
-  phase1/
-    auth_flow.py
-    selectors.py
-  phase2/
-    navigation.py
-    selectors.py
-  phase3/
-    parser.py
-  phase4/
-    db_loader.py
-utils/
-  browser.py
-  logger.py
-data/
-  captchas/
-  output/
-    nota_fiscal.csv
-    banco_nfce.db
-logs/
-  phase1.log
-  phase2.log
-  phase3.log
-  phase4.log
-```
+- O deploy da API e feito por container usando o `Dockerfile` da raiz.
+- A imagem instala Chromium/Chromedriver para o fluxo Selenium.
+- Comandos principais:
+  - `docker build -t <usuario>/minhascompras-api:latest .`
+  - `docker push <usuario>/minhascompras-api:latest`
+- No Render, usar `Deploy latest image`.
 
-## Detalhamento por Fase
+## Observacoes operacionais
 
-### Fase 1 - Autenticacao Assistida
-
-- Valida chave de acesso
-- Preenche chave automaticamente
-- Captura imagem do captcha em data/captchas/current_captcha.png
-- Solicita captcha manual no terminal
-- Mantem navegador aberto apos sucesso
-
-### Fase 2 - Navegacao de Abas
-
-- Clica em btn_visualizar_abas
-- Aguarda carregamento da pagina de abas
-- Clica em btn_aba_produtos
-- Aguarda conteudo de produtos ficar disponivel no DOM
-
-### Fase 3 - Extracao e Estruturacao
-
-- Captura HTML da pagina
-- Faz parsing com BeautifulSoup
-- Extrai por produto:
-  - descricao
-  - quantidade
-  - valor_total
-  - unidade_comercial
-  - codigo_ean_comercial
-- Converte campos numericos para float
-- Salva CSV em data/output/nota_fiscal.csv
-
-### Fase 4 - Persistencia em Banco
-
-- Cria tabelas automaticamente via Base.metadata.create_all
-- Usa SQLAlchemy 2.0 com tipagem forte
-- Salva nota fiscal e produtos relacionados
-- Isola dados por nota para evitar mistura entre execucoes
-
-## Modelo de Dados Atual
-
-Tabela notas_fiscais:
-
-- id (PK)
-- codigo_acesso (unico)
-- created_at
-
-Tabela produtos_extraidos:
-
-- id (PK)
-- id_nota_fiscal (FK para notas_fiscais.id)
-- descricao
-- quantidade
-- valor_total
-- unidade_comercial
-- codigo_ean_comercial
-
-## Regra de Reprocessamento
-
-Quando executar novamente com a mesma chave de acesso:
-
-- a nota fiscal e localizada pelo codigo_acesso
-- os produtos antigos daquela nota sao removidos
-- os novos produtos sao inseridos novamente
-
-Resultado:
-
-- sem duplicidade para a mesma nota
-- notas diferentes ficam separadas por id_nota_fiscal
-
-## Logs
-
-Cada fase grava log dedicado em logs:
-
-- phase1.log
-- phase2.log
-- phase3.log
-- phase4.log
-
-## Observacoes
-
-- Nao ha OCR nesta versao; captcha permanece manual.
-- O navegador utiliza detach=True e permanece aberto apos a execucao.
+- Captcha exige intervencao manual do usuario final.
+- Erros de regra retornam codigos de dominio (ex.: `INVALID_PASSWORD`, `INVALID_CAPTCHA`).
+- Em autenticacao, senha valida entre 8 e 128 caracteres.

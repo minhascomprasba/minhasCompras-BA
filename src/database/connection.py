@@ -8,7 +8,7 @@ from sqlalchemy.orm import sessionmaker
 
 load_dotenv()
 
-DEFAULT_SQLITE_URL = "sqlite:///data/output/banco_nfce.db"
+DEFAULT_SQLITE_URL = "sqlite:///data/output/dev.db"
 DATABASE_URL = os.getenv("DATABASE_URL", DEFAULT_SQLITE_URL).strip() or DEFAULT_SQLITE_URL
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)

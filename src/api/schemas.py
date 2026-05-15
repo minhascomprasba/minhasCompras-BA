@@ -72,13 +72,7 @@ class NotaListItem(BaseModel):
     codigo_acesso: str
     created_at: datetime
     itens_count: int
-
-
-class PaginatedNotasResponse(BaseModel):
-    data: list[NotaListItem]
-    page: int
-    page_size: int
-    total: int
+    valor_total_nota: float
 
 
 class NotaDetailResponse(BaseModel):
@@ -87,6 +81,7 @@ class NotaDetailResponse(BaseModel):
     id: int
     codigo_acesso: str
     created_at: datetime
+    valor_total_nota: float
 
 
 class ItemListItem(BaseModel):
@@ -106,3 +101,30 @@ class PaginatedItemsResponse(BaseModel):
     page: int
     page_size: int
     total: int
+
+class UserRegisterRequest(BaseModel):
+    email: str = Field(..., max_length=255)
+    password: str = Field(..., min_length=8, max_length=128)
+
+class UserLoginRequest(BaseModel):
+    email: str = Field(..., max_length=255)
+    password: str = Field(..., min_length=8, max_length=128)
+
+class UserResponse(BaseModel):
+    id: int
+    email: str
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse
+
+class ResumoPeriodo(BaseModel):
+    total_gasto_periodo: float
+
+class PaginatedNotasResponse(BaseModel):
+    data: list[NotaListItem]
+    page: int
+    page_size: int
+    total: int
+    resumo: ResumoPeriodo | None = None
