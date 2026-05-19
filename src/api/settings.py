@@ -16,6 +16,13 @@ def _get_env_int(name: str, default: int) -> int:
     except ValueError:
         return default
 
+
+def _get_env_list(name: str, default: list[str] | None = None) -> list[str]:
+    raw = os.getenv(name, "").strip()
+    if not raw:
+        return list(default or [])
+    return [item.strip() for item in raw.split(",") if item.strip()]
+
 JWT_SECRET = os.getenv("JWT_SECRET", "super-secret-key-change-in-production")
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_HOURS = _get_env_int("JWT_EXPIRATION_HOURS", 24)
@@ -30,3 +37,4 @@ MAX_CAPTCHA_ATTEMPTS = _get_env_int("MAX_CAPTCHA_ATTEMPTS", 5)
 CAPTCHA_TTL_SECONDS = _get_env_int("CAPTCHA_TTL_SECONDS", 300)
 HEADLESS = os.getenv("HEADLESS", "true").strip().lower() == "true"
 IMPORT_RATE_LIMIT_PER_MIN = _get_env_int("IMPORT_RATE_LIMIT_PER_MIN", 10)
+CORS_ALLOWED_ORIGINS = _get_env_list("CORS_ALLOWED_ORIGINS", ["http://localhost:5173"])

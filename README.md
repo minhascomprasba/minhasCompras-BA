@@ -112,6 +112,7 @@ Base (`.env.example`):
 - `CAPTCHA_TTL_SECONDS`
 - `HEADLESS`
 - `IMPORT_RATE_LIMIT_PER_MIN`
+- `CORS_ALLOWED_ORIGINS` (lista separada por virgula; ex.: `http://localhost:5173,https://minhas-compras-ba.vercel.app`)
 
 Frontend:
 
