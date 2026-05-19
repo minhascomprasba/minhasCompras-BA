@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from src.api.errors import ApiError
@@ -13,6 +14,13 @@ from src.database.models import Base
 from src.api import settings
 
 app = FastAPI(title="minhasCompras-BA API", version="1.0.0")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_ALLOWED_ORIGINS,
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.include_router(router)
 app.include_router(auth_router, prefix=settings.API_PREFIX)
 
