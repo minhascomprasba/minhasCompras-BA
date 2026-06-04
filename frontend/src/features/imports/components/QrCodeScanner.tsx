@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
-
-const SCANNER_CONFIG = {
-  fps: 10,
-  qrbox: { width: 250, height: 250 },
-} as const;
+import { pickDefaultCameraId } from '../utils/pickBackCamera';
+import { QR_SCANNER_CONFIG } from '../utils/qrScannerConfig';
 
 type QrCodeScannerProps = {
   isOpen: boolean;
@@ -12,12 +9,42 @@ type QrCodeScannerProps = {
   onScan: (decodedText: string) => void;
 };
 
+const noopFrameError = () => undefined;
+
 export function QrCodeScanner({ isOpen, onClose, onScan }: QrCodeScannerProps) {
   const readerId = useId().replace(/:/g, '');
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const hasScannedRef = useRef(false);
+  const onScanRef = useRef(onScan);
+  const onCloseRef = useRef(onClose);
+
   const [error, setError] = useState('');
   const [isStarting, setIsStarting] = useState(false);
+
+  useEffect(() => {
+    onScanRef.current = onScan;
+    onCloseRef.current = onClose;
+  }, [onClose, onScan]);
+
+  const onScanSuccess = useCallback((decodedText: string) => {
+    if (hasScannedRef.current) {
+      return;
+    }
+    hasScannedRef.current = true;
+    onScanRef.current(decodedText);
+
+    const scanner = scannerRef.current;
+    if (scanner?.isScanning) {
+      void scanner.stop().then(() => {
+        scannerRef.current = null;
+        onCloseRef.current();
+      });
+      return;
+    }
+
+    scannerRef.current = null;
+    onCloseRef.current();
+  }, []);
 
   const stopScanner = useCallback(async () => {
     const scanner = scannerRef.current;
@@ -51,41 +78,41 @@ export function QrCodeScanner({ isOpen, onClose, onScan }: QrCodeScannerProps) {
     setIsStarting(true);
 
     const startScanner = async () => {
-      const scanner = new Html5Qrcode(readerId, false);
-      scannerRef.current = scanner;
-
-      const onSuccess = (decodedText: string) => {
-        if (hasScannedRef.current) {
-          return;
-        }
-        hasScannedRef.current = true;
-        onScan(decodedText);
-        void stopScanner().then(onClose);
-      };
+      const html5QrCode = new Html5Qrcode(readerId, false);
+      scannerRef.current = html5QrCode;
 
       try {
-        await scanner.start(
-          { facingMode: 'environment' },
-          SCANNER_CONFIG,
-          onSuccess,
-          () => {
-            // erros de leitura entre frames são esperados; ignorar
-          },
-        );
-      } catch {
-        try {
-          await scanner.start(
-            { facingMode: 'user' },
-            SCANNER_CONFIG,
-            onSuccess,
-            () => undefined,
-          );
-        } catch {
-          if (!cancelled) {
-            setError(
-              'Não foi possível acessar a câmera. Verifique as permissões ou use o envio de imagem.',
+        const devices = await Html5Qrcode.getCameras();
+        if (cancelled) {
+          return;
+        }
+
+        const cameraId = pickDefaultCameraId(devices);
+
+        if (cameraId) {
+          try {
+            await html5QrCode.start(cameraId, QR_SCANNER_CONFIG, onScanSuccess, noopFrameError);
+          } catch {
+            await html5QrCode.start(
+              { facingMode: 'environment' },
+              QR_SCANNER_CONFIG,
+              onScanSuccess,
+              noopFrameError,
             );
           }
+        } else {
+          await html5QrCode.start(
+            { facingMode: 'environment' },
+            QR_SCANNER_CONFIG,
+            onScanSuccess,
+            noopFrameError,
+          );
+        }
+      } catch {
+        if (!cancelled) {
+          setError(
+            'Não foi possível acessar a câmera. Verifique as permissões ou use o envio de imagem.',
+          );
         }
       } finally {
         if (!cancelled) {
@@ -100,7 +127,7 @@ export function QrCodeScanner({ isOpen, onClose, onScan }: QrCodeScannerProps) {
       cancelled = true;
       void stopScanner();
     };
-  }, [isOpen, readerId, onClose, onScan, stopScanner]);
+  }, [isOpen, readerId, onScanSuccess, stopScanner]);
 
   if (!isOpen) {
     return null;
@@ -113,14 +140,10 @@ export function QrCodeScanner({ isOpen, onClose, onScan }: QrCodeScannerProps) {
           Ler QR Code da nota
         </h2>
         <p style={{ marginBottom: '1rem' }}>
-          Aponte a câmera para o QR Code impresso na nota fiscal.
+          Aponte a câmera traseira principal para o QR Code impresso na nota fiscal.
         </p>
 
-        <div
-          id={readerId}
-          className="qr-scanner-viewport"
-          style={{ minHeight: isStarting ? '240px' : undefined }}
-        />
+        <div id={readerId} className="qr-scanner-viewport" />
 
         {isStarting && (
           <p style={{ textAlign: 'center', marginTop: '0.75rem', color: 'var(--text-muted)' }}>
