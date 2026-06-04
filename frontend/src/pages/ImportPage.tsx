@@ -8,6 +8,7 @@ import { importsService } from '../features/imports/services/importsService';
 import { QrCodeScanner } from '../features/imports/components/QrCodeScanner';
 import { extractAccessKeyFromQrContent, validateAccessKey } from '../features/imports/utils/extractAccessKey';
 import { scanQrCodeFromFile } from '../features/imports/utils/scanQrFromFile';
+import { ImageUploadIcon, QrCodeIcon } from '../components/ImportActionIcons';
 
 const accessKeySchema = z.object({
   access_key: z
@@ -208,29 +209,39 @@ export function ImportPage() {
             <div className="import-actions-row">
               <button
                 type="button"
-                className="btn btn-secondary"
+                className="btn btn-secondary btn-icon-only"
                 disabled={isBusy}
+                aria-label="Ler QR Code"
+                title="Ler QR Code"
                 onClick={() => {
                   setQrFeedback(null);
                   setIsScannerOpen(true);
                 }}
               >
-                Ler QR Code
+                <QrCodeIcon />
               </button>
               <button
                 type="button"
-                className="btn btn-secondary"
+                className="btn btn-secondary btn-icon-only"
                 disabled={isBusy}
+                aria-label={isFileScanning ? 'Lendo imagem...' : 'Enviar imagem da nota'}
+                title={isFileScanning ? 'Lendo imagem...' : 'Enviar imagem da nota'}
                 onClick={() => fileInputRef.current?.click()}
               >
-                {isFileScanning ? 'Lendo imagem...' : 'Enviar imagem da nota'}
+                {isFileScanning ? (
+                  <span
+                    className="spinner btn-icon-only-spinner"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <ImageUploadIcon />
+                )}
               </button>
             </div>
             <input
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              capture="environment"
               className="sr-only"
               aria-hidden="true"
               tabIndex={-1}
