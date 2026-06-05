@@ -297,3 +297,80 @@ a:hover { color: var(--primary-hover); }
   0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.3); }
   50% { box-shadow: 0 0 25px rgba(99, 102, 241, 0.6); }
 }
+
+/* QR Code scanner */
+.qr-scanner-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(11, 15, 25, 0.85);
+  backdrop-filter: blur(6px);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.qr-scanner-panel {
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.qr-scanner-viewport {
+  width: 100%;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  background: var(--bg-main);
+}
+
+.qr-scanner-viewport video {
+  border-radius: var(--radius-md);
+}
+
+.import-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.import-actions-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.import-actions-row .btn {
+  flex: 1;
+}
+
+.btn-icon-only {
+  min-height: 3rem;
+  padding: 0.85rem 1rem;
+}
+
+.btn-icon-only svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.btn-icon-only-spinner {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-width: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
