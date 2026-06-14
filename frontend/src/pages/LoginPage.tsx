@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -19,6 +19,8 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const successMessage = (location.state as { message?: string } | null)?.message ?? '';
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -54,6 +56,12 @@ export function LoginPage() {
     <div className="container" style={{ maxWidth: '400px', marginTop: '4rem' }}>
       <div className="card" style={{ padding: '2rem' }}>
         <h1 style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '2rem' }}>Entrar</h1>
+
+        {successMessage && (
+          <div className="alert alert-success">
+            {successMessage}
+          </div>
+        )}
         
         {error && (
           <div className="alert alert-error">
@@ -82,6 +90,11 @@ export function LoginPage() {
               {...register('password')}
             />
             {errors.password && <span className="form-error-text">{errors.password.message}</span>}
+            <div style={{ marginTop: '0.5rem', textAlign: 'right' }}>
+              <Link to="/esqueci-senha" style={{ fontSize: '0.85rem', fontWeight: '500' }}>
+                Esqueci minha senha
+              </Link>
+            </div>
           </div>
 
           <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={isLoading}>

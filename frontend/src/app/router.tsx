@@ -7,6 +7,8 @@ import { NotasPage } from '../pages/NotasPage';
 import { NotaDetailPage } from '../pages/NotaDetailPage';
 import { LoginPage } from '../pages/LoginPage';
 import { RegisterPage } from '../pages/RegisterPage';
+import { ForgotPasswordPage } from '../pages/ForgotPasswordPage';
+import { ResetPasswordPage } from '../pages/ResetPasswordPage';
 import { useAuth } from '../features/auth/AuthContext';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -31,6 +33,14 @@ const router = createBrowserRouter([
   {
     path: '/register',
     element: <RegisterPage />,
+  },
+  {
+    path: '/esqueci-senha',
+    element: <ForgotPasswordPage />,
+  },
+  {
+    path: '/redefinir-senha',
+    element: <ResetPasswordPage />,
   },
   {
     path: '/importar',

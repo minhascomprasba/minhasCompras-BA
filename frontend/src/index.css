@@ -256,6 +256,12 @@ a:hover { color: var(--primary-hover); }
   border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
+.alert-success {
+  background: var(--success-bg);
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
 .badge {
   display: inline-flex;
   align-items: center;

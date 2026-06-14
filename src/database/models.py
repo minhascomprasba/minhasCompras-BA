@@ -21,6 +21,20 @@ class Usuario(Base):
 
     notas: Mapped[list[NotaFiscal]] = relationship(back_populates="usuario")
     imports: Mapped[list[NfceImport]] = relationship(back_populates="usuario")
+    password_reset_tokens: Mapped[list[PasswordResetToken]] = relationship(back_populates="usuario")
+
+
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), nullable=False, index=True)
+    token_hash: Mapped[str] = mapped_column(String, nullable=False, unique=True, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+    usuario: Mapped[Usuario] = relationship(back_populates="password_reset_tokens")
 
 
 class NotaFiscal(Base):

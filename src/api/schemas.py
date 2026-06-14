@@ -119,6 +119,16 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     user: UserResponse
 
+class ForgotPasswordRequest(BaseModel):
+    email: str = Field(..., max_length=255)
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(..., min_length=1)
+    password: str = Field(..., min_length=8, max_length=128)
+
+class MessageResponse(BaseModel):
+    message: str
+
 class ResumoPeriodo(BaseModel):
     total_gasto_periodo: float
 

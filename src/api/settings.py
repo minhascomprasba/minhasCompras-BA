@@ -38,3 +38,13 @@ CAPTCHA_TTL_SECONDS = _get_env_int("CAPTCHA_TTL_SECONDS", 300)
 HEADLESS = os.getenv("HEADLESS", "true").strip().lower() == "true"
 IMPORT_RATE_LIMIT_PER_MIN = _get_env_int("IMPORT_RATE_LIMIT_PER_MIN", 10)
 CORS_ALLOWED_ORIGINS = _get_env_list("CORS_ALLOWED_ORIGINS", ["http://localhost:5173"])
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173").strip().rstrip("/")
+SMTP_HOST = os.getenv("SMTP_HOST", "").strip()
+SMTP_PORT = _get_env_int("SMTP_PORT", 587)
+SMTP_USER = os.getenv("SMTP_USER", "").strip()
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "").strip()
+SMTP_FROM = os.getenv("SMTP_FROM", "").strip()
+SMTP_USE_TLS = os.getenv("SMTP_USE_TLS", "true").strip().lower() == "true"
+PASSWORD_RESET_TOKEN_EXPIRATION_MINUTES = _get_env_int("PASSWORD_RESET_TOKEN_EXPIRATION_MINUTES", 60)
+PASSWORD_RESET_RATE_LIMIT_PER_MIN = _get_env_int("PASSWORD_RESET_RATE_LIMIT_PER_MIN", 3)
