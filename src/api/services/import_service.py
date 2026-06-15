@@ -320,10 +320,21 @@ def submit_captcha(import_id: str, captcha_code: str, usuario_id: int) -> dict[s
         record.updated_at = _utcnow()
         session.commit()
 
-        Maps_to_products_tab(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
+        data_compra = Maps_to_products_tab(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
         wait_for_products_content(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
-        products = ProductParser.parse(runtime.driver.page_source)
-        items_count, nota_id = bulk_insert_produtos_with_nota_id(products, record.access_key, usuario_id)
+        parsed_page = ProductParser.parse_page(runtime.driver.page_source)
+        products = parsed_page["produtos"]
+        data_compra = data_compra or parsed_page.get("data_compra")
+        if data_compra is None:
+            debug_path = Path("data/debug/last_nfce_page.html")
+            debug_path.parent.mkdir(parents=True, exist_ok=True)
+            debug_path.write_text(runtime.driver.page_source, encoding="utf-8")
+        items_count, nota_id = bulk_insert_produtos_with_nota_id(
+            products,
+            record.access_key,
+            usuario_id,
+            data_compra=data_compra,
+        )
 
         finished_at = _utcnow()
         record.status = ImportStatus.COMPLETED.value
@@ -413,25 +424,26 @@ def list_notas(page: int, page_size: int, from_date: datetime | None, to_date: d
 
     session = SessionLocal()
     try:
+        purchase_date = func.coalesce(NotaFiscal.data_compra, NotaFiscal.created_at)
         base_query = select(NotaFiscal).where(NotaFiscal.usuario_id == usuario_id)
         count_query = select(func.count()).select_from(NotaFiscal).where(NotaFiscal.usuario_id == usuario_id)
         sum_query = select(func.sum(NotaFiscal.valor_total_nota)).select_from(NotaFiscal).where(NotaFiscal.usuario_id == usuario_id)
 
         if from_date is not None:
-            base_query = base_query.where(NotaFiscal.created_at >= from_date)
-            count_query = count_query.where(NotaFiscal.created_at >= from_date)
-            sum_query = sum_query.where(NotaFiscal.created_at >= from_date)
+            base_query = base_query.where(purchase_date >= from_date)
+            count_query = count_query.where(purchase_date >= from_date)
+            sum_query = sum_query.where(purchase_date >= from_date)
 
         if to_date is not None:
-            base_query = base_query.where(NotaFiscal.created_at <= to_date)
-            count_query = count_query.where(NotaFiscal.created_at <= to_date)
-            sum_query = sum_query.where(NotaFiscal.created_at <= to_date)
+            base_query = base_query.where(purchase_date <= to_date)
+            count_query = count_query.where(purchase_date <= to_date)
+            sum_query = sum_query.where(purchase_date <= to_date)
 
         total = session.execute(count_query).scalar_one()
         total_gasto = session.execute(sum_query).scalar() or 0.0
 
         notas = session.execute(
-            base_query.order_by(NotaFiscal.created_at.desc())
+            base_query.order_by(purchase_date.desc())
             .offset((page - 1) * page_size)
             .limit(page_size)
         ).scalars()
@@ -446,6 +458,7 @@ def list_notas(page: int, page_size: int, from_date: datetime | None, to_date: d
                     "id": nota.id,
                     "codigo_acesso": nota.codigo_acesso,
                     "created_at": nota.created_at,
+                    "data_compra": nota.data_compra,
                     "itens_count": itens_count,
                     "valor_total_nota": nota.valor_total_nota,
                 }
@@ -468,7 +481,7 @@ def get_nota(nota_id: int, usuario_id: int) -> dict[str, object]:
         nota = session.get(NotaFiscal, nota_id)
         if nota is None or nota.usuario_id != usuario_id:
             raise NotFoundError("NOTA_NOT_FOUND", "Nota fiscal nao encontrada.", {"nota_id": str(nota_id)})
-        return {"id": nota.id, "codigo_acesso": nota.codigo_acesso, "created_at": nota.created_at, "valor_total_nota": nota.valor_total_nota}
+        return {"id": nota.id, "codigo_acesso": nota.codigo_acesso, "created_at": nota.created_at, "data_compra": nota.data_compra, "valor_total_nota": nota.valor_total_nota}
     finally:
         session.close()
 
