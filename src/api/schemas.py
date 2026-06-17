@@ -71,6 +71,7 @@ class NotaListItem(BaseModel):
     id: int
     codigo_acesso: str
     created_at: datetime
+    data_compra: datetime | None = None
     itens_count: int
     valor_total_nota: float
 
@@ -81,6 +82,7 @@ class NotaDetailResponse(BaseModel):
     id: int
     codigo_acesso: str
     created_at: datetime
+    data_compra: datetime | None = None
     valor_total_nota: float
 
 

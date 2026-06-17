@@ -4,6 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy import inspect, text
 
 from src.api.errors import ApiError
 from src.api.routers import router
@@ -25,9 +26,24 @@ app.include_router(router)
 app.include_router(auth_router, prefix=settings.API_PREFIX)
 
 
+def _ensure_schema_updates() -> None:
+    inspector = inspect(engine)
+    if not inspector.has_table("notas_fiscais"):
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("notas_fiscais")}
+    if "data_compra" in columns:
+        return
+
+    column_type = "TIMESTAMP" if engine.dialect.name == "postgresql" else "DATETIME"
+    with engine.begin() as connection:
+        connection.execute(text(f"ALTER TABLE notas_fiscais ADD COLUMN data_compra {column_type}"))
+
+
 @app.on_event("startup")
 def on_startup() -> None:
     Base.metadata.create_all(bind=engine)
+    _ensure_schema_updates()
 
 
 @app.exception_handler(ApiError)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import delete, select
@@ -42,7 +43,12 @@ def _coerce_optional_str(value: Any) -> str | None:
 
 
 
-def bulk_insert_produtos_with_nota_id(produtos: list[dict[str, Any]], codigo_nota_fiscal: str, usuario_id: int) -> tuple[int, int]:
+def bulk_insert_produtos_with_nota_id(
+    produtos: list[dict[str, Any]],
+    codigo_nota_fiscal: str,
+    usuario_id: int,
+    data_compra: datetime | None = None,
+) -> tuple[int, int]:
     logger = setup_logger(log_file="logs/phase4.log", logger_name="phase4")
 
     codigo_nota_fiscal = codigo_nota_fiscal.strip()
@@ -66,9 +72,16 @@ def bulk_insert_produtos_with_nota_id(produtos: list[dict[str, Any]], codigo_not
         ).scalar_one_or_none()
 
         if nota_fiscal is None:
-            nota_fiscal = NotaFiscal(codigo_acesso=codigo_nota_fiscal, usuario_id=usuario_id, valor_total_nota=0.0)
+            nota_fiscal = NotaFiscal(
+                codigo_acesso=codigo_nota_fiscal,
+                usuario_id=usuario_id,
+                valor_total_nota=0.0,
+                data_compra=data_compra,
+            )
             session.add(nota_fiscal)
             session.flush()
+        elif data_compra is not None:
+            nota_fiscal.data_compra = data_compra
 
         session.execute(
             delete(ProdutoExtraido).where(ProdutoExtraido.id_nota_fiscal == nota_fiscal.id)

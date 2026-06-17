@@ -1,14 +1,22 @@
 from __future__ import annotations
 
+from datetime import datetime
+from pathlib import Path
+
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
+from src.phase3.parser import ProductParser
 from utils.logger import setup_logger
 
-from .selectors import PRODUTOS_TAB_BUTTON_ID, VISUALIZAR_ABAS_BUTTON_ID
+from .selectors import (
+    IDENTIFICACAO_TAB_BUTTON_IDS,
+    PRODUTOS_TAB_BUTTON_ID,
+    VISUALIZAR_ABAS_BUTTON_ID,
+)
 
 PHASE1_PAGE_PATH = "NFCEC_consulta_chave_acesso.aspx"
 PHASE2_TABS_PAGE_PATH = "NFCEC_consulta_abas.aspx"
@@ -16,10 +24,8 @@ PRODUCT_TABLE_SELECTOR = ".table_produtos"
 PRODUCT_DESCRIPTION_SELECTOR = ".fixo-prod-serv-descricao span"
 
 
-
 def _is_element_present(driver: WebDriver, element_id: str) -> bool:
     return len(driver.find_elements(By.ID, element_id)) > 0
-
 
 
 def _raise_tabs_button_diagnostics(driver: WebDriver) -> None:
@@ -46,10 +52,54 @@ def _raise_tabs_button_diagnostics(driver: WebDriver) -> None:
     )
 
 
+def _try_click_tab(driver: WebDriver, tab_id: str, timeout: int) -> bool:
+    if not _is_element_present(driver, tab_id):
+        return False
 
-def Maps_to_products_tab(driver: WebDriver, timeout: int) -> None:
+    try:
+        tab_button = WebDriverWait(driver, timeout).until(
+            EC.element_to_be_clickable((By.ID, tab_id))
+        )
+        tab_button.click()
+        return True
+    except TimeoutException:
+        return False
+
+
+def _save_debug_html(driver: WebDriver, filename: str) -> None:
+    debug_path = Path("data/debug") / filename
+    debug_path.parent.mkdir(parents=True, exist_ok=True)
+    debug_path.write_text(driver.page_source, encoding="utf-8")
+
+
+def _extract_purchase_datetime(driver: WebDriver, logger) -> datetime | None:
+    data_compra = ProductParser.extract_data_compra(driver.page_source)
+    if data_compra is not None:
+        logger.info("Fase 2: data/hora da compra encontrada na pagina atual.")
+    return data_compra
+
+
+def _extract_purchase_datetime_from_identificacao_tabs(driver: WebDriver, timeout: int, logger) -> datetime | None:
+    for tab_id in IDENTIFICACAO_TAB_BUTTON_IDS:
+        if not _try_click_tab(driver, tab_id, timeout):
+            continue
+
+        logger.info("Fase 2: aba '%s' aberta para buscar data da compra.", tab_id)
+        data_compra = ProductParser.extract_data_compra(driver.page_source)
+        if data_compra is not None:
+            logger.info("Fase 2: data/hora da compra encontrada na aba '%s'.", tab_id)
+            return data_compra
+
+    return None
+
+
+def Maps_to_products_tab(driver: WebDriver, timeout: int) -> datetime | None:
     logger = setup_logger(log_file="logs/phase2.log", logger_name="phase2")
     logger.info("Iniciando Fase 2: navegacao para aba de Produtos / Servicos.")
+
+    data_compra = _extract_purchase_datetime(driver, logger)
+    if data_compra is None:
+        _save_debug_html(driver, "last_nfce_summary.html")
 
     try:
         visualizar_abas_button = WebDriverWait(driver, timeout).until(
@@ -80,6 +130,16 @@ def Maps_to_products_tab(driver: WebDriver, timeout: int) -> None:
 
     logger.info("Pagina de abas carregada: %s", driver.current_url)
 
+    if data_compra is None:
+        data_compra = _extract_purchase_datetime(driver, logger)
+
+    if data_compra is None:
+        data_compra = _extract_purchase_datetime_from_identificacao_tabs(driver, timeout, logger)
+
+    if data_compra is None:
+        _save_debug_html(driver, "last_nfce_abas.html")
+        logger.warning("Fase 2: data da compra nao encontrada antes da aba de produtos.")
+
     try:
         WebDriverWait(driver, timeout).until(
             EC.presence_of_element_located((By.ID, PRODUTOS_TAB_BUTTON_ID))
@@ -98,6 +158,7 @@ def Maps_to_products_tab(driver: WebDriver, timeout: int) -> None:
         raise
 
     logger.info("Fase 2 concluida com sucesso.")
+    return data_compra
 
 
 def wait_for_products_content(driver: WebDriver, timeout: int) -> int:

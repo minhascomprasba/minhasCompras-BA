@@ -12,6 +12,7 @@ export interface Nota {
   id: number;
   codigo_acesso: string;
   created_at: string;
+  data_compra?: string | null;
   itens_count?: number;
   valor_total_nota?: number;
 }

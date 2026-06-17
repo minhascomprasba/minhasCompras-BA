@@ -49,8 +49,18 @@ export function NotaDetailPage() {
           <p style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>
             <strong style={{ color: 'var(--text-primary)' }}>Chave de Acesso:</strong> <span style={{ fontFamily: 'var(--mono)' }}>{nota.codigo_acesso}</span>
           </p>
-          <p>
-            <strong style={{ color: 'var(--text-primary)' }}>Importada em:</strong> {new Date(nota.created_at).toLocaleString('pt-BR')}
+          {nota.data_compra ? (
+            <p>
+              <strong style={{ color: 'var(--text-primary)' }}>Compra em:</strong>{' '}
+              {new Date(nota.data_compra).toLocaleString('pt-BR')}
+            </p>
+          ) : (
+            <p style={{ color: 'var(--text-muted)' }}>
+              <strong style={{ color: 'var(--text-primary)' }}>Compra em:</strong> não capturada nesta importação
+            </p>
+          )}
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+            <strong>Importada em:</strong> {new Date(nota.created_at).toLocaleString('pt-BR')}
           </p>
         </div>
       ) : null}

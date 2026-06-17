@@ -59,7 +59,7 @@ export function NotasPage() {
       <div className="card" style={{ marginBottom: '2rem', padding: '1.25rem' }}>
         <form onSubmit={handleDateFilter} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
           <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label">De (Data da importação):</label>
+            <label className="form-label">De (Data da compra):</label>
             <input 
               type="date" 
               className="form-input"
@@ -131,8 +131,16 @@ export function NotasPage() {
                     <p style={{ fontFamily: 'var(--mono)', fontSize: '0.85rem', marginBottom: '0.75rem' }}>
                       Chave: {nota.codigo_acesso}
                     </p>
-                    <div style={{ display: 'flex', gap: '1rem' }}>
-                      <span className="badge badge-primary">Importada em: {new Date(nota.created_at).toLocaleDateString('pt-BR')}</span>
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                      {nota.data_compra ? (
+                        <span className="badge badge-primary">
+                          Compra em: {new Date(nota.data_compra).toLocaleString('pt-BR')}
+                        </span>
+                      ) : (
+                        <span className="badge" style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
+                          Data da compra indisponível
+                        </span>
+                      )}
                       <span className="badge" style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>Itens: {nota.itens_count || 0}</span>
                     </div>
                   </div>
