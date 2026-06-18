@@ -34,7 +34,7 @@ export function LoginPage() {
     try {
       const response = await authService.login(data);
       login(response.access_token, response.user);
-      navigate('/notas');
+      navigate('/dashboard');
     } catch (err: any) {
       if (err instanceof AppError) {
         if (err.code === 'INVALID_PASSWORD' && err.details?.rule === 'min_length') {
