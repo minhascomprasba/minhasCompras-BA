@@ -759,19 +759,30 @@ a:hover { color: var(--primary-hover); }
 }
 
 
+.donut-chart-layout-wrapper {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  width: 100%;
+}
+
 /* Legend styling for charts */
 .donut-legend-container {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.35rem;
   justify-content: center;
+  flex: 1;
 }
 
 .donut-legend-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
+  line-height: 1.3;
 }
 
 .donut-legend-label {
@@ -1191,6 +1202,20 @@ a:hover { color: var(--primary-hover); }
 
 .auth-back-link:hover svg {
   transform: translateX(-4px);
+}
+
+@media (max-width: 768px) {
+  .donut-chart-layout-wrapper {
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    justify-content: center;
+  }
+  
+  .donut-legend-container {
+    width: 100%;
+    margin-top: 0.5rem;
+  }
 }
 
 @media (max-width: 480px) {

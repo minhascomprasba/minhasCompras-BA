@@ -48,17 +48,17 @@ export function CategoryDonutChart({ data }: CategoryDonutChartProps) {
   };
 
   return (
-    <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', height: '100%', flexWrap: 'wrap' }}>
+    <div className="donut-chart-layout-wrapper">
       {/* Container do Gráfico */}
-      <div style={{ flex: '1 1 200px', height: '240px', position: 'relative' }}>
+      <div style={{ flex: '0 0 180px', height: '220px', position: 'relative' }}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={data}
               cx="50%"
               cy="50%"
-              innerRadius={70}
-              outerRadius={90}
+              innerRadius={55}
+              outerRadius={75}
               paddingAngle={3}
               dataKey="valor"
               nameKey="categoria"
@@ -88,17 +88,17 @@ export function CategoryDonutChart({ data }: CategoryDonutChartProps) {
           pointerEvents: 'none',
           textAlign: 'center'
         }}>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Total Gasto
           </span>
-          <span style={{ fontSize: '1.25rem', color: 'var(--text-primary)', fontWeight: 700 }}>
+          <span style={{ fontSize: '1.05rem', color: 'var(--text-primary)', fontWeight: 700 }}>
             {formatCurrency(total)}
           </span>
         </div>
       </div>
 
       {/* Legenda Customizada */}
-      <div style={{ flex: '1 1 200px' }} className="donut-legend-container">
+      <div className="donut-legend-container">
         {data.map((item, index) => (
           <div key={index} className="donut-legend-item">
             <div className="donut-legend-label">

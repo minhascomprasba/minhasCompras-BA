@@ -140,7 +140,7 @@ export function PriceEvolutionChart({ data, onProductSelect }: PriceEvolutionCha
       {/* O indicador de produto ativo agora é exibido como subtítulo do card controlado pelo pai */}
 
       {/* Gráfico de Linha */}
-      <div style={{ width: '100%', height: '200px', marginTop: 'auto' }}>
+      <div style={{ width: '100%', height: '165px', marginTop: 'auto' }}>
         {activeProduct && activeProduct.historico && activeProduct.historico.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart

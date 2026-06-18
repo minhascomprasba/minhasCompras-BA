@@ -116,7 +116,7 @@ export function DashboardPage() {
           <div className="chart-card-header">
             <h3 className="chart-card-title">Distribuição de Gastos</h3>
           </div>
-          <div className="chart-container-wrapper" style={{ height: 'auto', minHeight: '260px', display: 'flex', alignItems: 'center' }}>
+          <div className="chart-container-wrapper" style={{ height: '220px', display: 'flex', alignItems: 'center' }}>
             <CategoryDonutChart data={currentData.gastosPorCategoria} />
           </div>
         </div>
@@ -131,7 +131,7 @@ export function DashboardPage() {
               </span>
             )}
           </div>
-          <div className="chart-container-wrapper" style={{ height: 'auto', minHeight: '260px' }}>
+          <div className="chart-container-wrapper" style={{ height: '220px', display: 'flex', flexDirection: 'column' }}>
             <PriceEvolutionChart data={currentData.produtosFrequentes} onProductSelect={setSelectedProductName} />
           </div>
         </div>
