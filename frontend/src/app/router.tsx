@@ -9,7 +9,10 @@ import { LoginPage } from '../pages/LoginPage';
 import { RegisterPage } from '../pages/RegisterPage';
 import { ForgotPasswordPage } from '../pages/ForgotPasswordPage';
 import { ResetPasswordPage } from '../pages/ResetPasswordPage';
+import { DashboardPage } from '../pages/DashboardPage';
+import { AuthenticatedLayout } from '../components/AuthenticatedLayout';
 import { useAuth } from '../features/auth/AuthContext';
+import { NotFoundPage } from '../pages/NotFoundPage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -43,21 +46,34 @@ const router = createBrowserRouter([
     element: <ResetPasswordPage />,
   },
   {
-    path: '/importar',
-    element: <PrivateRoute><ImportPage /></PrivateRoute>,
+    element: <PrivateRoute><AuthenticatedLayout /></PrivateRoute>,
+    children: [
+      {
+        path: '/dashboard',
+        element: <DashboardPage />,
+      },
+      {
+        path: '/importar',
+        element: <ImportPage />,
+      },
+      {
+        path: '/importacoes/:importId',
+        element: <ImportStatusPage />,
+      },
+      {
+        path: '/notas',
+        element: <NotasPage />,
+      },
+      {
+        path: '/notas/:notaId',
+        element: <NotaDetailPage />,
+      },
+    ]
   },
   {
-    path: '/importacoes/:importId',
-    element: <PrivateRoute><ImportStatusPage /></PrivateRoute>,
-  },
-  {
-    path: '/notas',
-    element: <PrivateRoute><NotasPage /></PrivateRoute>,
-  },
-  {
-    path: '/notas/:notaId',
-    element: <PrivateRoute><NotaDetailPage /></PrivateRoute>,
-  },
+    path: '*',
+    element: <NotFoundPage />,
+  }
 ]);
 
 export function AppRouter() {

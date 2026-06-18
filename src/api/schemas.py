@@ -141,3 +141,8 @@ class PaginatedNotasResponse(BaseModel):
     page_size: int
     total: int
     resumo: ResumoPeriodo | None = None
+
+class SystemStatsResponse(BaseModel):
+    total_users: int
+    total_notas_mes: int
+    total_products: int
