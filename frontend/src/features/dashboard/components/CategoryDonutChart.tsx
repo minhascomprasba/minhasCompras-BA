@@ -72,7 +72,7 @@ export function CategoryDonutChart({ data }: CategoryDonutChartProps) {
                 />
               ))}
             </Pie>
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip />} wrapperStyle={{ zIndex: 10 }} />
           </PieChart>
         </ResponsiveContainer>
         
@@ -86,7 +86,8 @@ export function CategoryDonutChart({ data }: CategoryDonutChartProps) {
           flexDirection: 'column',
           alignItems: 'center',
           pointerEvents: 'none',
-          textAlign: 'center'
+          textAlign: 'center',
+          zIndex: 1
         }}>
           <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Total Gasto
