@@ -13,7 +13,7 @@ from sqlalchemy import func, select
 from src.api import settings
 from src.api.errors import ConflictError, NotFoundError, ValidationError
 from src.database.connection import SessionLocal
-from src.database.models import ImportStatus, NfceImport, NotaFiscal, ProdutoExtraido
+from src.database.models import ImportStatus, ItemNotaFiscal, NfceImport, NotaFiscal
 from src.phase1.auth_flow import refresh_captcha_image, start_auth_session, submit_captcha_attempt
 from src.phase2.navigation import Maps_to_products_tab, wait_for_products_content
 from src.phase3.parser import EmpresaParser, ProductParser
@@ -457,7 +457,7 @@ def list_notas(page: int, page_size: int, from_date: datetime | None, to_date: d
         data = []
         for nota in notas:
             itens_count = session.execute(
-                select(func.count()).select_from(ProdutoExtraido).where(ProdutoExtraido.id_nota_fiscal == nota.id)
+                select(func.count()).select_from(ItemNotaFiscal).where(ItemNotaFiscal.id_nota_fiscal == nota.id)
             ).scalar_one()
             data.append(
                 {
@@ -503,13 +503,13 @@ def list_items(nota_id: int, page: int, page_size: int, usuario_id: int) -> dict
             raise NotFoundError("NOTA_NOT_FOUND", "Nota fiscal nao encontrada.", {"nota_id": str(nota_id)})
 
         total = session.execute(
-            select(func.count()).select_from(ProdutoExtraido).where(ProdutoExtraido.id_nota_fiscal == nota_id)
+            select(func.count()).select_from(ItemNotaFiscal).where(ItemNotaFiscal.id_nota_fiscal == nota_id)
         ).scalar_one()
 
         items = session.execute(
-            select(ProdutoExtraido)
-            .where(ProdutoExtraido.id_nota_fiscal == nota_id)
-            .order_by(ProdutoExtraido.id.asc())
+            select(ItemNotaFiscal)
+            .where(ItemNotaFiscal.id_nota_fiscal == nota_id)
+            .order_by(ItemNotaFiscal.id.asc())
             .offset((page - 1) * page_size)
             .limit(page_size)
         ).scalars()

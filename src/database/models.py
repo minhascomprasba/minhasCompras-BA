@@ -54,12 +54,16 @@ class NotaFiscal(Base):
 
 # TABELA N-N
 class ItemNotaFiscal(Base):
-    __tablename__ = "itens_nota_fiscal" 
+    __tablename__ = "itens_nota_fiscal"
+    __table_args__ = (UniqueConstraint("id_produto", "id_nota_fiscal", name="uq_item_nota_fiscal"),)
     
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     id_produto: Mapped[int] = mapped_column(ForeignKey("produto.id"), nullable=False, index=True)
     id_nota_fiscal: Mapped[int] = mapped_column(ForeignKey("nota_fiscais.id"), nullable=False, index=True)
     valor_unitario: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
-    quantidade: Mapped[int] = mapped_column(Integer, nullable=False, default=0) 
+    quantidade: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    
+    nota_fiscal: Mapped[NotaFiscal] = relationship(back_populates="itens") 
     
 
 
@@ -92,12 +96,13 @@ class NfceImport(Base):
 
 
 class Estabelecimento(Base):
-    # CNPJ COMO ID?
+    __tablename__ = "estabelecimento"
+
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    nome_Fantasia: Mapped[str] = mapped_column(String, nullable=False)
+    nome_fantasia: Mapped[str] = mapped_column(String, nullable=False)
     razao_social: Mapped[str] = mapped_column(String, nullable=False)
     logradouro: Mapped[str] = mapped_column(String, nullable=False)
-    cidade: Mapped[str] = Mapped 
+    cidade: Mapped[str] = mapped_column(String, nullable=False) 
 
 
 

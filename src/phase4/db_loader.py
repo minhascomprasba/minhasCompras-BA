@@ -7,7 +7,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.exc import SQLAlchemyError
 
 from src.database.connection import SessionLocal
-from src.database.models import ItemNotaFiscal, NotaFiscal, Produto, ProdutoExtraido, Estabelecimento
+from src.database.models import ItemNotaFiscal, NotaFiscal, Produto, Estabelecimento
 from utils.logger import setup_logger
 
 

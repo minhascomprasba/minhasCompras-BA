@@ -35,7 +35,7 @@ from src.api.services.import_service import (
     submit_captcha,
 )
 from src.database.connection import SessionLocal
-from src.database.models import Usuario, NotaFiscal, ProdutoExtraido
+from src.database.models import Usuario, NotaFiscal, Produto
 
 router = APIRouter(prefix=settings.API_PREFIX)
 import_rate_limiter = InMemoryRateLimiter(settings.IMPORT_RATE_LIMIT_PER_MIN)
@@ -78,7 +78,7 @@ def get_system_stats() -> SystemStatsResponse:
         inicio_mes = datetime(now.year, now.month, 1)
         total_notas_mes = session.query(NotaFiscal).filter(NotaFiscal.created_at >= inicio_mes).count()
         
-        total_products = session.query(ProdutoExtraido).count()
+        total_products = session.query(Produto).count()
         
         return SystemStatsResponse(
             total_users=total_users,
