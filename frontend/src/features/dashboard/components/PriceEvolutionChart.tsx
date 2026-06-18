@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import type { ProdutoFrequente } from '../types';
 
@@ -8,13 +8,55 @@ interface PriceEvolutionChartProps {
 
 export function PriceEvolutionChart({ data }: PriceEvolutionChartProps) {
   const [selectedIdx, setSelectedIdx] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   // Resetar seleção se a lista de produtos mudar (ao mudar de mês)
   useEffect(() => {
     setSelectedIdx(0);
+    setSearchTerm('');
+    setIsDropdownOpen(false);
   }, [data]);
 
+  // Fechar dropdown ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const activeProduct = data[selectedIdx];
+
+  const filteredProducts = data
+    .map((p, idx) => ({ ...p, originalIdx: idx }))
+    .filter((p) =>
+      p.nome.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+  const handleSelect = (originalIdx: number) => {
+    setSelectedIdx(originalIdx);
+    setSearchTerm('');
+    setIsDropdownOpen(false);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedIdx(0);
+    setSearchTerm('');
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    setIsDropdownOpen(true);
+  };
+
+  const handleInputFocus = () => {
+    setIsDropdownOpen(true);
+  };
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
@@ -49,21 +91,70 @@ export function PriceEvolutionChart({ data }: PriceEvolutionChartProps) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Chips Interativos */}
-      <div className="product-chips-container">
-        {data.map((product, idx) => (
-          <button
-            key={idx}
-            className={`product-chip ${selectedIdx === idx ? 'product-chip--active' : ''}`}
-            onClick={() => setSelectedIdx(idx)}
+      {/* Barra de Pesquisa com Autocomplete */}
+      <div ref={wrapperRef} className="product-search-wrapper">
+        <div className="product-search-input-wrapper">
+          <svg
+            width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            className="product-search-icon"
           >
-            {product.nome}
-          </button>
-        ))}
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input
+            type="text"
+            className="product-search-input"
+            placeholder="Pesquisar produto..."
+            value={searchTerm}
+            onChange={handleInputChange}
+            onFocus={handleInputFocus}
+          />
+        </div>
+
+        {/* Dropdown de Sugestões */}
+        {isDropdownOpen && (
+          <div className="product-search-dropdown">
+            {filteredProducts.length > 0 ? (
+              filteredProducts.map((product) => (
+                <button
+                  key={product.originalIdx}
+                  className={`product-search-option ${product.originalIdx === selectedIdx ? 'product-search-option--active' : ''}`}
+                  onClick={() => handleSelect(product.originalIdx)}
+                >
+                  {product.nome}
+                </button>
+              ))
+            ) : (
+              <div className="product-search-empty">
+                Nenhum produto encontrado.
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
+      {/* Badge do Produto Selecionado */}
+      {activeProduct && (
+        <div style={{ marginTop: '0.5rem', marginBottom: '0.75rem' }}>
+          <span className="product-selected-badge">
+            {activeProduct.nome}
+            <button
+              className="product-badge-clear"
+              onClick={handleClearSelection}
+              aria-label="Limpar seleção"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </span>
+        </div>
+      )}
+
       {/* Gráfico de Linha */}
-      <div style={{ width: '100%', height: '230px', marginTop: 'auto' }}>
+      <div style={{ width: '100%', height: '200px', marginTop: 'auto' }}>
         {activeProduct && activeProduct.historico && activeProduct.historico.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
