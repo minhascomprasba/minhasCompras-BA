@@ -5,6 +5,7 @@ import { PriceEvolutionChart } from '../features/dashboard/components/PriceEvolu
 
 export function DashboardPage() {
   const [monthIndex, setMonthIndex] = useState(0); // 0 = Junho (mais recente), 1 = Maio, 2 = Abril
+  const [selectedProductName, setSelectedProductName] = useState('');
 
   const currentData = mockDashboardData[monthIndex];
 
@@ -122,11 +123,16 @@ export function DashboardPage() {
 
         {/* Gráfico de Evolução de Preço */}
         <div className="chart-card">
-          <div className="chart-card-header">
+          <div className="chart-card-header" style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
             <h3 className="chart-card-title">Evolução de Preço por Produto</h3>
+            {selectedProductName && (
+              <span className="chart-card-subtitle" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 400 }}>
+                Produto: {selectedProductName}
+              </span>
+            )}
           </div>
           <div className="chart-container-wrapper" style={{ height: 'auto', minHeight: '260px' }}>
-            <PriceEvolutionChart data={currentData.produtosFrequentes} />
+            <PriceEvolutionChart data={currentData.produtosFrequentes} onProductSelect={setSelectedProductName} />
           </div>
         </div>
       </div>

@@ -4,9 +4,10 @@ import type { ProdutoFrequente } from '../types';
 
 interface PriceEvolutionChartProps {
   data: ProdutoFrequente[];
+  onProductSelect?: (productName: string) => void;
 }
 
-export function PriceEvolutionChart({ data }: PriceEvolutionChartProps) {
+export function PriceEvolutionChart({ data, onProductSelect }: PriceEvolutionChartProps) {
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -17,7 +18,10 @@ export function PriceEvolutionChart({ data }: PriceEvolutionChartProps) {
     setSelectedIdx(0);
     setSearchTerm('');
     setIsDropdownOpen(false);
-  }, [data]);
+    if (data && data.length > 0) {
+      onProductSelect?.(data[0].nome);
+    }
+  }, [data, onProductSelect]);
 
   // Fechar dropdown ao clicar fora
   useEffect(() => {
@@ -42,11 +46,10 @@ export function PriceEvolutionChart({ data }: PriceEvolutionChartProps) {
     setSelectedIdx(originalIdx);
     setSearchTerm('');
     setIsDropdownOpen(false);
-  };
-
-  const handleClearSelection = () => {
-    setSelectedIdx(0);
-    setSearchTerm('');
+    const product = data[originalIdx];
+    if (product) {
+      onProductSelect?.(product.nome);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -134,24 +137,7 @@ export function PriceEvolutionChart({ data }: PriceEvolutionChartProps) {
         )}
       </div>
 
-      {/* Badge do Produto Selecionado */}
-      {activeProduct && (
-        <div style={{ marginTop: '0.5rem', marginBottom: '0.75rem' }}>
-          <span className="product-selected-badge">
-            {activeProduct.nome}
-            <button
-              className="product-badge-clear"
-              onClick={handleClearSelection}
-              aria-label="Limpar seleção"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </button>
-          </span>
-        </div>
-      )}
+      {/* O indicador de produto ativo agora é exibido como subtítulo do card controlado pelo pai */}
 
       {/* Gráfico de Linha */}
       <div style={{ width: '100%', height: '200px', marginTop: 'auto' }}>

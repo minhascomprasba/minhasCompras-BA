@@ -12,6 +12,7 @@ import { ResetPasswordPage } from '../pages/ResetPasswordPage';
 import { DashboardPage } from '../pages/DashboardPage';
 import { AuthenticatedLayout } from '../components/AuthenticatedLayout';
 import { useAuth } from '../features/auth/AuthContext';
+import { NotFoundPage } from '../pages/NotFoundPage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -69,6 +70,10 @@ const router = createBrowserRouter([
       },
     ]
   },
+  {
+    path: '*',
+    element: <NotFoundPage />,
+  }
 ]);
 
 export function AppRouter() {

@@ -831,3 +831,111 @@ a:hover { color: var(--primary-hover); }
   }
 }
 
+/* ==========================================================================
+   Página 404 (NotFoundPage) e Efeitos Premium
+   ========================================================================== */
+
+.not-found-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 4rem);
+  padding: 2rem;
+  background-color: var(--bg-main);
+  animation: fadeIn 0.5s ease-out;
+}
+
+.not-found-content {
+  text-align: center;
+  width: 100%;
+  max-width: 480px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: 3.5rem 2rem;
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(8px);
+}
+
+.not-found-illustration-wrapper {
+  margin-bottom: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(99, 102, 241, 0.05);
+  border-radius: 50%;
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  color: var(--text-secondary);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.05);
+}
+
+.not-found-illustration {
+  animation: floatIllustration 4s ease-in-out infinite;
+}
+
+.not-found-code {
+  font-size: 6rem;
+  font-weight: 800;
+  line-height: 1;
+  margin: 0;
+  background: linear-gradient(to right, #818cf8, #c084fc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.05em;
+  filter: drop-shadow(0 4px 12px rgba(129, 140, 248, 0.2));
+}
+
+.not-found-title {
+  font-size: 1.75rem;
+  margin-top: 1rem;
+  margin-bottom: 0.75rem;
+  color: var(--text-primary);
+}
+
+.not-found-text {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+.not-found-actions {
+  display: flex;
+  justify-content: center;
+}
+
+/* Efeito Glow / Neon para botões */
+.btn-neon {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 15px var(--primary-glow);
+  transition: var(--transition);
+  animation: pulseNeon 3s infinite;
+}
+
+.btn-neon:hover {
+  box-shadow: 0 0 25px rgba(99, 102, 241, 0.6);
+  transform: translateY(-2px);
+}
+
+/* Animations */
+@keyframes floatIllustration {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes pulseNeon {
+  0%, 100% {
+    box-shadow: 0 0 12px var(--primary-glow);
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(99, 102, 241, 0.5);
+  }
+}
+
+
