@@ -13,7 +13,7 @@ Aplicacao web para importacao de NFC-e da SEFAZ BA com captcha manual, autentica
 
 ### 1) Backend (FastAPI)
 
-Arquivos principais:
+Arquivos principais
 
 - `src/api/app.py`: bootstrap da aplicacao, registro de rotas e handlers de erro.
 - `src/api/routers.py`: endpoints de health, importacao, notas e itens.
