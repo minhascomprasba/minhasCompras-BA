@@ -1145,5 +1145,63 @@ a:hover { color: var(--primary-hover); }
   }
 }
 
+/* Cabeçalho de Autenticação Flutuante (Login / Cadastro) */
+.auth-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  z-index: 10;
+}
+
+.auth-logo {
+  font-size: 1.25rem;
+  font-weight: 700;
+  background: linear-gradient(to right, #818cf8, #c084fc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  transition: opacity 0.2s ease;
+}
+
+.auth-logo:hover {
+  opacity: 0.95;
+}
+
+.auth-back-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.auth-back-link svg {
+  transition: transform 0.2s ease;
+}
+
+.auth-back-link:hover {
+  color: var(--primary);
+}
+
+.auth-back-link:hover svg {
+  transform: translateX(-4px);
+}
+
+@media (max-width: 480px) {
+  .auth-header {
+    padding: 1.25rem 1rem;
+    flex-direction: column;
+    gap: 0.75rem;
+    text-align: center;
+  }
+}
+
+
 
 

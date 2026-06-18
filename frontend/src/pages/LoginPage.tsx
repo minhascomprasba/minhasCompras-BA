@@ -53,57 +53,72 @@ export function LoginPage() {
   };
 
   return (
-    <div className="container" style={{ maxWidth: '400px', marginTop: '4rem' }}>
-      <div className="card" style={{ padding: '2rem' }}>
-        <h1 style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '2rem' }}>Entrar</h1>
+    <div style={{ position: 'relative', minHeight: 'calc(100vh - 4rem)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+      <header className="auth-header">
+        <Link to="/" className="auth-logo">
+          Minhas Compras BA
+        </Link>
+        <Link to="/" className="auth-back-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          <span>Voltar para a Home</span>
+        </Link>
+      </header>
 
-        {successMessage && (
-          <div className="alert alert-success">
-            {successMessage}
-          </div>
-        )}
-        
-        {error && (
-          <div className="alert alert-error">
-            {error}
-          </div>
-        )}
+      <div className="container" style={{ maxWidth: '400px', margin: '0 auto', padding: '1.5rem', animation: 'fadeIn 0.4s ease-out' }}>
+        <div className="card" style={{ padding: '2rem' }}>
+          <h1 style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '2rem' }}>Entrar</h1>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="form-group">
-            <label className="form-label">E-mail</label>
-            <input 
-              type="email" 
-              className={`form-input ${errors.email ? 'error' : ''}`}
-              placeholder="seu@email.com"
-              {...register('email')}
-            />
-            {errors.email && <span className="form-error-text">{errors.email.message}</span>}
-          </div>
-
-          <div className="form-group" style={{ marginBottom: '2rem' }}>
-            <label className="form-label">Senha</label>
-            <input 
-              type="password" 
-              className={`form-input ${errors.password ? 'error' : ''}`}
-              placeholder="Entre 8 e 128 caracteres"
-              {...register('password')}
-            />
-            {errors.password && <span className="form-error-text">{errors.password.message}</span>}
-            <div style={{ marginTop: '0.5rem', textAlign: 'right' }}>
-              <Link to="/esqueci-senha" style={{ fontSize: '0.85rem', fontWeight: '500' }}>
-                Esqueci minha senha
-              </Link>
+          {successMessage && (
+            <div className="alert alert-success">
+              {successMessage}
             </div>
+          )}
+          
+          {error && (
+            <div className="alert alert-error">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <div className="form-group">
+              <label className="form-label">E-mail</label>
+              <input 
+                type="email" 
+                className={`form-input ${errors.email ? 'error' : ''}`}
+                placeholder="seu@email.com"
+                {...register('email')}
+              />
+              {errors.email && <span className="form-error-text">{errors.email.message}</span>}
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '2rem' }}>
+              <label className="form-label">Senha</label>
+              <input 
+                type="password" 
+                className={`form-input ${errors.password ? 'error' : ''}`}
+                placeholder="Entre 8 e 128 caracteres"
+                {...register('password')}
+              />
+              {errors.password && <span className="form-error-text">{errors.password.message}</span>}
+              <div style={{ marginTop: '0.5rem', textAlign: 'right' }}>
+                <Link to="/esqueci-senha" style={{ fontSize: '0.85rem', fontWeight: '500' }}>
+                  Esqueci minha senha
+                </Link>
+              </div>
+            </div>
+
+            <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={isLoading}>
+              {isLoading ? 'Entrando...' : 'Entrar'}
+            </button>
+          </form>
+
+          <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+            Ainda não tem conta? <Link to="/register" style={{ fontWeight: '500' }}>Criar conta</Link>
           </div>
-
-          <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={isLoading}>
-            {isLoading ? 'Entrando...' : 'Entrar'}
-          </button>
-        </form>
-
-        <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-          Ainda não tem conta? <Link to="/register" style={{ fontWeight: '500' }}>Criar conta</Link>
         </div>
       </div>
     </div>
