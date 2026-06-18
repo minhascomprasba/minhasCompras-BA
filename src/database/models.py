@@ -43,16 +43,24 @@ class NotaFiscal(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), nullable=False, index=True)
+    estabelecimento_id: Mapped[int] = mapped_column(ForeignKey("estabelecimento.id"), nullable=False, index=True)
     codigo_acesso: Mapped[str] = mapped_column(String(44), nullable=False, index=True)
     valor_total_nota: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     data_compra: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
     usuario: Mapped[Usuario] = relationship(back_populates="notas")
-    produtos: Mapped[list[ProdutoExtraido]] = relationship(
-        back_populates="nota_fiscal",
-        cascade="all, delete-orphan",
-    )
+    itens: Mapped[list[ItemNotaFiscal]] = relationship(back_populates="nota_fiscal", cascade="all, delete-orphan")
+
+# TABELA N-N
+class ItemNotaFiscal(Base):
+    __tablename__ = "itens_nota_fiscal" 
+    
+    id_produto: Mapped[int] = mapped_column(ForeignKey("produto.id"), nullable=False, index=True)
+    id_nota_fiscal: Mapped[int] = mapped_column(ForeignKey("nota_fiscais.id"), nullable=False, index=True)
+    valor_unitario: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    quantidade: Mapped[int] = mapped_column(Integer, nullable=False, default=0) 
+    
 
 
 class ImportStatus(str, Enum):
@@ -83,15 +91,37 @@ class NfceImport(Base):
     usuario: Mapped[Usuario] = relationship(back_populates="imports")
 
 
-class ProdutoExtraido(Base):
-    __tablename__ = "produtos_extraidos"
-
+class Estabelecimento(Base):
+    # CNPJ COMO ID?
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    id_nota_fiscal: Mapped[int] = mapped_column(ForeignKey("notas_fiscais.id"), nullable=False, index=True)
-    descricao: Mapped[str] = mapped_column(String, nullable=False)
-    quantidade: Mapped[float] = mapped_column(Float, nullable=False)
-    valor_total: Mapped[float] = mapped_column(Float, nullable=False)
-    unidade_comercial: Mapped[str | None] = mapped_column(String, nullable=True)
-    codigo_ean_comercial: Mapped[str | None] = mapped_column(String, nullable=True)
+    nome_Fantasia: Mapped[str] = mapped_column(String, nullable=False)
+    razao_social: Mapped[str] = mapped_column(String, nullable=False)
+    logradouro: Mapped[str] = mapped_column(String, nullable=False)
+    cidade: Mapped[str] = Mapped 
 
-    nota_fiscal: Mapped[NotaFiscal] = relationship(back_populates="produtos")
+
+
+
+class Produto(Base):
+    
+    __tablename__= 'produto'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id_categoria: Mapped[int] = mapped_column(ForeignKey("categoria.id"), nullable=False, index=True)
+    descricao: Mapped[str] = mapped_column(String, nullable=False)
+    codigo_ean_comercial: Mapped[str | None] = mapped_column(String, nullable=True)
+    codigo_NCM_comercial: Mapped[str | None] = mapped_column(String, nullable=True)
+
+
+
+# class ProdutoExtraido(Base):
+#     __tablename__ = "produtos_extraidos"
+
+#     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+#     id_nota_fiscal: Mapped[int] = mapped_column(ForeignKey("notas_fiscais.id"), nullable=False, index=True)
+#     descricao: Mapped[str] = mapped_column(String, nullable=False)
+#     quantidade: Mapped[float] = mapped_column(Float, nullable=False)
+#     valor_total: Mapped[float] = mapped_column(Float, nullable=False)
+#     unidade_comercial: Mapped[str | None] = mapped_column(String, nullable=True)
+#     codigo_ean_comercial: Mapped[str | None] = mapped_column(String, nullable=True)
+
+#     nota_fiscal: Mapped[NotaFiscal] = relationship(back_populates="produtos")

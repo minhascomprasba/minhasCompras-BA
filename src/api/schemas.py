@@ -86,6 +86,7 @@ class NotaDetailResponse(BaseModel):
     valor_total_nota: float
 
 
+
 class ItemListItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -96,7 +97,7 @@ class ItemListItem(BaseModel):
     valor_total: float
     unidade_comercial: str | None
     codigo_ean_comercial: str | None
-
+ 
 
 class PaginatedItemsResponse(BaseModel):
     data: list[ItemListItem]

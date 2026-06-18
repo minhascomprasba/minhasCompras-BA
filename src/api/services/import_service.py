@@ -16,8 +16,8 @@ from src.database.connection import SessionLocal
 from src.database.models import ImportStatus, NfceImport, NotaFiscal, ProdutoExtraido
 from src.phase1.auth_flow import refresh_captcha_image, start_auth_session, submit_captcha_attempt
 from src.phase2.navigation import Maps_to_products_tab, wait_for_products_content
-from src.phase3.parser import ProductParser
-from src.phase4.db_loader import bulk_insert_produtos_with_nota_id
+from src.phase3.parser import EmpresaParser, ProductParser
+from src.phase4.db_loader import bulk_insert_produtos_with_nota_id, get_or_create_estabelecimento
 
 
 @dataclass
@@ -323,17 +323,23 @@ def submit_captcha(import_id: str, captcha_code: str, usuario_id: int) -> dict[s
         data_compra = Maps_to_products_tab(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
         wait_for_products_content(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
         parsed_page = ProductParser.parse_page(runtime.driver.page_source)
+        empresa_data  = EmpresaParser.parse_page(runtime.driver.page_source)
+        
+        estabelecimento_id = get_or_create_estabelecimento(empresa_data)
+        
         products = parsed_page["produtos"]
         data_compra = data_compra or parsed_page.get("data_compra")
         if data_compra is None:
             debug_path = Path("data/debug/last_nfce_page.html")
             debug_path.parent.mkdir(parents=True, exist_ok=True)
             debug_path.write_text(runtime.driver.page_source, encoding="utf-8")
+            
         items_count, nota_id = bulk_insert_produtos_with_nota_id(
             products,
             record.access_key,
             usuario_id,
             data_compra=data_compra,
+            estabelecimento_id=estabelecimento_id
         )
 
         finished_at = _utcnow()
