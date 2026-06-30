@@ -13,9 +13,9 @@ from sqlalchemy import func, select
 from src.api import settings
 from src.api.errors import ConflictError, NotFoundError, ValidationError
 from src.database.connection import SessionLocal
-from src.database.models import ImportStatus, ItemNotaFiscal, NfceImport, NotaFiscal
+from src.database.models import ImportStatus, ItemNotaFiscal, NfceImport, NotaFiscal, Produto
 from src.phase1.auth_flow import refresh_captcha_image, start_auth_session, submit_captcha_attempt
-from src.phase2.navigation import Maps_to_products_tab, wait_for_products_content
+from src.phase2.navigation import Maps_to_Emitente_tab, Maps_to_products_tab, wait_for_products_content
 from src.phase3.parser import EmpresaParser, ProductParser
 from src.phase4.db_loader import bulk_insert_produtos_with_nota_id, get_or_create_estabelecimento
 
@@ -320,26 +320,33 @@ def submit_captcha(import_id: str, captcha_code: str, usuario_id: int) -> dict[s
         record.updated_at = _utcnow()
         session.commit()
 
+     
+
+        # 2. Produtos
         data_compra = Maps_to_products_tab(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
         wait_for_products_content(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
         parsed_page = ProductParser.parse_page(runtime.driver.page_source)
-        empresa_data  = EmpresaParser.parse_page(runtime.driver.page_source)
         
+        
+         # 1. Emitente primeiro (ainda na página de abas antes de produtos)
+        empresa_data = Maps_to_Emitente_tab(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
         estabelecimento_id = get_or_create_estabelecimento(empresa_data)
-        
+
         products = parsed_page["produtos"]
+        
+        print('Quantidade de Produtos:', len(products))
         data_compra = data_compra or parsed_page.get("data_compra")
         if data_compra is None:
             debug_path = Path("data/debug/last_nfce_page.html")
             debug_path.parent.mkdir(parents=True, exist_ok=True)
             debug_path.write_text(runtime.driver.page_source, encoding="utf-8")
-            
+
         items_count, nota_id = bulk_insert_produtos_with_nota_id(
             products,
             record.access_key,
             usuario_id,
             data_compra=data_compra,
-            estabelecimento_id=estabelecimento_id
+            estabelecimento_id=estabelecimento_id,
         )
 
         finished_at = _utcnow()
@@ -352,7 +359,7 @@ def submit_captcha(import_id: str, captcha_code: str, usuario_id: int) -> dict[s
         session.commit()
         should_close_runtime = True
 
-        return {"import_id": import_id, "status": ImportStatus.PROCESSING.value}
+        return {"import_id": import_id, "status": ImportStatus.COMPLETED.value}
     except (NotFoundError, ConflictError, ValidationError):
         raise
     except Exception as exc:
@@ -376,7 +383,6 @@ def submit_captcha(import_id: str, captcha_code: str, usuario_id: int) -> dict[s
                     runtime_to_close.driver.quit()
                 except Exception:
                     pass
-
 
 def list_imports(page: int, page_size: int, status: str | None, usuario_id: int) -> dict[str, object]:
     cleanup_expired_import_sessions()
@@ -506,25 +512,28 @@ def list_items(nota_id: int, page: int, page_size: int, usuario_id: int) -> dict
             select(func.count()).select_from(ItemNotaFiscal).where(ItemNotaFiscal.id_nota_fiscal == nota_id)
         ).scalar_one()
 
-        items = session.execute(
-            select(ItemNotaFiscal)
+        rows = session.execute(
+            select(ItemNotaFiscal, Produto)
+            .join(Produto, ItemNotaFiscal.id_produto == Produto.id)
             .where(ItemNotaFiscal.id_nota_fiscal == nota_id)
             .order_by(ItemNotaFiscal.id.asc())
             .offset((page - 1) * page_size)
             .limit(page_size)
-        ).scalars()
-
+        ).all()
+        
+        print(rows)
         data = [
             {
                 "id": item.id,
                 "id_nota_fiscal": item.id_nota_fiscal,
-                "descricao": item.descricao,
+                "descricao": produto.descricao,
                 "quantidade": item.quantidade,
-                "valor_total": item.valor_total,
-                "unidade_comercial": item.unidade_comercial,
-                "codigo_ean_comercial": item.codigo_ean_comercial,
+                "valor_unitario": item.valor_unitario,
+                "valor_total": round(item.quantidade * item.valor_unitario, 2),
+                "unidade_comercial": produto.unidade_comercial,
+                "codigo_ean_comercial": produto.codigo_ean_comercial,
             }
-            for item in items
+            for item, produto in rows
         ]
 
         return {"data": data, "page": page, "page_size": page_size, "total": total}

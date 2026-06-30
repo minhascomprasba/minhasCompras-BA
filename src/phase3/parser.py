@@ -467,36 +467,34 @@ class EmpresaParser:
         soup = BeautifulSoup(html_content, "html.parser")
 
         try:
-            
-            nome_fantasia = cls._extract_by_class_patterns(
-                soup, ["txtRazao", "nomeEmpresa", "fixo-emi-xnome", "fixo-emit-xnome"]
-            )
-            
-            if not nome_fantasia:
-                nome_fantasia = cls._extract_value_by_label(
-                    soup, ["Nome / Razao Social", "Razao Social", "Nome Fantasia", "Emitente"]
-                )
+            razao_social = cls._extract_value_by_label(soup, ["Nome / Razao Social", "Razao Social"])
+            nome_fantasia = cls._extract_value_by_label(soup, ["Nome Fantasia"])
+            cnpj = cls._extract_value_by_label(soup, ["CNPJ"])
+            logradouro = cls._extract_value_by_label(soup, ["Endereco", "Logradouro"])
+            bairro = cls._extract_value_by_label(soup, ["Bairro / Distrito", "Bairro"])
+            cep = cls._extract_value_by_label(soup, ["CEP"])
 
-            endereco_cru = cls._extract_by_class_patterns(
-                soup, ["txtEndereco", "fixo-emi-enderemi", "fixo-emit-enderemit"]
-            )
-            
-            if not endereco_cru:
-                endereco_cru = cls._extract_value_by_label(soup, ["Endereco", "Logradouro"])
+            # Município vem como "2927408 - Salvador", extrai só o nome
+            municipio_raw = cls._extract_value_by_label(soup, ["Municipio", "Município"])
+            cidade = re.sub(r"^\d+\s*-\s*", "", municipio_raw).strip()
 
-            endereco_parsed = cls._parse_endereco_completo(endereco_cru)
+            uf = cls._extract_value_by_label(soup, ["UF"])
 
             estabelecimento_data = {
-                "nome_fantasia": nome_fantasia or "Estabelecimento Nao Identificado",
-                "logradouro": endereco_parsed["logradouro"] or endereco_cru,
-                "cidade": endereco_parsed["cidade"],
-                "estado": endereco_parsed["estado"],
+                "razao_social": razao_social or "Nao Identificado",
+                "nome_fantasia": nome_fantasia or razao_social or "Nao Identificado",
+                "cnpj": cnpj,
+                "logradouro": logradouro,
+                "bairro": bairro,
+                "cidade": cidade,
+                "estado": uf,
+                "cep": cep,
             }
 
-            if nome_fantasia:
-                logger.info("Fase 3: Dados do estabelecimento '%s' extraidos com sucesso.", nome_fantasia)
+            if razao_social:
+                logger.info("Fase 3: Estabelecimento '%s' extraido com sucesso.", razao_social)
             else:
-                logger.warning("Fase 3: Nao foi possivel identificar o nome do estabelecimento no HTML.")
+                logger.warning("Fase 3: Nao foi possivel identificar a razao social no HTML.")
 
             return estabelecimento_data
 

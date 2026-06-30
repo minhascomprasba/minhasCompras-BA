@@ -59,9 +59,9 @@ class ItemNotaFiscal(Base):
     
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     id_produto: Mapped[int] = mapped_column(ForeignKey("produto.id"), nullable=False, index=True)
-    id_nota_fiscal: Mapped[int] = mapped_column(ForeignKey("nota_fiscais.id"), nullable=False, index=True)
+    id_nota_fiscal: Mapped[int] = mapped_column(ForeignKey("notas_fiscais.id"), nullable=False, index=True)
     valor_unitario: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
-    quantidade: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    quantidade: Mapped[int] = mapped_column(Float, nullable=False, default=0)
     
     nota_fiscal: Mapped[NotaFiscal] = relationship(back_populates="itens") 
     
@@ -101,9 +101,12 @@ class Estabelecimento(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     nome_fantasia: Mapped[str] = mapped_column(String, nullable=False)
     razao_social: Mapped[str] = mapped_column(String, nullable=False)
+    cnpj: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     logradouro: Mapped[str] = mapped_column(String, nullable=False)
-    cidade: Mapped[str] = mapped_column(String, nullable=False) 
-
+    bairro: Mapped[str | None] = mapped_column(String, nullable=True)
+    cidade: Mapped[str] = mapped_column(String, nullable=False)
+    estado: Mapped[str] = mapped_column(String, nullable=False)
+    cep: Mapped[str | None] = mapped_column(String, nullable=True)
 
 
 
@@ -111,10 +114,13 @@ class Produto(Base):
     
     __tablename__= 'produto'
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    id_categoria: Mapped[int] = mapped_column(ForeignKey("categoria.id"), nullable=False, index=True)
     descricao: Mapped[str] = mapped_column(String, nullable=False)
     codigo_ean_comercial: Mapped[str | None] = mapped_column(String, nullable=True)
     codigo_NCM_comercial: Mapped[str | None] = mapped_column(String, nullable=True)
+    unidade_comercial: Mapped[str | None] = mapped_column(String, nullable=True)
+    categoria: Mapped[str] = mapped_column(String, nullable=False)
+
+
 
 
 

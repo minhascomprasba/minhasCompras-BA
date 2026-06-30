@@ -94,6 +94,7 @@ class ItemListItem(BaseModel):
     id_nota_fiscal: int
     descricao: str
     quantidade: float
+    valor_unitario: float
     valor_total: float
     unidade_comercial: str | None
     codigo_ean_comercial: str | None
