@@ -321,20 +321,17 @@ def submit_captcha(import_id: str, captcha_code: str, usuario_id: int) -> dict[s
         session.commit()
 
      
-
-        # 2. Produtos
+        # Produtos
         data_compra = Maps_to_products_tab(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
         wait_for_products_content(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
         parsed_page = ProductParser.parse_page(runtime.driver.page_source)
         
-        
-         # 1. Emitente primeiro (ainda na página de abas antes de produtos)
+        # Dados do Emitente
         empresa_data = Maps_to_Emitente_tab(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
         estabelecimento_id = get_or_create_estabelecimento(empresa_data)
 
         products = parsed_page["produtos"]
         
-        print('Quantidade de Produtos:', len(products))
         data_compra = data_compra or parsed_page.get("data_compra")
         if data_compra is None:
             debug_path = Path("data/debug/last_nfce_page.html")
@@ -521,7 +518,6 @@ def list_items(nota_id: int, page: int, page_size: int, usuario_id: int) -> dict
             .limit(page_size)
         ).all()
         
-        print(rows)
         data = [
             {
                 "id": item.id,

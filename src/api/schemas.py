@@ -147,3 +147,29 @@ class SystemStatsResponse(BaseModel):
     total_users: int
     total_notas_mes: int
     total_products: int
+
+
+class GastoPorCategoriaResponse(BaseModel):
+    categoria: str
+    valor: float
+    percentual: float
+
+
+class HistoricoPrecoResponse(BaseModel):
+    data: str  # Formato DD/MM
+    preco: float
+
+
+class ProdutoFrequenteResponse(BaseModel):
+    nome: str
+    historico: list[HistoricoPrecoResponse]
+
+
+class DashboardDataResponse(BaseModel):
+    mesAno: str  # Formato "Junho 2026"
+    mediaGastosMensal: float
+    quantidadeNotas: int
+    ticketMedio: float
+    gastosPorCategoria: list[GastoPorCategoriaResponse]
+    produtosFrequentes: list[ProdutoFrequenteResponse]
+

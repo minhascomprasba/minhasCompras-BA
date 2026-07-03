@@ -89,10 +89,6 @@ def bulk_insert_produtos_with_nota_id(
         
         session.flush()
 
-        # Agregamos por id_produto porque a constraint UNIQUE(id_produto, id_nota_fiscal)
-        # nao permite duas linhas para o mesmo produto na mesma nota. Quando o mesmo
-        # produto aparece em mais de uma linha do cupom, somamos quantidade e valor
-        # total e recalculamos o valor unitario (media ponderada).
         agregados: dict[int, dict[str, float]] = {}
 
         total_nota = 0.0
@@ -108,8 +104,7 @@ def bulk_insert_produtos_with_nota_id(
                 unidade_comercial = _coerce_optional_str(produto_scraped.get("unidade_comercial"))
                 descricao = _coerce_required_str(produto_scraped.get("descricao"), "descricao")
 
-                # EAN valido para deduplicacao: presente, diferente de "SEM GTIN"
-                # e nao comecando com "2" (faixa de uso interno/balanca, nao globalmente unica).
+                
                 ean_valido = bool(ean) and ean != "SEM GTIN" and not ean.startswith("2")
 
                 produto_banco = None

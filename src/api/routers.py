@@ -13,6 +13,7 @@ from src.api.rate_limit import InMemoryRateLimiter
 from src.api.schemas import (
     CaptchaSubmitRequest,
     CaptchaSubmitResponse,
+    DashboardDataResponse,
     HealthResponse,
     ImportCreateRequest,
     ImportCreateResponse,
@@ -34,6 +35,7 @@ from src.api.services.import_service import (
     start_import,
     submit_captcha,
 )
+from src.api.services.dashboard_service import get_dashboard_data
 from src.database.connection import SessionLocal
 from src.database.models import Usuario, NotaFiscal, Produto
 
@@ -190,3 +192,11 @@ def nota_items(
 ) -> PaginatedItemsResponse:
     data = list_items(nota_id=nota_id, page=page, page_size=page_size, usuario_id=user_id)
     return PaginatedItemsResponse(**data)
+
+
+@router.get("/dashboard", response_model=list[DashboardDataResponse])
+def dashboard(user_id: int = Depends(get_current_user_id)) -> list[DashboardDataResponse]:
+    data = get_dashboard_data(user_id)
+    return [DashboardDataResponse(**item) for item in data]
+
+

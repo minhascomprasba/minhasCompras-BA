@@ -324,13 +324,21 @@ class ProductParser:
                     toggable_table,
                     ["Codigo EAN Comercial", "Codigo EAN", "EAN Comercial"],
                 )
-
+                
+            codigo_ncm = ""
+            
+            if isinstance(toggable_table, Tag):
+                codigo_ncm = cls._extract_value_by_labels(
+                    toggable_table,
+                    ["Codigo NCM", "Codigo ncm", "Código NCM", "Código ncm"],
+                )
             product = {
                 "descricao": descricao,
                 "quantidade": cls._to_float(quantidade_raw),
                 "valor_total": cls._to_float(valor_total_raw),
                 "unidade_comercial": cls._normalize_text(unidade_comercial),
                 "codigo_ean_comercial": cls._normalize_text(codigo_ean_comercial),
+                "codigo_ncm_comercial": cls._normalize_text(codigo_ean_comercial),
             }
             products.append(product)
             logger.info("Fase 3: produto %s extraido com sucesso.", index)

@@ -174,7 +174,6 @@ def Maps_to_Emitente_tab(driver: WebDriver, timeout: int) -> dict | None:
         emitente_tab_button.click()
         logger.info("Clique realizado na aba de emitente '%s'.", EMITENTE_TAB_BUTTON)
         
-        print('clicou')
     except TimeoutException as exc:
         logger.error("Aba de emitente '%s' nao ficou disponivel no tempo esperado.", EMITENTE_TAB_BUTTON)
         raise RuntimeError("Falha ao abrir aba de Emitente.") from exc
