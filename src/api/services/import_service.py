@@ -528,6 +528,8 @@ def list_items(nota_id: int, page: int, page_size: int, usuario_id: int) -> dict
                 "valor_total": round(item.quantidade * item.valor_unitario, 2),
                 "unidade_comercial": produto.unidade_comercial,
                 "codigo_ean_comercial": produto.codigo_ean_comercial,
+                "codigo_NCM_comercial": produto.codigo_NCM_comercial,
+                "sem_gtin": produto.sem_gtin,
             }
             for item, produto in rows
         ]

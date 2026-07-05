@@ -133,6 +133,8 @@ def get_dashboard_data(user_id: int) -> list[dict[str, object]]:
                 select(
                     Produto.id,
                     Produto.descricao,
+                    Produto.codigo_NCM_comercial,
+                    Produto.sem_gtin,
                     func.count(ItemNotaFiscal.id).label("contagem")
                 )
                 .join(ItemNotaFiscal, ItemNotaFiscal.id_produto == Produto.id)
@@ -142,14 +144,19 @@ def get_dashboard_data(user_id: int) -> list[dict[str, object]]:
                     purchase_date_expr >= start_date,
                     purchase_date_expr < end_date
                 )
-                .group_by(Produto.id, Produto.descricao)
+                .group_by(
+                    Produto.id,
+                    Produto.descricao,
+                    Produto.codigo_NCM_comercial,
+                    Produto.sem_gtin,
+                )
                 .order_by(text("contagem DESC"))
                 .limit(5)
             )
             top_prods_res = session.execute(stmt_top_prods).all()
             
             produtos_frequentes = []
-            for prod_id, prod_desc, _ in top_prods_res:
+            for prod_id, prod_desc, prod_ncm, prod_sem_gtin, _ in top_prods_res:
                 # Histórico de preços deste produto específico no mês corrente
                 stmt_history = (
                     select(
@@ -177,7 +184,41 @@ def get_dashboard_data(user_id: int) -> list[dict[str, object]]:
                     
                 produtos_frequentes.append({
                     "nome": prod_desc,
-                    "historico": historico
+                    "historico": historico,
+                    "codigo_NCM_comercial": prod_ncm,
+                    "sem_gtin": bool(prod_sem_gtin),
+                })
+
+            stmt_grupos_ncm = (
+                select(
+                    Produto.codigo_NCM_comercial,
+                    Produto.categoria,
+                    func.count(func.distinct(Produto.id)).label("qtd_produtos"),
+                    func.sum(ItemNotaFiscal.quantidade * ItemNotaFiscal.valor_unitario).label("valor_total"),
+                )
+                .join(ItemNotaFiscal, ItemNotaFiscal.id_produto == Produto.id)
+                .join(NotaFiscal, ItemNotaFiscal.id_nota_fiscal == NotaFiscal.id)
+                .where(
+                    NotaFiscal.usuario_id == user_id,
+                    Produto.sem_gtin.is_(True),
+                    Produto.codigo_NCM_comercial.is_not(None),
+                    purchase_date_expr >= start_date,
+                    purchase_date_expr < end_date,
+                )
+                .group_by(Produto.codigo_NCM_comercial, Produto.categoria)
+                .order_by(text("valor_total DESC"))
+            )
+            grupos_ncm_res = session.execute(stmt_grupos_ncm).all()
+
+            grupos_ncm_sem_gtin = []
+            for ncm_val, cat_db, qtd_produtos, valor_total in grupos_ncm_res:
+                if not ncm_val:
+                    continue
+                grupos_ncm_sem_gtin.append({
+                    "ncm": ncm_val,
+                    "categoria": obter_categoria_por_ncm(ncm_val, cat_db),
+                    "quantidade_produtos": int(qtd_produtos or 0),
+                    "valor_total": round(float(valor_total or 0.0), 2),
                 })
                 
             mes_nome = PORTUGUESE_MONTHS.get(month, "Outro")
@@ -187,7 +228,8 @@ def get_dashboard_data(user_id: int) -> list[dict[str, object]]:
                 "quantidadeNotas": note_count,
                 "ticketMedio": round(ticket_medio, 2),
                 "gastosPorCategoria": gastos_por_categoria,
-                "produtosFrequentes": produtos_frequentes
+                "produtosFrequentes": produtos_frequentes,
+                "gruposNcmSemGtin": grupos_ncm_sem_gtin,
             })
             
         return dashboard_list
