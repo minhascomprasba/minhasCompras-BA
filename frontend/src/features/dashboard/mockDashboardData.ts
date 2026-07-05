@@ -55,6 +55,9 @@ export const mockDashboardData: DashboardData[] = [
           { data: '25/06', preco: 8.79 }
         ]
       }
+    ],
+    gruposNcmSemGtin: [
+      { ncm: '21069090', categoria: 'Mercado', quantidade_produtos: 2, valor_total: 45.80 }
     ]
   },
   {
@@ -109,6 +112,9 @@ export const mockDashboardData: DashboardData[] = [
           { data: '22/05', preco: 8.49 }
         ]
       }
+    ],
+    gruposNcmSemGtin: [
+      { ncm: '21069090', categoria: 'Mercado', quantidade_produtos: 2, valor_total: 45.80 }
     ]
   },
   {

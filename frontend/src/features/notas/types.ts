@@ -25,6 +25,8 @@ export interface NotaItem {
   valor_total: number;
   unidade_comercial: string;
   codigo_ean_comercial?: string;
+  codigo_NCM_comercial?: string;
+  sem_gtin?: boolean;
 }
 
 export interface GetNotasParams {

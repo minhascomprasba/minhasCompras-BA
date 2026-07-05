@@ -228,6 +228,41 @@ export function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {currentData.gruposNcmSemGtin && currentData.gruposNcmSemGtin.length > 0 && (
+        <div className="chart-card" style={{ marginTop: '1.5rem' }}>
+          <div className="chart-card-header">
+            <h3 className="chart-card-title">Produtos sem GTIN agrupados por NCM</h3>
+            <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+              Itens identificados com EAN &quot;SEM GTIN&quot;, agrupados pelo código NCM
+            </p>
+          </div>
+          <div className="table-container">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>NCM</th>
+                  <th>Categoria</th>
+                  <th style={{ textAlign: 'center' }}>Produtos</th>
+                  <th style={{ textAlign: 'right' }}>Total (R$)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {currentData.gruposNcmSemGtin.map((grupo) => (
+                  <tr key={grupo.ncm}>
+                    <td style={{ fontFamily: 'var(--mono)', fontSize: '0.9rem' }}>{grupo.ncm}</td>
+                    <td>{grupo.categoria}</td>
+                    <td style={{ textAlign: 'center' }}>{grupo.quantidade_produtos}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--success)' }}>
+                      {formatCurrency(grupo.valor_total)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
