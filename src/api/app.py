@@ -28,16 +28,22 @@ app.include_router(auth_router, prefix=settings.API_PREFIX)
 
 def _ensure_schema_updates() -> None:
     inspector = inspect(engine)
-    if not inspector.has_table("notas_fiscais"):
-        return
-
-    columns = {column["name"] for column in inspector.get_columns("notas_fiscais")}
-    if "data_compra" in columns:
-        return
-
     column_type = "TIMESTAMP" if engine.dialect.name == "postgresql" else "DATETIME"
+    boolean_type = "BOOLEAN" if engine.dialect.name == "postgresql" else "INTEGER"
+    boolean_default = "FALSE" if engine.dialect.name == "postgresql" else "0"
+
     with engine.begin() as connection:
-        connection.execute(text(f"ALTER TABLE notas_fiscais ADD COLUMN data_compra {column_type}"))
+        if inspector.has_table("notas_fiscais"):
+            columns = {column["name"] for column in inspector.get_columns("notas_fiscais")}
+            if "data_compra" not in columns:
+                connection.execute(text(f"ALTER TABLE notas_fiscais ADD COLUMN data_compra {column_type}"))
+
+        if inspector.has_table("produto"):
+            produto_columns = {column["name"] for column in inspector.get_columns("produto")}
+            if "sem_gtin" not in produto_columns:
+                connection.execute(
+                    text(f"ALTER TABLE produto ADD COLUMN sem_gtin {boolean_type} NOT NULL DEFAULT {boolean_default}")
+                )
 
 
 @app.on_event("startup")
