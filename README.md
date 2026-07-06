@@ -7,7 +7,7 @@ Aplicacao web para importacao de NFC-e da SEFAZ BA com captcha manual, autentica
 - Backend em FastAPI expoe API REST em `/api/v1`.
 - Frontend em React + Vite consome a API com JWT e cache via React Query.
 - Banco principal e PostgreSQL (Neon em producao).
-- Fluxo principal: usuario autentica, inicia importacao por chave de 44 digitos, resolve captcha, acompanha processamento e consulta notas/importacoes.
+- Fluxo principal: usuario autentica, inicia importacao por chave de 44 digitos, resolve captcha, acompanha processamento e consulta notas/importacoes
 
 ## Arquitetura
 
