@@ -324,13 +324,21 @@ class ProductParser:
                     toggable_table,
                     ["Codigo EAN Comercial", "Codigo EAN", "EAN Comercial"],
                 )
-
+                
+            codigo_ncm = ""
+            
+            if isinstance(toggable_table, Tag):
+                codigo_ncm = cls._extract_value_by_labels(
+                    toggable_table,
+                    ["Codigo NCM", "Codigo ncm", "Código NCM", "Código ncm"],
+                )
             product = {
                 "descricao": descricao,
                 "quantidade": cls._to_float(quantidade_raw),
                 "valor_total": cls._to_float(valor_total_raw),
                 "unidade_comercial": cls._normalize_text(unidade_comercial),
                 "codigo_ean_comercial": cls._normalize_text(codigo_ean_comercial),
+                "codigo_ncm_comercial": cls._normalize_text(codigo_ean_comercial),
             }
             products.append(product)
             logger.info("Fase 3: produto %s extraido com sucesso.", index)
@@ -390,3 +398,117 @@ class ProductParser:
 
         logger.info("Fase 3: CSV salvo em %s com %s linhas.", output_path.as_posix(), len(data_frame))
         return data_frame
+
+
+class EmpresaParser:
+    @staticmethod
+    def _normalize_text(value: str) -> str:
+        return " ".join(value.split()).strip()
+
+    @classmethod
+    def _normalize_label_key(cls, value: str) -> str:
+        text = cls._normalize_text(value)
+        text = text.rstrip(":")
+        text = unicodedata.normalize("NFKD", text)
+        text = "".join(ch for ch in text if not unicodedata.combining(ch))
+        return text.casefold()
+
+    @classmethod
+    def _extract_value_by_label(cls, container: Tag, label_text: list[str] | str) -> str:
+        """
+        Busca o valor associado a uma label. Aceita uma string única ou uma lista 
+        de strings para tratar variações do portal da Sefaz.
+        """
+        labels_to_check = [label_text] if isinstance(label_text, str) else label_text
+        target_keys = [cls._normalize_label_key(lbl) for lbl in labels_to_check]
+
+        for label in container.find_all("label"):
+            current_label = cls._normalize_label_key(label.get_text(" ", strip=True))
+            if current_label not in target_keys:
+                continue
+
+            # Tenta pegar o span irmão ou próximo elemento com o dado
+            candidate = label.find_next("span")
+            if candidate:
+                return cls._normalize_text(candidate.get_text(" ", strip=True))
+            
+            # Fallback caso o texto esteja diretamente dentro do elemento pai da label
+            parent_text = label.parent.get_text(" ", strip=True)
+            label_text_raw = label.get_text(" ", strip=True)
+            fallback_text = parent_text.replace(label_text_raw, "").strip()
+            if fallback_text:
+                return cls._normalize_text(fallback_text)
+
+        return ""
+
+    @classmethod
+    def _extract_by_class_patterns(cls, soup: Tag, class_names: list[str]) -> str:
+        """
+        Busca o dado com base em classes CSS conhecidas de portais NFC-e/NF-e
+        """
+        for class_name in class_names:
+            element = soup.find(class_=class_name)
+            if element:
+                return cls._normalize_text(element.get_text(" ", strip=True))
+        return ""
+
+    @classmethod
+    def _parse_endereco_completo(cls, endereco_cru: str) -> dict[str, str]:
+        
+        result = {"logradouro": "", "cidade": "", "estado": ""}
+        if not endereco_cru:
+            return result
+
+        result["logradouro"] = endereco_cru
+
+        match_uf = re.search(r",?\s*([^,/\-]+)\s*[\-/]\s*([A-Z]{2})\s*$", endereco_cru)
+        if match_uf:
+            result["cidade"] = cls._normalize_text(match_uf.group(1))
+            result["estado"] = match_uf.group(2).upper()
+            result["logradouro"] = cls._normalize_text(endereco_cru[:match_uf.start()])
+
+        return result
+
+    @classmethod
+    def parse_page(cls, html_content: str) -> dict[str, Any]:
+        logger = setup_logger(log_file="logs/phase3.log", logger_name="phase3")
+        soup = BeautifulSoup(html_content, "html.parser")
+
+        try:
+            razao_social = cls._extract_value_by_label(soup, ["Nome / Razao Social", "Razao Social"])
+            nome_fantasia = cls._extract_value_by_label(soup, ["Nome Fantasia"])
+            cnpj = cls._extract_value_by_label(soup, ["CNPJ"])
+            logradouro = cls._extract_value_by_label(soup, ["Endereco", "Logradouro"])
+            bairro = cls._extract_value_by_label(soup, ["Bairro / Distrito", "Bairro"])
+            cep = cls._extract_value_by_label(soup, ["CEP"])
+
+            # Município vem como "2927408 - Salvador", extrai só o nome
+            municipio_raw = cls._extract_value_by_label(soup, ["Municipio", "Município"])
+            cidade = re.sub(r"^\d+\s*-\s*", "", municipio_raw).strip()
+
+            uf = cls._extract_value_by_label(soup, ["UF"])
+
+            estabelecimento_data = {
+                "razao_social": razao_social or "Nao Identificado",
+                "nome_fantasia": nome_fantasia or razao_social or "Nao Identificado",
+                "cnpj": cnpj,
+                "logradouro": logradouro,
+                "bairro": bairro,
+                "cidade": cidade,
+                "estado": uf,
+                "cep": cep,
+            }
+
+            if razao_social:
+                logger.info("Fase 3: Estabelecimento '%s' extraido com sucesso.", razao_social)
+            else:
+                logger.warning("Fase 3: Nao foi possivel identificar a razao social no HTML.")
+
+            return estabelecimento_data
+
+        except Exception as exc:
+            logger.exception("Fase 3: Erro critico ao processar dados do estabelecimento.")
+            raise exc
+        finally:
+            soup.decompose()
+            del soup
