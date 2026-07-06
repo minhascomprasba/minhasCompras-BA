@@ -26,14 +26,20 @@ export function AuthenticatedLayout() {
             >
               Dashboard
             </NavLink>
-            <NavLink 
-              to="/notas" 
+            <NavLink
+              to="/notas"
               className={({ isActive }) => `nav-link ${isActive ? 'nav-link--active' : ''}`}
             >
               Notas
             </NavLink>
-            <NavLink 
-              to="/importar" 
+            <NavLink
+              to="/mapa"
+              className={({ isActive }) => `nav-link ${isActive ? 'nav-link--active' : ''}`}
+            >
+              Mapa
+            </NavLink>
+            <NavLink
+              to="/importar"
               className={({ isActive }) => `nav-link ${isActive ? 'nav-link--active' : ''}`}
             >
               Importar
