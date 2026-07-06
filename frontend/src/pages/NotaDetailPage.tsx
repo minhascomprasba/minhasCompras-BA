@@ -38,7 +38,7 @@ export function NotaDetailPage() {
         </div>
       ) : nota ? (
         <div className="glass-panel" style={{ marginBottom: '3rem', textAlign: 'center' }}>
-          <h1 style={{ fontSize: '3rem', marginBottom: '0.5rem', background: 'linear-gradient(to right, #818cf8, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem' }}>
+          <h1 style={{ fontSize: '3rem', marginBottom: '0.5rem', background: 'linear-gradient(100deg, #17c85f, #3a8fe0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem' }}>
             Nota #{nota.id}
             {nota.valor_total_nota !== undefined && (
               <span style={{ fontSize: '2rem', color: 'var(--success)', background: 'var(--bg-main)', padding: '0.25rem 1rem', borderRadius: 'var(--radius-md)', WebkitTextFillColor: 'initial' }}>

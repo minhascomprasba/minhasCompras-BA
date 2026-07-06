@@ -6,11 +6,11 @@ interface CategoryDonutChartProps {
 }
 
 const CATEGORY_COLORS: { [key: string]: string } = {
-  'Mercado': '#6366f1',      // Indigo
-  'Alimentação': '#10b981',  // Emerald
+  'Mercado': '#17c85f',      // Brand green
+  'Alimentação': '#3a8fe0',  // Brand blue
   'Combustível': '#f59e0b',  // Amber
   'Farmácia': '#ec4899',     // Pink
-  'Vestuário': '#8b5cf6',    // Violet
+  'Vestuário': '#14b8a6',    // Teal
   'Outros': '#64748b',       // Slate
 };
 
