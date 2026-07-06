@@ -9,6 +9,9 @@ interface SystemStats {
   total_products: number;
 }
 
+const GREEN = '#17c85f';
+const BLUE = '#3a8fe0';
+
 export function HomePage() {
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
 
@@ -50,89 +53,175 @@ export function HomePage() {
   const totalNotas = stats?.total_notas_mes ?? 0;
   const totalProducts = stats?.total_products ?? 0;
 
+  const features = [
+    {
+      color: GREEN,
+      bg: 'rgba(23, 200, 95, 0.12)',
+      title: 'Importação automática',
+      text: 'Cole a chave de 44 dígitos da NFC-e e o sistema busca os dados diretamente na Sefaz-BA.',
+      icon: (
+        <path d="M12 3v12m0 0l4-4m-4 4l-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+      ),
+    },
+    {
+      color: BLUE,
+      bg: 'rgba(58, 143, 224, 0.12)',
+      title: 'Gastos por categoria',
+      text: 'Veja para onde vai o seu dinheiro com gráficos claros de mercado, farmácia, combustível e mais.',
+      icon: (
+        <>
+          <path d="M21 21H4a1 1 0 0 1-1-1V3" />
+          <path d="M7 15l4-4 3 3 5-6" />
+        </>
+      ),
+    },
+    {
+      color: GREEN,
+      bg: 'rgba(23, 200, 95, 0.12)',
+      title: 'Evolução de preços',
+      text: 'Acompanhe a inflação pessoal comparando o preço histórico de cada produto que você compra.',
+      icon: (
+        <>
+          <path d="M3 3v18h18" />
+          <path d="M7 14l3-3 3 3 4-5" />
+        </>
+      ),
+    },
+    {
+      color: BLUE,
+      bg: 'rgba(58, 143, 224, 0.12)',
+      title: 'Leitura por QR Code',
+      text: 'Aponte a câmera para o QR Code do cupom fiscal e importe a nota em segundos, sem digitar.',
+      icon: (
+        <>
+          <rect x="3" y="3" width="7" height="7" rx="1" />
+          <rect x="14" y="3" width="7" height="7" rx="1" />
+          <rect x="3" y="14" width="7" height="7" rx="1" />
+          <path d="M14 14h3v3M20 20h.01M17 20h.01M20 17h.01" />
+        </>
+      ),
+    },
+    {
+      color: GREEN,
+      bg: 'rgba(23, 200, 95, 0.12)',
+      title: 'Histórico privado',
+      text: 'Todas as suas notas ficam guardadas com segurança e vinculadas apenas ao seu perfil.',
+      icon: (
+        <>
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          <path d="M9 12l2 2 4-4" />
+        </>
+      ),
+    },
+    {
+      color: BLUE,
+      bg: 'rgba(58, 143, 224, 0.12)',
+      title: '100% gratuito',
+      text: 'Uma ferramenta completa de controle financeiro pessoal, sem custos e sem anúncios.',
+      icon: (
+        <>
+          <circle cx="12" cy="12" r="9" />
+          <path d="M14.5 9.5a2.5 2.5 0 0 0-2.5-1.5c-1.5 0-2.5 1-2.5 2s1 1.5 2.5 2 2.5 1 2.5 2-1 2-2.5 2a2.5 2.5 0 0 1-2.5-1.5M12 6.5v11" />
+        </>
+      ),
+    },
+  ];
+
   return (
     <div className="container" style={{ maxWidth: '1100px', paddingBottom: '5rem' }}>
       {/* Hero Section */}
-      <section className="hero-section" style={{ textAlign: 'center', marginTop: '3rem', marginBottom: '4rem' }}>
-        <h1 style={{ 
-          fontSize: '3.8rem', 
-          background: 'linear-gradient(to right, #818cf8, #c084fc)', 
-          WebkitBackgroundClip: 'text', 
-          WebkitTextFillColor: 'transparent', 
-          marginBottom: '1rem',
-          lineHeight: '1.1' 
-        }}>
-          Minhas Compras BA
-        </h1>
-        <p style={{ fontSize: '1.3rem', marginBottom: '2.5rem', color: 'var(--text-secondary)', maxWidth: '750px', margin: '0 auto 2.5rem auto' }}>
-          Gestão inteligente e automatizada de suas NFC-e. Acompanhe seus gastos por categoria, monitore a evolução de preços dos produtos e tenha controle financeiro total na palma da mão.
-        </p>
+      <section className="hero-grid">
+        <div className="hero-copy">
+          <span className="hero-eyebrow">
+            <span className="dot" /> Notas da Sefaz-BA
+          </span>
+          <h1 className="hero-title">
+            Controle total das suas <span className="accent">compras</span> na Bahia.
+          </h1>
+          <p className="hero-subtitle">
+            Importe suas NFC-e automaticamente, acompanhe gastos por categoria e monitore a
+            evolução de preços dos produtos. Simples, seguro e gratuito.
+          </p>
 
-        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginBottom: '1.5rem' }}>
-          <Link to="/login" className="btn btn-secondary" style={{ padding: '0.85rem 2.2rem', fontSize: '1.05rem', borderRadius: 'var(--radius-md)' }}>
-            Entrar
-          </Link>
-          <Link to="/register" className="btn btn-primary btn-neon" style={{ padding: '0.85rem 2.2rem', fontSize: '1.05rem', borderRadius: 'var(--radius-md)' }}>
-            Criar Conta
-          </Link>
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            <Link to="/register" className="btn btn-primary btn-neon" style={{ padding: '0.85rem 2.2rem', fontSize: '1.05rem', borderRadius: 'var(--radius-md)' }}>
+              Criar Conta
+            </Link>
+            <Link to="/login" className="btn btn-secondary" style={{ padding: '0.85rem 2.2rem', fontSize: '1.05rem', borderRadius: 'var(--radius-md)' }}>
+              Entrar
+            </Link>
+          </div>
+
+          <div className="hero-proof">
+            <div className="hero-proof-item">
+              <span className="hero-proof-num">{totalUsers.toLocaleString('pt-BR')}</span>
+              <span className="hero-proof-label">Usuários ativos</span>
+            </div>
+            <div className="hero-proof-divider" />
+            <div className="hero-proof-item">
+              <span className="hero-proof-num">{totalNotas.toLocaleString('pt-BR')}</span>
+              <span className="hero-proof-label">Notas este mês</span>
+            </div>
+            <div className="hero-proof-divider" />
+            <div className="hero-proof-item">
+              <span className="hero-proof-num">{totalProducts.toLocaleString('pt-BR')}</span>
+              <span className="hero-proof-label">Produtos</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="hero-visual">
+          <div className="hero-visual-glow" />
+          <div className="hero-visual-card">
+            <img src="/icon.png" alt="Minhas Compras BA" />
+          </div>
+
+          <div className="hero-chip hero-chip--tl">
+            <span className="hero-chip-icon" style={{ background: 'rgba(23, 200, 95, 0.15)', color: GREEN }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </span>
+            <span>Nota importada<small>em tempo real</small></span>
+          </div>
+
+          <div className="hero-chip hero-chip--br">
+            <span className="hero-chip-icon" style={{ background: 'rgba(58, 143, 224, 0.15)', color: BLUE }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 3v18h18" />
+                <path d="M7 14l3-3 3 3 4-5" />
+              </svg>
+            </span>
+            <span>Gastos organizados<small>por categoria</small></span>
+          </div>
         </div>
       </section>
 
-      {/* Estatísticas do Sistema */}
-      <section className="home-stats-section" style={{ marginBottom: '5rem' }}>
-        <h2 style={{ textAlign: 'center', fontSize: '1.8rem', marginBottom: '2.5rem' }}>Dados Gerais do Sistema</h2>
-        <div className="home-stats-grid">
-          {/* Card 1: Usuários */}
-          <div className="home-stats-card">
-            <div className="home-stats-glow" style={{ background: 'rgba(99, 102, 241, 0.15)' }}></div>
-            <div className="home-stats-icon-wrapper" style={{ color: '#818cf8', background: 'rgba(99, 102, 241, 0.1)' }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-              </svg>
+      {/* Recursos */}
+      <section className="features-section" style={{ marginBottom: '5rem' }}>
+        <h2 style={{ textAlign: 'center', fontSize: '1.9rem', marginBottom: '0.75rem' }}>Tudo o que você precisa em um só lugar</h2>
+        <p style={{ textAlign: 'center', color: 'var(--text-secondary)', maxWidth: '560px', margin: '0 auto 2.5rem auto' }}>
+          Recursos pensados para deixar o controle das suas compras simples e automático.
+        </p>
+        <div className="features-grid">
+          {features.map((f, i) => (
+            <div key={i} className="feature-card">
+              <div className="feature-icon" style={{ background: f.bg, color: f.color }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  {f.icon}
+                </svg>
+              </div>
+              <h3>{f.title}</h3>
+              <p>{f.text}</p>
             </div>
-            <span className="home-stats-number">{totalUsers.toLocaleString('pt-BR')}</span>
-            <span className="home-stats-label">Usuários Ativos</span>
-          </div>
-
-          {/* Card 2: Notas Lidas */}
-          <div className="home-stats-card">
-            <div className="home-stats-glow" style={{ background: 'rgba(16, 185, 129, 0.15)' }}></div>
-            <div className="home-stats-icon-wrapper" style={{ color: '#34d399', background: 'rgba(16, 185, 129, 0.1)' }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <line x1="16" y1="13" x2="8" y2="13"></line>
-                <line x1="16" y1="17" x2="8" y2="17"></line>
-                <polyline points="10 9 9 9 8 9"></polyline>
-              </svg>
-            </div>
-            <span className="home-stats-number">{totalNotas.toLocaleString('pt-BR')}</span>
-            <span className="home-stats-label">Notas Importadas este Mês</span>
-          </div>
-
-          {/* Card 3: Produtos Catalogados */}
-          <div className="home-stats-card">
-            <div className="home-stats-glow" style={{ background: 'rgba(245, 158, 11, 0.15)' }}></div>
-            <div className="home-stats-icon-wrapper" style={{ color: '#fbbf24', background: 'rgba(245, 158, 11, 0.1)' }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
-                <line x1="7" y1="7" x2="7.01" y2="7"></line>
-              </svg>
-            </div>
-            <span className="home-stats-number">{totalProducts.toLocaleString('pt-BR')}</span>
-            <span className="home-stats-label">Produtos Catalogados</span>
-          </div>
+          ))}
         </div>
       </section>
 
       {/* Como Funciona */}
       <section className="steps-section" style={{ marginBottom: '5rem' }}>
-        <h2 style={{ textAlign: 'center', fontSize: '1.8rem', marginBottom: '2.5rem' }}>Como Funciona</h2>
+        <h2 style={{ textAlign: 'center', fontSize: '1.9rem', marginBottom: '2.5rem' }}>Como Funciona</h2>
         <div className="steps-grid">
-          {/* Passo 1 */}
           <div className="step-card">
             <span className="step-number">01</span>
             <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>Insira a Chave</h3>
@@ -141,7 +230,6 @@ export function HomePage() {
             </p>
           </div>
 
-          {/* Passo 2 */}
           <div className="step-card">
             <span className="step-number">02</span>
             <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>Confirme o Captcha</h3>
@@ -150,7 +238,6 @@ export function HomePage() {
             </p>
           </div>
 
-          {/* Passo 3 */}
           <div className="step-card">
             <span className="step-number">03</span>
             <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>Monitore os Gastos</h3>
@@ -163,7 +250,7 @@ export function HomePage() {
 
       {/* Benefícios */}
       <section className="benefits-section" style={{ marginBottom: '5rem' }}>
-        <h2 style={{ textAlign: 'center', fontSize: '1.8rem', marginBottom: '2.5rem' }}>Vantagens da Plataforma</h2>
+        <h2 style={{ textAlign: 'center', fontSize: '1.9rem', marginBottom: '2.5rem' }}>Vantagens da Plataforma</h2>
         <div className="glass-panel" style={{ maxWidth: '750px', margin: '0 auto', padding: '2rem 2.5rem' }}>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <li style={{ display: 'flex', alignItems: 'flex-start', gap: '1.25rem' }}>
@@ -193,12 +280,12 @@ export function HomePage() {
 
       {/* FAQ */}
       <section className="faq-section" style={{ marginBottom: '5rem' }}>
-        <h2 style={{ textAlign: 'center', fontSize: '1.8rem', marginBottom: '2.5rem' }}>Perguntas Frequentes</h2>
+        <h2 style={{ textAlign: 'center', fontSize: '1.9rem', marginBottom: '2.5rem' }}>Perguntas Frequentes</h2>
         <div style={{ maxWidth: '750px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {faqData.map((item, idx) => (
             <div key={idx} className="faq-item">
-              <button 
-                className="faq-question" 
+              <button
+                className="faq-question"
                 onClick={() => toggleFaq(idx)}
                 aria-expanded={activeFaq === idx}
               >
@@ -218,10 +305,10 @@ export function HomePage() {
       {/* CTA Banner Rodapé */}
       <section className="home-cta-banner">
         <h2 style={{ fontSize: '2rem', marginBottom: '0.75rem', color: '#FFF' }}>Comece a Controlar seus Gastos Agora Mesmo</h2>
-        <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '1.05rem', marginBottom: '2rem', maxWidth: '600px', margin: '0 auto 2rem auto' }}>
+        <p style={{ color: 'rgba(255, 255, 255, 0.85)', fontSize: '1.05rem', marginBottom: '2rem', maxWidth: '600px', margin: '0 auto 2rem auto' }}>
           Junte-se a nós e tenha acesso instantâneo ao painel completo de controle de consumo e monitoramento de produtos de forma simplificada.
         </p>
-        <Link to="/register" className="btn btn-secondary btn-neon" style={{ padding: '0.9rem 2.5rem', fontSize: '1.1rem', background: '#FFF', color: '#0B0F19', border: 'none', fontWeight: 600 }}>
+        <Link to="/register" className="btn btn-secondary btn-neon" style={{ padding: '0.9rem 2.5rem', fontSize: '1.1rem', background: '#FFF', color: '#033876', border: 'none', fontWeight: 600 }}>
           Cadastrar-se Gratuitamente
         </Link>
       </section>
