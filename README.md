@@ -64,13 +64,25 @@ Modelos principais (`src/database/models.py`):
 
 - `usuarios`
   - `id`, `email` (unico), `password_hash`, `created_at`.
+
 - `notas_fiscais`
-  - `id`, `usuario_id` (FK), `codigo_acesso`, `valor_total_nota`, `created_at`.
+  - `id`, `usuario_id` (FK), `codigo_acesso`, `valor_total_nota`, `created_at`, `data_compra`, idEstabelicimento.
   - Constraint importante: `UNIQUE(usuario_id, codigo_acesso)`.
+
+- `Estabelicimento`
+  -  `idEstabelicimento`, `nome_fantasia`, `idEndereco`
+
+- ItemNotaFiscal
+  - idNotaFiscal, idProduto, valorUnitario, quantidade
+
+
 - `produtos_extraidos`
   - itens vinculados por `id_nota_fiscal`.
+
+  
 - `nfce_imports`
   - rastreia status da importacao (`WAITING_CAPTCHA`, `PROCESSING`, `COMPLETED`, `FAILED`, `EXPIRED`).
+- ``
 
 ## API principal
 

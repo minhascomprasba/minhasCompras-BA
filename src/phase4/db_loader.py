@@ -5,9 +5,16 @@ from typing import Any
 
 from sqlalchemy import delete, select
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 
 from src.database.connection import SessionLocal
-from src.database.models import NotaFiscal, ProdutoExtraido
+from src.database.models import ItemNotaFiscal, NotaFiscal, Produto, Estabelecimento
+from src.domain.product_codes import (
+    categoria_inicial_por_ncm,
+    is_ean_valido,
+    is_sem_gtin,
+    normalizar_descricao,
+)
 from utils.logger import setup_logger
 
 
@@ -42,13 +49,78 @@ def _coerce_optional_str(value: Any) -> str | None:
     return text or None
 
 
+def _find_produto_por_ncm_e_descricao(
+    session: Session,
+    ncm: str,
+    descricao: str,
+) -> Produto | None:
+    descricao_normalizada = normalizar_descricao(descricao)
+    candidatos = session.execute(
+        select(Produto).where(
+            Produto.codigo_NCM_comercial == ncm,
+            Produto.sem_gtin.is_(True),
+        )
+    ).scalars().all()
 
+    for produto in candidatos:
+        if normalizar_descricao(produto.descricao) == descricao_normalizada:
+            return produto
+
+    return None
+
+
+def _find_or_create_produto(
+    session: Session,
+    *,
+    ean: str | None,
+    ncm: str | None,
+    descricao: str,
+    unidade_comercial: str | None,
+) -> Produto:
+    produto_sem_gtin = is_sem_gtin(ean)
+    ean_valido = is_ean_valido(ean)
+
+    produto_banco: Produto | None = None
+    if ean_valido:
+        produto_banco = session.execute(
+            select(Produto).where(Produto.codigo_ean_comercial == ean)
+        ).scalar_one_or_none()
+
+    if produto_banco is None and produto_sem_gtin and ncm:
+        produto_banco = _find_produto_por_ncm_e_descricao(session, ncm, descricao)
+
+    if produto_banco is None:
+        produto_banco = Produto(
+            codigo_ean_comercial=ean if ean_valido else None,
+            codigo_NCM_comercial=ncm,
+            unidade_comercial=unidade_comercial,
+            descricao=descricao,
+            categoria=categoria_inicial_por_ncm(ncm),
+            sem_gtin=produto_sem_gtin,
+        )
+        session.add(produto_banco)
+        session.flush()
+        return produto_banco
+
+    if produto_sem_gtin and not produto_banco.sem_gtin:
+        produto_banco.sem_gtin = True
+
+    if ncm and not produto_banco.codigo_NCM_comercial:
+        produto_banco.codigo_NCM_comercial = ncm
+
+    if unidade_comercial and not produto_banco.unidade_comercial:
+        produto_banco.unidade_comercial = unidade_comercial
+
+    return produto_banco
+    
 def bulk_insert_produtos_with_nota_id(
     produtos: list[dict[str, Any]],
     codigo_nota_fiscal: str,
     usuario_id: int,
+    estabelecimento_id: int,
     data_compra: datetime | None = None,
 ) -> tuple[int, int]:
+
     logger = setup_logger(log_file="logs/phase4.log", logger_name="phase4")
 
     codigo_nota_fiscal = codigo_nota_fiscal.strip()
@@ -56,10 +128,7 @@ def bulk_insert_produtos_with_nota_id(
         raise ValueError("codigo_nota_fiscal invalido: informe exatamente 44 digitos numericos.")
 
     if not produtos:
-        logger.warning(
-            "Fase 4: lista de produtos vazia para a nota fiscal %s. Nenhum registro inserido.",
-            codigo_nota_fiscal,
-        )
+        logger.warning("Fase 4: lista de produtos vazia para a nota %s.", codigo_nota_fiscal)
         return 0, 0
 
     session = SessionLocal()
@@ -75,49 +144,117 @@ def bulk_insert_produtos_with_nota_id(
             nota_fiscal = NotaFiscal(
                 codigo_acesso=codigo_nota_fiscal,
                 usuario_id=usuario_id,
+                estabelecimento_id=estabelecimento_id,
                 valor_total_nota=0.0,
                 data_compra=data_compra,
             )
             session.add(nota_fiscal)
             session.flush()
-        elif data_compra is not None:
-            nota_fiscal.data_compra = data_compra
+        else:
+            if data_compra is not None:
+                nota_fiscal.data_compra = data_compra
+            nota_fiscal.estabelecimento_id = estabelecimento_id
 
         session.execute(
-            delete(ProdutoExtraido).where(ProdutoExtraido.id_nota_fiscal == nota_fiscal.id)
+            delete(ItemNotaFiscal).where(ItemNotaFiscal.id_nota_fiscal == nota_fiscal.id)
         )
+        
+        session.flush()
 
-        records: list[ProdutoExtraido] = []
+        agregados: dict[int, dict[str, float]] = {}
+
         total_nota = 0.0
-        for index, produto in enumerate(produtos, start=1):
+
+        for index, produto_scraped in enumerate(produtos, start=1):
             try:
-                vt = _coerce_required_float(produto.get("valor_total"), "valor_total")
+                vt = _coerce_required_float(produto_scraped.get("valor_total"), "valor_total")
+                qtd = _coerce_required_float(produto_scraped.get("quantidade"), "quantidade")
                 total_nota += vt
-                record = ProdutoExtraido(
-                    id_nota_fiscal=nota_fiscal.id,
-                    descricao=_coerce_required_str(produto.get("descricao"), "descricao"),
-                    quantidade=_coerce_required_float(produto.get("quantidade"), "quantidade"),
-                    valor_total=vt,
-                    unidade_comercial=_coerce_optional_str(produto.get("unidade_comercial")),
-                    codigo_ean_comercial=_coerce_optional_str(produto.get("codigo_ean_comercial")),
+
+                ean = _coerce_optional_str(produto_scraped.get("codigo_ean_comercial"))
+                ncm = _coerce_optional_str(produto_scraped.get("codigo_ncm_comercial"))
+                unidade_comercial = _coerce_optional_str(produto_scraped.get("unidade_comercial"))
+                descricao = _coerce_required_str(produto_scraped.get("descricao"), "descricao")
+
+                produto_banco = _find_or_create_produto(
+                    session,
+                    ean=ean,
+                    ncm=ncm,
+                    descricao=descricao,
+                    unidade_comercial=unidade_comercial,
                 )
-                records.append(record)
+
+                if produto_banco.id in agregados:
+                    agregados[produto_banco.id]["quantidade"] += qtd
+                    agregados[produto_banco.id]["valor_total"] += vt
+                else:
+                    agregados[produto_banco.id] = {
+                        "quantidade": qtd,
+                        "valor_total": vt,
+                    }
+
             except ValueError as exc:
                 raise ValueError(f"Produto invalido na posicao {index}: {exc}") from exc
-                
+
         nota_fiscal.valor_total_nota = total_nota
 
-        session.add_all(records)
+        records_itens = [
+            ItemNotaFiscal(
+                id_nota_fiscal=nota_fiscal.id,
+                id_produto=produto_id,
+                quantidade=dados["quantidade"],
+                valor_unitario=(
+                    dados["valor_total"] / dados["quantidade"]
+                    if dados["quantidade"] > 0
+                    else 0.0
+                ),
+            )
+            for produto_id, dados in agregados.items()
+        ]
+
+        session.add_all(records_itens)
         session.commit()
+
         logger.info(
-            "Fase 4: %s produtos persistidos para nota fiscal %s no banco.",
-            len(records),
+            "Fase 4: %s itens vinculados com sucesso para a nota fiscal %s.",
+            len(records_itens),
             codigo_nota_fiscal,
         )
-        return len(records), nota_fiscal.id
+        return len(records_itens), nota_fiscal.id
+
     except SQLAlchemyError:
         session.rollback()
-        logger.exception("Fase 4: erro transacional durante insercao no banco.")
+        logger.exception("Fase 4: erro transacional ao processar a nota.")
+        raise
+    finally:
+        session.close()
+
+def get_or_create_estabelecimento(empresa_data: dict | None) -> int | None:
+    if empresa_data is None:
+        return None
+
+    session = SessionLocal()
+    try:
+        existing = session.query(Estabelecimento).filter_by(cnpj=empresa_data["cnpj"]).first()
+        if existing:
+            return existing.id
+
+        novo = Estabelecimento(
+            razao_social=empresa_data["razao_social"],
+            nome_fantasia=empresa_data["nome_fantasia"],
+            cnpj=empresa_data["cnpj"],
+            logradouro=empresa_data["logradouro"],
+            bairro=empresa_data.get("bairro"),
+            cidade=empresa_data["cidade"],
+            estado=empresa_data["estado"],
+            cep=empresa_data.get("cep"),
+        )
+        session.add(novo)
+        session.commit()
+        session.refresh(novo)
+        return novo.id
+    except Exception:
+        session.rollback()
         raise
     finally:
         session.close()

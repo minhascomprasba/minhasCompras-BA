@@ -103,9 +103,19 @@ export function NotaDetailPage() {
                   {itensData.data.map((item) => (
                     <tr key={item.id}>
                       <td>
-                        <div style={{ fontWeight: '500', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>{item.descricao}</div>
+                        <div style={{ fontWeight: '500', color: 'var(--text-primary)', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          {item.descricao}
+                          {item.sem_gtin && (
+                            <span className="badge" style={{ fontSize: '0.65rem', background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+                              Sem GTIN
+                            </span>
+                          )}
+                        </div>
                         {item.codigo_ean_comercial && (
                           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'var(--mono)' }}>EAN: {item.codigo_ean_comercial}</div>
+                        )}
+                        {item.codigo_NCM_comercial && (
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'var(--mono)' }}>NCM: {item.codigo_NCM_comercial}</div>
                         )}
                       </td>
                       <td style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>{item.quantidade}</td>

@@ -86,6 +86,7 @@ class NotaDetailResponse(BaseModel):
     valor_total_nota: float
 
 
+
 class ItemListItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -93,10 +94,12 @@ class ItemListItem(BaseModel):
     id_nota_fiscal: int
     descricao: str
     quantidade: float
+    valor_unitario: float
     valor_total: float
     unidade_comercial: str | None
     codigo_ean_comercial: str | None
-
+    codigo_NCM_comercial: str | None
+    sem_gtin: bool = False
 
 class PaginatedItemsResponse(BaseModel):
     data: list[ItemListItem]
@@ -140,3 +143,44 @@ class PaginatedNotasResponse(BaseModel):
     page_size: int
     total: int
     resumo: ResumoPeriodo | None = None
+
+class SystemStatsResponse(BaseModel):
+    total_users: int
+    total_notas_mes: int
+    total_products: int
+
+
+class GastoPorCategoriaResponse(BaseModel):
+    categoria: str
+    valor: float
+    percentual: float
+
+
+class HistoricoPrecoResponse(BaseModel):
+    data: str  # Formato DD/MM
+    preco: float
+
+
+class ProdutoFrequenteResponse(BaseModel):
+    nome: str
+    historico: list[HistoricoPrecoResponse]
+    codigo_NCM_comercial: str | None = None
+    sem_gtin: bool = False
+
+
+class GrupoNcmSemGtinResponse(BaseModel):
+    ncm: str
+    categoria: str
+    quantidade_produtos: int
+    valor_total: float
+
+
+class DashboardDataResponse(BaseModel):
+    mesAno: str  # Formato "Junho 2026"
+    mediaGastosMensal: float
+    quantidadeNotas: int
+    ticketMedio: float
+    gastosPorCategoria: list[GastoPorCategoriaResponse]
+    produtosFrequentes: list[ProdutoFrequenteResponse]
+    gruposNcmSemGtin: list[GrupoNcmSemGtinResponse] = Field(default_factory=list)
+

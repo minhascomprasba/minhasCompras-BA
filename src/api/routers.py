@@ -13,6 +13,7 @@ from src.api.rate_limit import InMemoryRateLimiter
 from src.api.schemas import (
     CaptchaSubmitRequest,
     CaptchaSubmitResponse,
+    DashboardDataResponse,
     HealthResponse,
     ImportCreateRequest,
     ImportCreateResponse,
@@ -22,6 +23,7 @@ from src.api.schemas import (
     PaginatedItemsResponse,
     PaginatedNotasResponse,
     ReadyResponse,
+    SystemStatsResponse,
 )
 from src.api.services.import_service import (
     get_captcha_image_path,
@@ -33,7 +35,9 @@ from src.api.services.import_service import (
     start_import,
     submit_captcha,
 )
+from src.api.services.dashboard_service import get_dashboard_data
 from src.database.connection import SessionLocal
+from src.database.models import Usuario, NotaFiscal, Produto
 
 router = APIRouter(prefix=settings.API_PREFIX)
 import_rate_limiter = InMemoryRateLimiter(settings.IMPORT_RATE_LIMIT_PER_MIN)
@@ -62,6 +66,29 @@ def ready(response: Response) -> ReadyResponse:
     except Exception:
         response.status_code = 503
         return ReadyResponse(status="not_ready", database="down")
+    finally:
+        session.close()
+
+
+@router.get("/stats", response_model=SystemStatsResponse)
+def get_system_stats() -> SystemStatsResponse:
+    session = SessionLocal()
+    try:
+        total_users = session.query(Usuario).count()
+        
+        now = datetime.utcnow()
+        inicio_mes = datetime(now.year, now.month, 1)
+        total_notas_mes = session.query(NotaFiscal).filter(NotaFiscal.created_at >= inicio_mes).count()
+        
+        total_products = session.query(Produto).count()
+        
+        return SystemStatsResponse(
+            total_users=total_users,
+            total_notas_mes=total_notas_mes,
+            total_products=total_products
+        )
+    except Exception:
+        return SystemStatsResponse(total_users=0, total_notas_mes=0, total_products=0)
     finally:
         session.close()
 
@@ -165,3 +192,11 @@ def nota_items(
 ) -> PaginatedItemsResponse:
     data = list_items(nota_id=nota_id, page=page, page_size=page_size, usuario_id=user_id)
     return PaginatedItemsResponse(**data)
+
+
+@router.get("/dashboard", response_model=list[DashboardDataResponse])
+def dashboard(user_id: int = Depends(get_current_user_id)) -> list[DashboardDataResponse]:
+    data = get_dashboard_data(user_id)
+    return [DashboardDataResponse(**item) for item in data]
+
+

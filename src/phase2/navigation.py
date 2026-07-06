@@ -9,10 +9,11 @@ from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-from src.phase3.parser import ProductParser
+from src.phase3.parser import EmpresaParser, ProductParser
 from utils.logger import setup_logger
 
 from .selectors import (
+    EMITENTE_TAB_BUTTON,
     IDENTIFICACAO_TAB_BUTTON_IDS,
     PRODUTOS_TAB_BUTTON_ID,
     VISUALIZAR_ABAS_BUTTON_ID,
@@ -159,6 +160,40 @@ def Maps_to_products_tab(driver: WebDriver, timeout: int) -> datetime | None:
 
     logger.info("Fase 2 concluida com sucesso.")
     return data_compra
+
+
+
+def Maps_to_Emitente_tab(driver: WebDriver, timeout: int) -> dict | None:
+    logger = setup_logger(log_file="logs/phase2.log", logger_name="phase2")
+    logger.info("Navegando para aba de Emitente.")
+
+    try:
+        emitente_tab_button = WebDriverWait(driver, timeout).until(
+            EC.element_to_be_clickable((By.ID, EMITENTE_TAB_BUTTON))
+        )
+        emitente_tab_button.click()
+        logger.info("Clique realizado na aba de emitente '%s'.", EMITENTE_TAB_BUTTON)
+        
+    except TimeoutException as exc:
+        logger.error("Aba de emitente '%s' nao ficou disponivel no tempo esperado.", EMITENTE_TAB_BUTTON)
+        raise RuntimeError("Falha ao abrir aba de Emitente.") from exc
+    except Exception:
+        logger.exception("Erro inesperado ao clicar na aba de emitente.")
+        raise
+
+    try:
+        WebDriverWait(driver, timeout).until(
+            EC.presence_of_element_located((By.ID, "txtRazaoSocial"))
+        )
+    except TimeoutException:
+        logger.warning("Conteudo da aba de emitente nao carregou no tempo esperado.")
+
+    empresa_data = EmpresaParser.parse_page(driver.page_source)
+    if empresa_data is None:
+        logger.warning("Maps_to_Emitente_tab: nao foi possivel extrair dados do emitente.")
+
+    logger.info("Aba de Emitente processada: %s", empresa_data)
+    return empresa_data
 
 
 def wait_for_products_content(driver: WebDriver, timeout: int) -> int:

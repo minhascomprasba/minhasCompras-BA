@@ -2,6 +2,7 @@
 
 VISUALIZAR_ABAS_BUTTON_ID = "btn_visualizar_abas"
 PRODUTOS_TAB_BUTTON_ID = "btn_aba_produtos"
+EMITENTE_TAB_BUTTON = "btn_aba_emitente"
 IDENTIFICACAO_TAB_BUTTON_IDS = (
     "btn_aba_nota",
     "btn_aba_identificacao",
