@@ -338,7 +338,7 @@ class ProductParser:
                 "valor_total": cls._to_float(valor_total_raw),
                 "unidade_comercial": cls._normalize_text(unidade_comercial),
                 "codigo_ean_comercial": cls._normalize_text(codigo_ean_comercial),
-                "codigo_ncm_comercial": cls._normalize_text(codigo_ean_comercial),
+                "codigo_ncm_comercial": cls._normalize_text(codigo_ncm),
             }
             products.append(product)
             logger.info("Fase 3: produto %s extraido com sucesso.", index)

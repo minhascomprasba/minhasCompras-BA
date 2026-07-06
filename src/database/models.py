@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -116,9 +116,10 @@ class Produto(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     descricao: Mapped[str] = mapped_column(String, nullable=False)
     codigo_ean_comercial: Mapped[str | None] = mapped_column(String, nullable=True)
-    codigo_NCM_comercial: Mapped[str | None] = mapped_column(String, nullable=True)
+    codigo_NCM_comercial: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     unidade_comercial: Mapped[str | None] = mapped_column(String, nullable=True)
     categoria: Mapped[str] = mapped_column(String, nullable=False)
+    sem_gtin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
 
 

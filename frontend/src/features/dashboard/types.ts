@@ -12,6 +12,15 @@ export interface HistoricoPreco {
 export interface ProdutoFrequente {
   nome: string;
   historico: HistoricoPreco[];
+  codigo_NCM_comercial?: string | null;
+  sem_gtin?: boolean;
+}
+
+export interface GrupoNcmSemGtin {
+  ncm: string;
+  categoria: string;
+  quantidade_produtos: number;
+  valor_total: number;
 }
 
 export interface DashboardData {
@@ -21,4 +30,5 @@ export interface DashboardData {
   ticketMedio: number;
   gastosPorCategoria: GastoPorCategoria[];
   produtosFrequentes: ProdutoFrequente[];
+  gruposNcmSemGtin?: GrupoNcmSemGtin[];
 }

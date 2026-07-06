@@ -98,7 +98,8 @@ class ItemListItem(BaseModel):
     valor_total: float
     unidade_comercial: str | None
     codigo_ean_comercial: str | None
- 
+    codigo_NCM_comercial: str | None
+    sem_gtin: bool = False
 
 class PaginatedItemsResponse(BaseModel):
     data: list[ItemListItem]
@@ -163,6 +164,15 @@ class HistoricoPrecoResponse(BaseModel):
 class ProdutoFrequenteResponse(BaseModel):
     nome: str
     historico: list[HistoricoPrecoResponse]
+    codigo_NCM_comercial: str | None = None
+    sem_gtin: bool = False
+
+
+class GrupoNcmSemGtinResponse(BaseModel):
+    ncm: str
+    categoria: str
+    quantidade_produtos: int
+    valor_total: float
 
 
 class DashboardDataResponse(BaseModel):
@@ -172,4 +182,5 @@ class DashboardDataResponse(BaseModel):
     ticketMedio: float
     gastosPorCategoria: list[GastoPorCategoriaResponse]
     produtosFrequentes: list[ProdutoFrequenteResponse]
+    gruposNcmSemGtin: list[GrupoNcmSemGtinResponse] = Field(default_factory=list)
 
