@@ -15,7 +15,8 @@ export function AuthenticatedLayout() {
       <header className="app-navbar">
         <div className="navbar-container">
           <NavLink to="/dashboard" className="navbar-logo">
-            <span className="logo-text">Minhas Compras BA</span>
+            <img src="/icon.png" alt="" className="brand-icon" />
+            <span className="logo-text">MinhasCompras.app</span>
           </NavLink>
           
           <nav className="navbar-nav">

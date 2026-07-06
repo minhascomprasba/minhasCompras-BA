@@ -23,8 +23,8 @@ export function DashboardPage() {
           <div className="spinner" style={{
             width: '40px',
             height: '40px',
-            border: '4px solid rgba(99, 102, 241, 0.1)',
-            borderTop: '4px solid #818cf8',
+            border: '4px solid rgba(23, 200, 95, 0.1)',
+            borderTop: '4px solid #17c85f',
             borderRadius: '50%',
             animation: 'spin 1s linear infinite'
           }}></div>
@@ -62,7 +62,7 @@ export function DashboardPage() {
     return (
       <div className="container" style={{ maxWidth: '1200px', display: 'flex', justifyContent: 'center', alignItems: 'center', height: '70vh' }}>
         <div style={{ textAlign: 'center', maxWidth: '500px', padding: '40px 24px', background: 'var(--bg-secondary)', borderRadius: '16px', border: '1px solid var(--border-color)', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }}>
-          <div style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#818cf8', width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+          <div style={{ background: 'rgba(23, 200, 95, 0.1)', color: '#17c85f', width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
               <line x1="9" y1="9" x2="15" y2="9"></line>
@@ -78,7 +78,7 @@ export function DashboardPage() {
             display: 'inline-flex',
             alignItems: 'center',
             gap: '8px',
-            background: 'var(--accent-color, #6366f1)',
+            background: 'var(--accent-color, #17c85f)',
             color: '#ffffff',
             padding: '12px 24px',
             borderRadius: '8px',
@@ -86,8 +86,8 @@ export function DashboardPage() {
             fontWeight: 500,
             transition: 'background 0.2s',
           }}
-          onMouseOver={(e) => e.currentTarget.style.background = '#4f46e5'}
-          onMouseOut={(e) => e.currentTarget.style.background = 'var(--accent-color, #6366f1)'}
+          onMouseOver={(e) => e.currentTarget.style.background = '#13a850'}
+          onMouseOut={(e) => e.currentTarget.style.background = 'var(--accent-color, #17c85f)'}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -155,7 +155,7 @@ export function DashboardPage() {
       <div className="kpi-grid">
         {/* KPI 1: Gasto Mensal */}
         <div className="kpi-card">
-          <div className="kpi-icon-wrapper" style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#818cf8' }}>
+          <div className="kpi-icon-wrapper" style={{ background: 'rgba(23, 200, 95, 0.1)', color: '#17c85f' }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect>
               <line x1="12" y1="18" x2="12" y2="12"></line>
