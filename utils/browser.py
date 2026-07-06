@@ -25,6 +25,10 @@ def build_chrome_driver(headless: bool = False) -> WebDriver:
 
     if headless:
         options.add_argument("--headless=new")
+        options.add_argument("--single-process")
+        options.add_argument("--no-zygote")
+        options.add_argument("--disable-features=dbus")
+        options.add_argument("--disable-software-rasterizer")
 
     chrome_bin = os.getenv("CHROME_BIN", "").strip()
     if chrome_bin:
