@@ -44,7 +44,6 @@ export function NotasPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
         <div>
           <h1 style={{ marginBottom: '0.25rem' }}>Minhas Notas Fiscais</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Bem-vindo, {user?.email}</p>
         </div>
         <div style={{ display: 'flex', gap: '1rem' }}>
           <button onClick={handleLogout} className="btn btn-secondary">
