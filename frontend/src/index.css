@@ -49,6 +49,10 @@
   box-sizing: border-box;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
   font-family: var(--font-sans);
@@ -57,11 +61,23 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
+  overflow-x: hidden;
   /* Subtle brand background glow (blue top-left, green top-right) */
   background-image:
     radial-gradient(circle at 15% -5%, rgba(3, 56, 118, 0.35) 0%, transparent 45%),
     radial-gradient(circle at 90% 0%, rgba(23, 200, 95, 0.12) 0%, transparent 45%);
   background-attachment: fixed;
+}
+
+/* Mídia fluida por padrão */
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+img {
+  height: auto;
 }
 
 #root {
@@ -407,6 +423,7 @@ a:hover { color: var(--primary-hover); }
 }
 
 .navbar-container {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -414,6 +431,32 @@ a:hover { color: var(--primary-hover); }
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 1.5rem;
+}
+
+/* Menu (nav + usuario). No desktop fica em linha; no mobile vira dropdown. */
+.navbar-menu {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex: 1;
+  margin-left: 2rem;
+}
+
+/* Botão hamburger — visível apenas no mobile */
+.navbar-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 0.4rem;
+  border-radius: var(--radius-md);
+}
+.navbar-toggle:hover {
+  background: var(--bg-card-hover);
 }
 
 .navbar-logo {
@@ -448,7 +491,9 @@ a:hover { color: var(--primary-hover); }
 .navbar-nav {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 1.5rem;
+  flex: 1;
 }
 
 .nav-link {
@@ -469,6 +514,59 @@ a:hover { color: var(--primary-hover); }
 .nav-link--active {
   color: var(--text-primary);
   background: var(--border-color);
+}
+
+/* Navbar mobile: colapsa o menu num dropdown acionado pelo hamburger */
+@media (max-width: 820px) {
+  .navbar-toggle {
+    display: flex;
+  }
+
+  .navbar-menu {
+    position: absolute;
+    top: 70px;
+    left: 0;
+    right: 0;
+    margin-left: 0;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0;
+    padding: 0.5rem 1rem 1rem;
+    background: rgba(10, 14, 26, 0.98);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: var(--shadow-lg);
+    display: none;
+  }
+  .navbar-menu--open {
+    display: flex;
+  }
+
+  .navbar-nav {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.25rem;
+    width: 100%;
+  }
+  .navbar-nav .nav-link {
+    display: block;
+    padding: 0.85rem 0.75rem;
+    font-size: 1rem;
+  }
+
+  .navbar-user {
+    width: 100%;
+    justify-content: space-between;
+    padding-top: 0.85rem;
+    margin-top: 0.5rem;
+    border-top: 1px solid var(--border-color);
+  }
+  .navbar-user .user-email {
+    display: block;
+    font-size: 0.9rem;
+  }
 }
 
 .navbar-user {
@@ -1131,6 +1229,7 @@ a:hover { color: var(--primary-hover); }
   .hero-copy { text-align: center; }
   .hero-eyebrow { margin-left: auto; margin-right: auto; }
   .hero-subtitle { margin-left: auto; margin-right: auto; }
+  .hero-actions { justify-content: center; }
   .hero-proof { justify-content: center; }
   .hero-title { font-size: 2.6rem; }
   .features-grid { grid-template-columns: 1fr; }
@@ -1527,6 +1626,259 @@ a:hover { color: var(--primary-hover); }
   transform: translateX(-4px);
 }
 
+/* ==========================================================================
+   Página de Mapa (Leaflet)
+   ========================================================================== */
+.map-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.map-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.map-sidebar-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.map-location-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  width: 100%;
+  text-align: left;
+  padding: 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+}
+
+.map-location-card:hover {
+  border-color: var(--border-light);
+  background: var(--bg-card-hover);
+}
+
+.map-location-card--active {
+  border-color: var(--brand-green);
+  box-shadow: 0 0 0 1px var(--brand-green);
+}
+
+.map-location-card--placeholder {
+  cursor: default;
+  align-items: center;
+}
+.map-location-card--placeholder:hover {
+  border-color: var(--border-color);
+  background: var(--bg-card);
+}
+
+.map-failed-note {
+  font-size: 0.8rem;
+  color: var(--warning);
+  padding: 0.25rem 0.25rem 0;
+}
+
+/* Painel de notas do local selecionado */
+.map-notas-panel {
+  margin-top: 1.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-md);
+  animation: fadeIn 0.3s ease-out;
+}
+
+.map-notas-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.map-notas-badge {
+  flex-shrink: 0;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  background: var(--brand-green-soft);
+  color: var(--brand-green);
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.map-notas-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.75rem;
+}
+
+.map-nota-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-main);
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: var(--transition);
+}
+.map-nota-row:hover {
+  border-color: var(--brand-green);
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
+.map-nota-icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--brand-blue-soft);
+  color: var(--brand-blue-light);
+}
+
+.map-nota-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.map-nota-main strong { font-size: 1rem; }
+.map-nota-sub { font-size: 0.8rem; color: var(--text-muted); }
+
+.map-nota-arrow {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  display: flex;
+}
+.map-nota-row:hover .map-nota-arrow { color: var(--brand-green); }
+
+.map-location-pin {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--brand-green-soft);
+  color: var(--brand-green);
+}
+
+.map-location-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+.map-location-info strong { font-size: 0.98rem; }
+.map-location-info span { font-size: 0.85rem; color: var(--text-secondary); }
+.map-location-address { color: var(--text-muted) !important; }
+.map-location-count { color: var(--brand-green) !important; font-weight: 600; font-size: 0.8rem !important; }
+
+.map-canvas {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+}
+
+.map-view {
+  width: 100%;
+  height: 70vh;
+  min-height: 420px;
+  background: var(--bg-card);
+}
+
+.map-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 70vh;
+  min-height: 420px;
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+/* Pin customizado (divIcon) sem fundo/borda padrão do Leaflet */
+.map-pin {
+  background: transparent;
+  border: none;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4));
+}
+
+/* Popups no tema escuro */
+.leaflet-popup-content-wrapper {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+.leaflet-popup-tip {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+}
+.leaflet-popup-content {
+  margin: 0.85rem 1rem;
+}
+.map-popup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.map-popup strong { font-size: 0.95rem; color: var(--text-primary); }
+.map-popup span { font-size: 0.82rem; color: var(--text-secondary); }
+.map-popup-count { color: var(--brand-green) !important; font-weight: 600; margin-top: 0.2rem; }
+.leaflet-popup-close-button { color: var(--text-muted) !important; }
+.leaflet-container a.leaflet-popup-close-button:hover { color: var(--text-primary) !important; }
+
+/* Atribuição/controles mais discretos no tema escuro */
+.leaflet-control-attribution {
+  background: rgba(10, 14, 26, 0.8) !important;
+  color: var(--text-muted) !important;
+}
+.leaflet-control-attribution a { color: var(--brand-blue-light) !important; }
+
+@media (max-width: 860px) {
+  .map-layout {
+    grid-template-columns: 1fr;
+  }
+  .map-sidebar {
+    max-height: none;
+    flex-direction: row;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+  .map-location-card { min-width: 240px; }
+  .map-view, .map-error { height: 55vh; }
+}
+
 @media (max-width: 768px) {
   .donut-chart-layout-wrapper {
     flex-direction: column;
@@ -1548,4 +1900,54 @@ a:hover { color: var(--primary-hover); }
     gap: 0.75rem;
     text-align: center;
   }
+}
+
+/* ==========================================================================
+   Responsividade global
+   ========================================================================== */
+@media (max-width: 768px) {
+  .container {
+    padding: 1.5rem 1rem;
+  }
+
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.35rem; }
+
+  .card {
+    padding: 1.25rem;
+  }
+  .glass-panel {
+    padding: 1.5rem;
+  }
+
+  /* Tabelas rolam horizontalmente em vez de estourar a tela */
+  .table-container {
+    -webkit-overflow-scrolling: touch;
+  }
+  .table th,
+  .table td {
+    padding: 0.75rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 1.25rem 0.85rem;
+  }
+
+  h1 { font-size: 1.7rem; }
+
+  /* Botões ocupam a largura toda em telas bem pequenas para facilitar o toque */
+  .btn {
+    font-size: 0.92rem;
+  }
+
+  .home-cta-banner h2 { font-size: 1.5rem !important; }
+
+  .hero-visual { min-height: 300px; }
+  .hero-visual-card { width: min(240px, 72vw); padding: 2rem; }
+  .hero-chip { font-size: 0.78rem; padding: 0.55rem 0.75rem; }
+  .hero-chip--tl { left: 0; }
+  .hero-chip--br { right: 0; }
 }

@@ -143,7 +143,7 @@ export function HomePage() {
             evolução de preços dos produtos. Simples, seguro e gratuito.
           </p>
 
-          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+          <div className="hero-actions" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
             <Link to="/register" className="btn btn-primary btn-neon" style={{ padding: '0.85rem 2.2rem', fontSize: '1.05rem', borderRadius: 'var(--radius-md)' }}>
               Criar Conta
             </Link>

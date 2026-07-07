@@ -10,6 +10,7 @@ import { RegisterPage } from '../pages/RegisterPage';
 import { ForgotPasswordPage } from '../pages/ForgotPasswordPage';
 import { ResetPasswordPage } from '../pages/ResetPasswordPage';
 import { DashboardPage } from '../pages/DashboardPage';
+import { MapPage } from '../pages/MapPage';
 import { AuthenticatedLayout } from '../components/AuthenticatedLayout';
 import { useAuth } from '../features/auth/AuthContext';
 import { NotFoundPage } from '../pages/NotFoundPage';
@@ -63,6 +64,10 @@ const router = createBrowserRouter([
       {
         path: '/notas',
         element: <NotasPage />,
+      },
+      {
+        path: '/mapa',
+        element: <MapPage />,
       },
       {
         path: '/notas/:notaId',

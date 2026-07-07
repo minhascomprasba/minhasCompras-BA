@@ -38,10 +38,10 @@ export function NotaDetailPage() {
         </div>
       ) : nota ? (
         <div className="glass-panel" style={{ marginBottom: '3rem', textAlign: 'center' }}>
-          <h1 style={{ fontSize: '3rem', marginBottom: '0.5rem', background: 'linear-gradient(100deg, #17c85f, #3a8fe0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem' }}>
+          <h1 style={{ fontSize: 'clamp(1.8rem, 6vw, 3rem)', marginBottom: '0.5rem', background: 'linear-gradient(100deg, #17c85f, #3a8fe0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
             Nota #{nota.id}
             {nota.valor_total_nota !== undefined && (
-              <span style={{ fontSize: '2rem', color: 'var(--success)', background: 'var(--bg-main)', padding: '0.25rem 1rem', borderRadius: 'var(--radius-md)', WebkitTextFillColor: 'initial' }}>
+              <span style={{ fontSize: 'clamp(1.3rem, 4.5vw, 2rem)', color: 'var(--success)', background: 'var(--bg-main)', padding: '0.25rem 1rem', borderRadius: 'var(--radius-md)', WebkitTextFillColor: 'initial' }}>
                 {nota.valor_total_nota.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
               </span>
             )}
@@ -65,7 +65,7 @@ export function NotaDetailPage() {
         </div>
       ) : null}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <h2 style={{ margin: 0 }}>Itens da Nota</h2>
         {itensData && (
           <span className="badge badge-primary">{itensData.total} produtos encontrados</span>
@@ -132,7 +132,7 @@ export function NotaDetailPage() {
 
           {/* Pagination */}
           {itensData.total > 0 && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
               <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
                 Página <strong style={{ color: 'var(--text-primary)' }}>{itensData.page}</strong>
               </span>

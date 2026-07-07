@@ -18,6 +18,7 @@ from src.api.schemas import (
     ImportCreateRequest,
     ImportCreateResponse,
     ImportStatusResponse,
+    MapaPontoResponse,
     NotaDetailResponse,
     PaginatedImportsResponse,
     PaginatedItemsResponse,
@@ -29,6 +30,7 @@ from src.api.services.import_service import (
     get_captcha_image_path,
     get_import_status,
     get_nota,
+    list_estabelecimentos_mapa,
     list_imports,
     list_items,
     list_notas,
@@ -175,6 +177,12 @@ def notas(
 
     data = list_notas(page=page, page_size=page_size, from_date=parsed_from, to_date=parsed_to, usuario_id=user_id)
     return PaginatedNotasResponse(**data)
+
+
+@router.get("/mapa", response_model=list[MapaPontoResponse])
+def mapa(user_id: int = Depends(get_current_user_id)) -> list[MapaPontoResponse]:
+    data = list_estabelecimentos_mapa(user_id)
+    return [MapaPontoResponse(**item) for item in data]
 
 
 @router.get("/notas/{nota_id}", response_model=NotaDetailResponse)

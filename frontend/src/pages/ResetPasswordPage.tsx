@@ -83,7 +83,7 @@ export function ResetPasswordPage() {
               <input
                 type="password"
                 className={`form-input ${errors.password ? 'error' : ''}`}
-                placeholder="Entre 8 e 128 caracteres"
+                placeholder="EDigite uma senha"
                 {...register('password')}
               />
               {errors.password && <span className="form-error-text">{errors.password.message}</span>}
