@@ -120,7 +120,7 @@ export function LoginPage() {
               <input
                 type={showPassword ? 'text' : 'password'}
                 className={`form-input has-icon has-toggle ${errors.password ? 'error' : ''}`}
-                placeholder="Entre 8 e 128 caracteres"
+                placeholder="Digite sua senha"
                 {...register('password')}
               />
               <button
