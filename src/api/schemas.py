@@ -150,6 +150,26 @@ class SystemStatsResponse(BaseModel):
     total_products: int
 
 
+class MapaNotaItem(BaseModel):
+    id: int
+    codigo_acesso: str
+    data_compra: datetime | None = None
+    created_at: datetime
+    valor_total_nota: float
+
+
+class MapaPontoResponse(BaseModel):
+    estabelecimento_id: int
+    razao_social: str
+    logradouro: str | None = None
+    bairro: str | None = None
+    cidade: str | None = None
+    estado: str | None = None
+    cep: str | None = None
+    notas_count: int
+    notas: list[MapaNotaItem] = Field(default_factory=list)
+
+
 class GastoPorCategoriaResponse(BaseModel):
     categoria: str
     valor: float
