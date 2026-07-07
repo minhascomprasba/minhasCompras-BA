@@ -1527,6 +1527,259 @@ a:hover { color: var(--primary-hover); }
   transform: translateX(-4px);
 }
 
+/* ==========================================================================
+   Página de Mapa (Leaflet)
+   ========================================================================== */
+.map-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.map-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.map-sidebar-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.map-location-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  width: 100%;
+  text-align: left;
+  padding: 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+}
+
+.map-location-card:hover {
+  border-color: var(--border-light);
+  background: var(--bg-card-hover);
+}
+
+.map-location-card--active {
+  border-color: var(--brand-green);
+  box-shadow: 0 0 0 1px var(--brand-green);
+}
+
+.map-location-card--placeholder {
+  cursor: default;
+  align-items: center;
+}
+.map-location-card--placeholder:hover {
+  border-color: var(--border-color);
+  background: var(--bg-card);
+}
+
+.map-failed-note {
+  font-size: 0.8rem;
+  color: var(--warning);
+  padding: 0.25rem 0.25rem 0;
+}
+
+/* Painel de notas do local selecionado */
+.map-notas-panel {
+  margin-top: 1.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-md);
+  animation: fadeIn 0.3s ease-out;
+}
+
+.map-notas-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.map-notas-badge {
+  flex-shrink: 0;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  background: var(--brand-green-soft);
+  color: var(--brand-green);
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.map-notas-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.75rem;
+}
+
+.map-nota-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-main);
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: var(--transition);
+}
+.map-nota-row:hover {
+  border-color: var(--brand-green);
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
+.map-nota-icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--brand-blue-soft);
+  color: var(--brand-blue-light);
+}
+
+.map-nota-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.map-nota-main strong { font-size: 1rem; }
+.map-nota-sub { font-size: 0.8rem; color: var(--text-muted); }
+
+.map-nota-arrow {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  display: flex;
+}
+.map-nota-row:hover .map-nota-arrow { color: var(--brand-green); }
+
+.map-location-pin {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--brand-green-soft);
+  color: var(--brand-green);
+}
+
+.map-location-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+.map-location-info strong { font-size: 0.98rem; }
+.map-location-info span { font-size: 0.85rem; color: var(--text-secondary); }
+.map-location-address { color: var(--text-muted) !important; }
+.map-location-count { color: var(--brand-green) !important; font-weight: 600; font-size: 0.8rem !important; }
+
+.map-canvas {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+}
+
+.map-view {
+  width: 100%;
+  height: 70vh;
+  min-height: 420px;
+  background: var(--bg-card);
+}
+
+.map-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 70vh;
+  min-height: 420px;
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+/* Pin customizado (divIcon) sem fundo/borda padrão do Leaflet */
+.map-pin {
+  background: transparent;
+  border: none;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4));
+}
+
+/* Popups no tema escuro */
+.leaflet-popup-content-wrapper {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+.leaflet-popup-tip {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+}
+.leaflet-popup-content {
+  margin: 0.85rem 1rem;
+}
+.map-popup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.map-popup strong { font-size: 0.95rem; color: var(--text-primary); }
+.map-popup span { font-size: 0.82rem; color: var(--text-secondary); }
+.map-popup-count { color: var(--brand-green) !important; font-weight: 600; margin-top: 0.2rem; }
+.leaflet-popup-close-button { color: var(--text-muted) !important; }
+.leaflet-container a.leaflet-popup-close-button:hover { color: var(--text-primary) !important; }
+
+/* Atribuição/controles mais discretos no tema escuro */
+.leaflet-control-attribution {
+  background: rgba(10, 14, 26, 0.8) !important;
+  color: var(--text-muted) !important;
+}
+.leaflet-control-attribution a { color: var(--brand-blue-light) !important; }
+
+@media (max-width: 860px) {
+  .map-layout {
+    grid-template-columns: 1fr;
+  }
+  .map-sidebar {
+    max-height: none;
+    flex-direction: row;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+  .map-location-card { min-width: 240px; }
+  .map-view, .map-error { height: 55vh; }
+}
+
 @media (max-width: 768px) {
   .donut-chart-layout-wrapper {
     flex-direction: column;
