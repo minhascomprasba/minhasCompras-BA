@@ -13,7 +13,7 @@ from sqlalchemy import func, select
 from src.api import settings
 from src.api.errors import ConflictError, NotFoundError, ValidationError
 from src.database.connection import SessionLocal
-from src.database.models import ImportStatus, ItemNotaFiscal, NfceImport, NotaFiscal, Produto
+from src.database.models import Estabelecimento, ImportStatus, ItemNotaFiscal, NfceImport, NotaFiscal, Produto
 from src.phase1.auth_flow import refresh_captcha_image, start_auth_session, submit_captcha_attempt
 from src.phase2.navigation import Maps_to_Emitente_tab, Maps_to_products_tab, wait_for_products_content
 from src.phase3.parser import EmpresaParser, ProductParser
@@ -480,6 +480,59 @@ def list_notas(page: int, page_size: int, from_date: datetime | None, to_date: d
             "total": total,
             "resumo": {"total_gasto_periodo": float(total_gasto)}
         }
+    finally:
+        session.close()
+
+
+def list_estabelecimentos_mapa(usuario_id: int) -> list[dict[str, object]]:
+    """Estabelecimentos (com CEP) onde o usuario possui notas, agregados por
+    local e ja trazendo a lista de notas de cada estabelecimento. Usado pela
+    pagina de Mapa."""
+    session = SessionLocal()
+    try:
+        purchase_date = func.coalesce(NotaFiscal.data_compra, NotaFiscal.created_at)
+        rows = session.execute(
+            select(Estabelecimento, NotaFiscal)
+            .join(NotaFiscal, NotaFiscal.estabelecimento_id == Estabelecimento.id)
+            .where(NotaFiscal.usuario_id == usuario_id)
+            .where(Estabelecimento.cep.is_not(None))
+            .where(Estabelecimento.cep != "")
+            .order_by(purchase_date.desc())
+        ).all()
+
+        grouped: dict[int, dict[str, object]] = {}
+        for est, nota in rows:
+            entry = grouped.get(est.id)
+            if entry is None:
+                entry = {
+                    "estabelecimento_id": est.id,
+                    "razao_social": est.razao_social,
+                    "logradouro": est.logradouro,
+                    "bairro": est.bairro,
+                    "cidade": est.cidade,
+                    "estado": est.estado,
+                    "cep": est.cep,
+                    "notas": [],
+                }
+                grouped[est.id] = entry
+
+            entry["notas"].append(
+                {
+                    "id": nota.id,
+                    "codigo_acesso": nota.codigo_acesso,
+                    "data_compra": nota.data_compra,
+                    "created_at": nota.created_at,
+                    "valor_total_nota": nota.valor_total_nota,
+                }
+            )
+
+        result: list[dict[str, object]] = []
+        for entry in grouped.values():
+            entry["notas_count"] = len(entry["notas"])
+            result.append(entry)
+
+        result.sort(key=lambda e: e["notas_count"], reverse=True)
+        return result
     finally:
         session.close()
 
