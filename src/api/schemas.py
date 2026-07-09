@@ -193,6 +193,7 @@ class GrupoNcmSemGtinResponse(BaseModel):
     categoria: str
     quantidade_produtos: int
     valor_total: float
+    produto_nome: str | None = None
 
 
 class DashboardDataResponse(BaseModel):

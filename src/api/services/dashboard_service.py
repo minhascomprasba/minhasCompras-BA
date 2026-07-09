@@ -195,6 +195,7 @@ def get_dashboard_data(user_id: int) -> list[dict[str, object]]:
                     Produto.categoria,
                     func.count(func.distinct(Produto.id)).label("qtd_produtos"),
                     func.sum(ItemNotaFiscal.quantidade * ItemNotaFiscal.valor_unitario).label("valor_total"),
+                    func.min(Produto.descricao).label("exemplo_nome"),
                 )
                 .join(ItemNotaFiscal, ItemNotaFiscal.id_produto == Produto.id)
                 .join(NotaFiscal, ItemNotaFiscal.id_nota_fiscal == NotaFiscal.id)
@@ -211,7 +212,7 @@ def get_dashboard_data(user_id: int) -> list[dict[str, object]]:
             grupos_ncm_res = session.execute(stmt_grupos_ncm).all()
 
             grupos_ncm_sem_gtin = []
-            for ncm_val, cat_db, qtd_produtos, valor_total in grupos_ncm_res:
+            for ncm_val, cat_db, qtd_produtos, valor_total, exemplo_nome in grupos_ncm_res:
                 if not ncm_val:
                     continue
                 grupos_ncm_sem_gtin.append({
@@ -219,6 +220,7 @@ def get_dashboard_data(user_id: int) -> list[dict[str, object]]:
                     "categoria": obter_categoria_por_ncm(ncm_val, cat_db),
                     "quantidade_produtos": int(qtd_produtos or 0),
                     "valor_total": round(float(valor_total or 0.0), 2),
+                    "produto_nome": exemplo_nome,
                 })
                 
             mes_nome = PORTUGUESE_MONTHS.get(month, "Outro")

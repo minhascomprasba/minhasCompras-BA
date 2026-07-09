@@ -21,6 +21,7 @@ export interface GrupoNcmSemGtin {
   categoria: string;
   quantidade_produtos: number;
   valor_total: number;
+  produto_nome?: string;
 }
 
 export interface DashboardData {
