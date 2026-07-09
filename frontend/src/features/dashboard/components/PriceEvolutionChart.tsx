@@ -139,7 +139,7 @@ export function PriceEvolutionChart({ data, onProductSelect }: PriceEvolutionCha
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={activeProduct.historico}
-              margin={{ top: 10, right: 10, left: -15, bottom: 0 }}
+              margin={{ top: 10, right: 10, left: -5, bottom: 0 }}
             >
               <CartesianGrid stroke="var(--border-color)" strokeDasharray="3 3" vertical={false} />
               <XAxis 
