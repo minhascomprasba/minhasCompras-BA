@@ -69,13 +69,7 @@ export function PriceEvolutionChart({ data, onProductSelect }: PriceEvolutionCha
     if (active && payload && payload.length) {
       const item = payload[0].payload;
       return (
-        <div style={{
-          background: 'var(--bg-card)',
-          border: '1px solid var(--border-color)',
-          borderRadius: 'var(--radius-md)',
-          padding: '0.5rem 0.75rem',
-          boxShadow: 'var(--shadow-md)'
-        }}>
+        <div className="chart-tooltip">
           <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
             Data: {item.data}
           </p>
@@ -89,11 +83,11 @@ export function PriceEvolutionChart({ data, onProductSelect }: PriceEvolutionCha
   };
 
   if (!data || data.length === 0) {
-    return <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>Nenhum produto frequente encontrado.</div>;
+    return <div className="price-chart-empty">Nenhum produto frequente encontrado.</div>;
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div className="price-chart-wrapper">
       {/* Barra de Pesquisa com Autocomplete */}
       <div ref={wrapperRef} className="product-search-wrapper">
         <div className="product-search-input-wrapper">
@@ -140,7 +134,7 @@ export function PriceEvolutionChart({ data, onProductSelect }: PriceEvolutionCha
       {/* O indicador de produto ativo agora é exibido como subtítulo do card controlado pelo pai */}
 
       {/* Gráfico de Linha */}
-      <div style={{ width: '100%', height: '165px', marginTop: 'auto' }}>
+      <div className="price-evolution-chart-container">
         {activeProduct && activeProduct.historico && activeProduct.historico.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart

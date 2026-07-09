@@ -191,8 +191,8 @@ export function ImportPage() {
   const isBusy = startImportMutation.isPending || isFileScanning;
 
   return (
-    <div className="container" style={{ maxWidth: '600px', marginTop: '2rem' }}>
-      <h1 style={{ textAlign: 'center', marginBottom: '2rem' }}>Nova Importação</h1>
+    <div className="container container-small">
+      <h1 className="text-center mb-8">Nova Importação</h1>
 
       <QrCodeScanner
         isOpen={isScannerOpen}
@@ -201,7 +201,7 @@ export function ImportPage() {
       />
 
       {!importId ? (
-        <div className="card" style={{ animation: 'fadeIn 0.3s ease-out' }}>
+        <div className="card card-animated">
           <h2 style={{ fontSize: '1.25rem' }}>1. Informe a chave de acesso</h2>
           <p>Use o QR Code da nota, envie uma foto ou digite a chave de 44 dígitos.</p>
 
@@ -250,7 +250,7 @@ export function ImportPage() {
           </div>
 
           {qrFeedback && (
-            <div className={`alert ${qrFeedback.type === 'error' ? 'alert-error' : ''}`} style={qrFeedback.type === 'success' ? { background: 'var(--success-bg)', color: 'var(--success)', border: '1px solid rgba(16, 185, 129, 0.2)' } : undefined}>
+            <div className={`alert ${qrFeedback.type === 'error' ? 'alert-error' : 'alert-success-custom'}`}>
               <span style={{ fontSize: '1.2rem' }}>{qrFeedback.type === 'error' ? '⚠️' : '✓'}</span>
               <span>{qrFeedback.message}</span>
             </div>
@@ -265,7 +265,7 @@ export function ImportPage() {
                 id="access_key"
                 type="text"
                 inputMode="numeric"
-                placeholder="Ex: 29210112345678901234550010001234561000123456"
+                placeholder="Digite a chave de 44 dígitos"
                 className={`form-input ${keyForm.formState.errors.access_key ? 'error' : ''}`}
                 maxLength={44}
                 {...keyForm.register('access_key', {
@@ -284,27 +284,27 @@ export function ImportPage() {
               </div>
             )}
 
-            <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={isBusy}>
+            <button type="submit" className="btn btn-primary btn-full" disabled={isBusy}>
               {startImportMutation.isPending ? 'Validando chave...' : 'Avançar'}
             </button>
           </form>
         </div>
       ) : (
-        <div className="card" style={{ animation: 'fadeIn 0.3s ease-out' }}>
+        <div className="card card-animated">
           <h2 style={{ fontSize: '1.25rem' }}>2. Validação de Segurança</h2>
           <p>Resolva o captcha para autorizar a consulta da nota na SEFAZ.</p>
 
-          <div style={{ background: 'var(--bg-main)', padding: '1rem', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'center', marginBottom: '1.5rem', border: '1px solid var(--border-color)' }}>
+          <div className="captcha-image-wrapper">
             {isCaptchaLoading ? (
               <span>Carregando captcha...</span>
             ) : captchaImageSrc ? (
               <img
                 src={captchaImageSrc}
                 alt="Captcha"
-                style={{ maxHeight: '80px', objectFit: 'contain', filter: 'invert(1) hue-rotate(180deg) brightness(1.2)' }}
+                className="captcha-image"
               />
             ) : (
-              <span>{captchaImageError || 'Captcha indisponivel.'}</span>
+              <span>{captchaImageError || 'Captcha indisponível.'}</span>
             )}
           </div>
 
@@ -329,11 +329,11 @@ export function ImportPage() {
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-              <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => { setCaptchaImageSrc((prevSrc) => { if (prevSrc) { URL.revokeObjectURL(prevSrc); } return null; }); setCaptchaImageError(''); setImportId(null); setCaptchaRefreshKey(0); keyForm.reset(); startImportMutation.reset(); captchaForm.reset(); }} disabled={submitCaptchaMutation.isPending}>
+            <div className="captcha-actions-wrapper">
+              <button type="button" className="btn btn-secondary flex-1" onClick={() => { setCaptchaImageSrc((prevSrc) => { if (prevSrc) { URL.revokeObjectURL(prevSrc); } return null; }); setCaptchaImageError(''); setImportId(null); setCaptchaRefreshKey(0); keyForm.reset(); startImportMutation.reset(); captchaForm.reset(); }} disabled={submitCaptchaMutation.isPending}>
                 Voltar
               </button>
-              <button type="submit" className="btn btn-primary" style={{ flex: 2 }} disabled={submitCaptchaMutation.isPending}>
+              <button type="submit" className="btn btn-primary flex-2" disabled={submitCaptchaMutation.isPending}>
                 {submitCaptchaMutation.isPending ? 'Enviando...' : 'Confirmar Captcha'}
               </button>
             </div>

@@ -108,7 +108,7 @@ export function LoginPage() {
             {errors.email && <span className="form-error-text">{errors.email.message}</span>}
           </div>
 
-          <div className="form-group" style={{ marginBottom: '1.75rem' }}>
+          <div className="form-group auth-form-group-spaced">
             <label className="form-label">Senha</label>
             <div className="input-icon-wrap">
               <span className="input-icon">
@@ -144,20 +144,20 @@ export function LoginPage() {
               </button>
             </div>
             {errors.password && <span className="form-error-text">{errors.password.message}</span>}
-            <div style={{ marginTop: '0.5rem', textAlign: 'right' }}>
-              <Link to="/esqueci-senha" style={{ fontSize: '0.85rem', fontWeight: '500' }}>
+            <div className="auth-forgot-password-wrap">
+              <Link to="/esqueci-senha" className="auth-forgot-password-link">
                 Esqueci minha senha
               </Link>
             </div>
           </div>
 
-          <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={isLoading}>
+          <button type="submit" className="btn btn-primary btn-full" disabled={isLoading}>
             {isLoading ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
 
         <div className="auth-footer-link">
-          Ainda não tem conta? <Link to="/register" style={{ fontWeight: '500' }}>Criar conta</Link>
+          Ainda não tem conta? <Link to="/register" className="font-semibold">Criar conta</Link>
         </div>
       </div>
     </div>

@@ -59,9 +59,9 @@ export function ResetPasswordPage() {
   };
 
   return (
-    <div className="container" style={{ maxWidth: '400px', marginTop: '4rem' }}>
-      <div className="card" style={{ padding: '2rem' }}>
-        <h1 style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '2rem' }}>Redefinir senha</h1>
+    <div className="container auth-container-narrow">
+      <div className="card auth-card-inner">
+        <h1 className="auth-title-centered">Redefinir senha</h1>
 
         {!token && (
           <div className="alert alert-error">
@@ -83,13 +83,13 @@ export function ResetPasswordPage() {
               <input
                 type="password"
                 className={`form-input ${errors.password ? 'error' : ''}`}
-                placeholder="EDigite uma senha"
+                placeholder="Digite uma senha"
                 {...register('password')}
               />
               {errors.password && <span className="form-error-text">{errors.password.message}</span>}
             </div>
 
-            <div className="form-group" style={{ marginBottom: '2rem' }}>
+            <div className="form-group auth-form-group-spaced">
               <label className="form-label">Confirmar nova senha</label>
               <input
                 type="password"
@@ -100,14 +100,14 @@ export function ResetPasswordPage() {
               {errors.password_confirm && <span className="form-error-text">{errors.password_confirm.message}</span>}
             </div>
 
-            <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={isLoading}>
+            <button type="submit" className="btn btn-primary btn-full" disabled={isLoading}>
               {isLoading ? 'Salvando...' : 'Redefinir senha'}
             </button>
           </form>
         )}
 
-        <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-          <Link to="/login" style={{ fontWeight: '500' }}>Voltar ao login</Link>
+        <div className="auth-footer-centered">
+          <Link to="/login" className="font-semibold">Voltar ao login</Link>
         </div>
       </div>
     </div>

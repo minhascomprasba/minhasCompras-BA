@@ -128,7 +128,7 @@ export function HomePage() {
   ];
 
   return (
-    <div className="container" style={{ maxWidth: '1100px', paddingBottom: '5rem' }}>
+    <div className="container pb-20">
       {/* Hero Section */}
       <section className="hero-grid">
         <div className="hero-copy">
@@ -143,11 +143,11 @@ export function HomePage() {
             evolução de preços dos produtos. Simples, seguro e gratuito.
           </p>
 
-          <div className="hero-actions" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-            <Link to="/register" className="btn btn-primary btn-neon" style={{ padding: '0.85rem 2.2rem', fontSize: '1.05rem', borderRadius: 'var(--radius-md)' }}>
+          <div className="hero-actions flex-wrap-gap">
+            <Link to="/register" className="btn btn-primary btn-neon btn-hero-action">
               Criar Conta
             </Link>
-            <Link to="/login" className="btn btn-secondary" style={{ padding: '0.85rem 2.2rem', fontSize: '1.05rem', borderRadius: 'var(--radius-md)' }}>
+            <Link to="/login" className="btn btn-secondary btn-hero-action">
               Entrar
             </Link>
           </div>
@@ -177,7 +177,7 @@ export function HomePage() {
           </div>
 
           <div className="hero-chip hero-chip--tl">
-            <span className="hero-chip-icon" style={{ background: 'rgba(23, 200, 95, 0.15)', color: GREEN }}>
+            <span className="hero-chip-icon chip-icon-green">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
@@ -186,7 +186,7 @@ export function HomePage() {
           </div>
 
           <div className="hero-chip hero-chip--br">
-            <span className="hero-chip-icon" style={{ background: 'rgba(58, 143, 224, 0.15)', color: BLUE }}>
+            <span className="hero-chip-icon chip-icon-blue">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 3v18h18" />
                 <path d="M7 14l3-3 3 3 4-5" />
@@ -198,9 +198,9 @@ export function HomePage() {
       </section>
 
       {/* Recursos */}
-      <section className="features-section" style={{ marginBottom: '5rem' }}>
-        <h2 style={{ textAlign: 'center', fontSize: '1.9rem', marginBottom: '0.75rem' }}>Tudo o que você precisa em um só lugar</h2>
-        <p style={{ textAlign: 'center', color: 'var(--text-secondary)', maxWidth: '560px', margin: '0 auto 2.5rem auto' }}>
+      <section className="features-section section-spaced">
+        <h2 className="section-title">Tudo o que você precisa em um só lugar</h2>
+        <p className="section-subtitle">
           Recursos pensados para deixar o controle das suas compras simples e automático.
         </p>
         <div className="features-grid">
@@ -219,29 +219,29 @@ export function HomePage() {
       </section>
 
       {/* Como Funciona */}
-      <section className="steps-section" style={{ marginBottom: '5rem' }}>
-        <h2 style={{ textAlign: 'center', fontSize: '1.9rem', marginBottom: '2.5rem' }}>Como Funciona</h2>
+      <section className="steps-section section-spaced">
+        <h2 className="section-title mb-10">Como Funciona</h2>
         <div className="steps-grid">
           <div className="step-card">
             <span className="step-number">01</span>
-            <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>Insira a Chave</h3>
-            <p style={{ margin: 0, fontSize: '0.95rem' }}>
+            <h3 className="step-card-title">Insira a Chave</h3>
+            <p className="step-card-text">
               Digite ou cole a chave de acesso da sua NFC-e emitida em qualquer estabelecimento do estado da Bahia.
             </p>
           </div>
 
           <div className="step-card">
             <span className="step-number">02</span>
-            <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>Confirme o Captcha</h3>
-            <p style={{ margin: 0, fontSize: '0.95rem' }}>
+            <h3 className="step-card-title">Confirme o Captcha</h3>
+            <p className="step-card-text">
               Se solicitado, digite o código de verificação para que o robô possa consultar e estruturar as notas oficiais de forma autônoma.
             </p>
           </div>
 
           <div className="step-card">
             <span className="step-number">03</span>
-            <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>Monitore os Gastos</h3>
-            <p style={{ margin: 0, fontSize: '0.95rem' }}>
+            <h3 className="step-card-title">Monitore os Gastos</h3>
+            <p className="step-card-text">
               Veja sua dashboard preenchida com gráficos de categorias e acompanhe a oscilação histórica de preços de cada produto comprado.
             </p>
           </div>
@@ -249,29 +249,29 @@ export function HomePage() {
       </section>
 
       {/* Benefícios */}
-      <section className="benefits-section" style={{ marginBottom: '5rem' }}>
-        <h2 style={{ textAlign: 'center', fontSize: '1.9rem', marginBottom: '2.5rem' }}>Vantagens da Plataforma</h2>
-        <div className="glass-panel" style={{ maxWidth: '750px', margin: '0 auto', padding: '2rem 2.5rem' }}>
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <li style={{ display: 'flex', alignItems: 'flex-start', gap: '1.25rem' }}>
-              <span style={{ color: 'var(--success)', fontSize: '1.5rem', lineHeight: '1' }}>✓</span>
+      <section className="benefits-section section-spaced">
+        <h2 className="section-title mb-10">Vantagens da Plataforma</h2>
+        <div className="glass-panel benefits-glass-panel">
+          <ul className="benefits-list">
+            <li className="benefits-item">
+              <span className="benefits-check">✓</span>
               <div>
-                <strong style={{ display: 'block', color: 'var(--text-primary)', fontSize: '1.1rem' }}>Histórico Centralizado e Privado</strong>
-                <span style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>Suas notas fiscais e hábitos de consumo guardados de forma segura e pessoal no seu perfil.</span>
+                <strong className="benefit-title">Histórico Centralizado e Privado</strong>
+                <span className="benefit-description">Suas notas fiscais e hábitos de consumo guardados de forma segura e pessoal no seu perfil.</span>
               </div>
             </li>
-            <li style={{ display: 'flex', alignItems: 'flex-start', gap: '1.25rem' }}>
-              <span style={{ color: 'var(--success)', fontSize: '1.5rem', lineHeight: '1' }}>✓</span>
+            <li className="benefits-item">
+              <span className="benefits-check">✓</span>
               <div>
-                <strong style={{ display: 'block', color: 'var(--text-primary)', fontSize: '1.1rem' }}>Análise Automatizada de Categorias</strong>
-                <span style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>Organização instantânea do destino do seu dinheiro (Mercado, Combustível, Farmácia) sem tabelas manuais.</span>
+                <strong className="benefit-title">Análise Automatizada de Categorias</strong>
+                <span className="benefit-description">Organização instantânea do destino do seu dinheiro (Mercado, Combustível, Farmácia) sem tabelas manuais.</span>
               </div>
             </li>
-            <li style={{ display: 'flex', alignItems: 'flex-start', gap: '1.25rem' }}>
-              <span style={{ color: 'var(--success)', fontSize: '1.5rem', lineHeight: '1' }}>✓</span>
+            <li className="benefits-item">
+              <span className="benefits-check">✓</span>
               <div>
-                <strong style={{ display: 'block', color: 'var(--text-primary)', fontSize: '1.1rem' }}>Acompanhamento de Inflação Pessoal</strong>
-                <span style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>Compare preços históricos do mesmo item (ex: leite ou café) ao longo do tempo e otimize seu orçamento.</span>
+                <strong className="benefit-title">Acompanhamento de Inflação Pessoal</strong>
+                <span className="benefit-description">Compare preços históricos do mesmo item (ex: leite ou café) ao longo do tempo e otimize seu orçamento.</span>
               </div>
             </li>
           </ul>
@@ -279,9 +279,9 @@ export function HomePage() {
       </section>
 
       {/* FAQ */}
-      <section className="faq-section" style={{ marginBottom: '5rem' }}>
-        <h2 style={{ textAlign: 'center', fontSize: '1.9rem', marginBottom: '2.5rem' }}>Perguntas Frequentes</h2>
-        <div style={{ maxWidth: '750px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+      <section className="faq-section section-spaced">
+        <h2 className="section-title mb-10">Perguntas Frequentes</h2>
+        <div className="faq-list-container">
           {faqData.map((item, idx) => (
             <div key={idx} className="faq-item">
               <button
@@ -295,7 +295,7 @@ export function HomePage() {
                 </span>
               </button>
               <div className={`faq-answer ${activeFaq === idx ? 'faq-answer--open' : ''}`}>
-                <p style={{ margin: 0, padding: '1rem 1.25rem' }}>{item.answer}</p>
+                <p className="faq-answer-text">{item.answer}</p>
               </div>
             </div>
           ))}
@@ -304,11 +304,11 @@ export function HomePage() {
 
       {/* CTA Banner Rodapé */}
       <section className="home-cta-banner">
-        <h2 style={{ fontSize: '2rem', marginBottom: '0.75rem', color: '#FFF' }}>Comece a Controlar seus Gastos Agora Mesmo</h2>
-        <p style={{ color: 'rgba(255, 255, 255, 0.85)', fontSize: '1.05rem', marginBottom: '2rem', maxWidth: '600px', margin: '0 auto 2rem auto' }}>
+        <h2 className="cta-banner-title">Comece a Controlar seus Gastos Agora Mesmo</h2>
+        <p className="cta-banner-subtitle">
           Junte-se a nós e tenha acesso instantâneo ao painel completo de controle de consumo e monitoramento de produtos de forma simplificada.
         </p>
-        <Link to="/register" className="btn btn-secondary btn-neon" style={{ padding: '0.9rem 2.5rem', fontSize: '1.1rem', background: '#FFF', color: '#033876', border: 'none', fontWeight: 600 }}>
+        <Link to="/register" className="btn btn-secondary btn-neon btn-cta-signup">
           Cadastrar-se Gratuitamente
         </Link>
       </section>
