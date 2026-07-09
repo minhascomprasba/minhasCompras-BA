@@ -214,7 +214,7 @@ export function DashboardPage() {
             <table className="table">
               <thead>
                 <tr>
-                  <th>NCM</th>
+                  <th>Descrição / NCM</th>
                   <th>Categoria</th>
                   <th style={{ textAlign: 'center' }}>Produtos</th>
                   <th style={{ textAlign: 'right' }}>Total (R$)</th>
@@ -223,7 +223,14 @@ export function DashboardPage() {
               <tbody>
                 {currentData.gruposNcmSemGtin.map((grupo) => (
                   <tr key={grupo.ncm}>
-                    <td className="ncm-font">{grupo.ncm}</td>
+                    <td>
+                      <div style={{ fontWeight: '500', color: 'var(--text-primary)', marginBottom: '2px' }}>
+                        {grupo.produto_nome || 'Produto sem nome'}
+                      </div>
+                      <div className="ncm-font" style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        NCM: {grupo.ncm}
+                      </div>
+                    </td>
                     <td>{grupo.categoria}</td>
                     <td style={{ textAlign: 'center' }}>{grupo.quantidade_produtos}</td>
                     <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--success)' }}>
