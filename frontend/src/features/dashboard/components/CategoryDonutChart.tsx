@@ -28,17 +28,11 @@ export function CategoryDonutChart({ data }: CategoryDonutChartProps) {
     if (active && payload && payload.length) {
       const item = payload[0].payload;
       return (
-        <div style={{
-          background: 'var(--bg-card)',
-          border: '1px solid var(--border-color)',
-          borderRadius: 'var(--radius-md)',
-          padding: '0.5rem 0.75rem',
-          boxShadow: 'var(--shadow-md)'
-        }}>
-          <p style={{ margin: 0, fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+        <div className="chart-tooltip">
+          <p className="chart-tooltip-title">
             {item.categoria}
           </p>
-          <p style={{ margin: 0, fontSize: '0.85rem', color: CATEGORY_COLORS[item.categoria] || DEFAULT_COLOR, fontWeight: 500 }}>
+          <p className="chart-tooltip-value" style={{ color: CATEGORY_COLORS[item.categoria] || DEFAULT_COLOR }}>
             {formatCurrency(item.valor)} ({item.percentual}%)
           </p>
         </div>
@@ -50,7 +44,7 @@ export function CategoryDonutChart({ data }: CategoryDonutChartProps) {
   return (
     <div className="donut-chart-layout-wrapper">
       {/* Container do Gráfico */}
-      <div style={{ flex: '0 0 180px', height: '220px', position: 'relative' }}>
+      <div className="donut-chart-svg-container">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -65,10 +59,10 @@ export function CategoryDonutChart({ data }: CategoryDonutChartProps) {
             >
               {data.map((entry, index) => (
                 <Cell 
-                  key={`cell-${index}`} 
-                  fill={CATEGORY_COLORS[entry.categoria] || DEFAULT_COLOR} 
-                  stroke="rgba(11, 15, 25, 0.5)"
-                  strokeWidth={2}
+                   key={`cell-${index}`} 
+                   fill={CATEGORY_COLORS[entry.categoria] || DEFAULT_COLOR} 
+                   stroke="rgba(11, 15, 25, 0.5)"
+                   strokeWidth={2}
                 />
               ))}
             </Pie>
@@ -77,22 +71,11 @@ export function CategoryDonutChart({ data }: CategoryDonutChartProps) {
         </ResponsiveContainer>
         
         {/* Label Central */}
-        <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          pointerEvents: 'none',
-          textAlign: 'center',
-          zIndex: 1
-        }}>
-          <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <div className="donut-chart-center-label">
+          <span className="label-title">
             Total Gasto
           </span>
-          <span style={{ fontSize: '1.05rem', color: 'var(--text-primary)', fontWeight: 700 }}>
+          <span className="label-value">
             {formatCurrency(total)}
           </span>
         </div>

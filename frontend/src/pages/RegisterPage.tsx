@@ -143,7 +143,7 @@ export function RegisterPage() {
             {errors.password && <span className="form-error-text">{errors.password.message}</span>}
           </div>
 
-          <div className="form-group" style={{ marginBottom: '1.75rem' }}>
+          <div className="form-group auth-form-group-spaced">
             <label className="form-label">Confirmar Senha</label>
             <div className="input-icon-wrap">
               <span className="input-icon">
@@ -181,13 +181,13 @@ export function RegisterPage() {
             {errors.password_confirm && <span className="form-error-text">{errors.password_confirm.message}</span>}
           </div>
 
-          <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={isLoading}>
+          <button type="submit" className="btn btn-primary btn-full" disabled={isLoading}>
             {isLoading ? 'Criando...' : 'Criar Conta'}
           </button>
         </form>
 
         <div className="auth-footer-link">
-          Já tem conta? <Link to="/login" style={{ fontWeight: '500' }}>Fazer login</Link>
+          Já tem conta? <Link to="/login" className="font-semibold">Fazer login</Link>
         </div>
       </div>
     </div>

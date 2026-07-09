@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
 
@@ -8,6 +8,15 @@ export function AuthenticatedLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const closeMenu = () => setMenuOpen(false);
+
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.classList.add('menu-open');
+    } else {
+      document.body.classList.remove('menu-open');
+    }
+    return () => document.body.classList.remove('menu-open');
+  }, [menuOpen]);
 
   const handleLogout = () => {
     closeMenu();
@@ -19,7 +28,7 @@ export function AuthenticatedLayout() {
     `nav-link ${isActive ? 'nav-link--active' : ''}`;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <div className="app-layout-wrapper">
       <header className="app-navbar">
         <div className="navbar-container">
           <NavLink to="/dashboard" className="navbar-logo" onClick={closeMenu}>
@@ -68,7 +77,7 @@ export function AuthenticatedLayout() {
               <span className="user-email" title={user?.email || ''}>
                 {user?.email ? (user.email.length > 24 ? `${user.email.substring(0, 21)}...` : user.email) : ''}
               </span>
-              <button onClick={handleLogout} className="btn btn-secondary btn-sm" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}>
+              <button onClick={handleLogout} className="btn btn-secondary btn-sm btn-logout">
                 Sair
               </button>
             </div>
@@ -76,18 +85,11 @@ export function AuthenticatedLayout() {
         </div>
       </header>
 
-      <main style={{ flex: '1 0 auto' }}>
+      <main className="app-main">
         <Outlet />
       </main>
 
-      <footer style={{
-        textAlign: 'center',
-        padding: '1.5rem',
-        color: 'var(--text-muted)',
-        fontSize: '0.85rem',
-        borderTop: '1px solid var(--border-color)',
-        marginTop: 'auto'
-      }}>
+      <footer className="app-footer">
         &copy; {new Date().getFullYear()} Minhas Compras BA. Todos os direitos reservados.
       </footer>
     </div>

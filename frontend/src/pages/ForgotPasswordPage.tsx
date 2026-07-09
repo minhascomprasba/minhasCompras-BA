@@ -40,10 +40,10 @@ export function ForgotPasswordPage() {
   };
 
   return (
-    <div className="container" style={{ maxWidth: '400px', marginTop: '4rem' }}>
-      <div className="card" style={{ padding: '2rem' }}>
-        <h1 style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '2rem' }}>Esqueci minha senha</h1>
-        <p style={{ textAlign: 'center', marginBottom: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+    <div className="container auth-container-narrow">
+      <div className="card auth-card-inner">
+        <h1 className="auth-title-centered">Esqueci minha senha</h1>
+        <p className="auth-subtitle-centered">
           Informe seu e-mail e enviaremos um link para redefinir sua senha.
         </p>
 
@@ -61,7 +61,7 @@ export function ForgotPasswordPage() {
 
         {!success && (
           <form onSubmit={handleSubmit(onSubmit)}>
-            <div className="form-group" style={{ marginBottom: '2rem' }}>
+            <div className="form-group auth-form-group-spaced">
               <label className="form-label">E-mail</label>
               <input
                 type="email"
@@ -72,14 +72,14 @@ export function ForgotPasswordPage() {
               {errors.email && <span className="form-error-text">{errors.email.message}</span>}
             </div>
 
-            <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={isLoading}>
+            <button type="submit" className="btn btn-primary btn-full" disabled={isLoading}>
               {isLoading ? 'Enviando...' : 'Enviar link'}
             </button>
           </form>
         )}
 
-        <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-          <Link to="/login" style={{ fontWeight: '500' }}>Voltar ao login</Link>
+        <div className="auth-footer-centered">
+          <Link to="/login" className="font-semibold">Voltar ao login</Link>
         </div>
       </div>
     </div>

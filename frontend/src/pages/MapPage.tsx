@@ -375,10 +375,10 @@ export function MapPage() {
   const selectedLocation = locations.find((l) => l.id === selectedId) ?? null;
 
   return (
-    <div className="container" style={{ maxWidth: '1200px' }}>
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h1 style={{ fontSize: '2rem', marginBottom: '0.35rem' }}>Mapa das Compras</h1>
-        <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
+    <div className="container">
+      <div className="mb-6">
+        <h1 className="page-title">Mapa das Compras</h1>
+        <p className="page-subtitle">
           Localização dos estabelecimentos onde suas notas foram emitidas, a partir do CEP.
           Clique em um marcador ou em um local da lista para ver os detalhes.
         </p>
@@ -462,10 +462,10 @@ export function MapPage() {
         <section className="map-notas-panel">
           <div className="map-notas-header">
             <div>
-              <h2 style={{ fontSize: '1.2rem', marginBottom: '0.15rem' }}>
+              <h2 className="map-selected-title">
                 Notas de {selectedLocation.label}
               </h2>
-              <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+              <span className="map-selected-subtitle">
                 CEP {formatCep(selectedLocation.cep)} · {selectedLocation.address}
               </span>
             </div>
@@ -475,7 +475,7 @@ export function MapPage() {
           </div>
 
           {selectedLocation.notas.length === 0 ? (
-            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
+            <p className="text-secondary" style={{ margin: 0 }}>
               Nenhuma nota detalhada disponível para este local.
             </p>
           ) : (
