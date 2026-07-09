@@ -283,7 +283,7 @@ class ProductParser:
     @classmethod
     def extract_data_compra(cls, html_content: str) -> datetime | None:
         logger = setup_logger(log_file="logs/phase3.log", logger_name="phase3")
-        soup = BeautifulSoup(html_content, "html.parser")
+        soup = BeautifulSoup(html_content, "lxml")
         try:
             return cls._parse_data_compra(soup, html_content=html_content, logger=logger)
         finally:
@@ -354,7 +354,7 @@ class ProductParser:
     @classmethod
     def parse_page(cls, html_content: str) -> dict[str, Any]:
         logger = setup_logger(log_file="logs/phase3.log", logger_name="phase3")
-        soup = BeautifulSoup(html_content, "html.parser")
+        soup = BeautifulSoup(html_content, "lxml")
 
         try:
             data_compra = cls._parse_data_compra(soup, html_content=html_content, logger=logger)
@@ -472,7 +472,7 @@ class EmpresaParser:
     @classmethod
     def parse_page(cls, html_content: str) -> dict[str, Any]:
         logger = setup_logger(log_file="logs/phase3.log", logger_name="phase3")
-        soup = BeautifulSoup(html_content, "html.parser")
+        soup = BeautifulSoup(html_content, "lxml")
 
         try:
             razao_social = cls._extract_value_by_label(soup, ["Nome / Razao Social", "Razao Social"])

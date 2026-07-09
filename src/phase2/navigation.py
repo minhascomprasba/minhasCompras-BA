@@ -183,7 +183,7 @@ def Maps_to_Emitente_tab(driver: WebDriver, timeout: int) -> dict | None:
 
     try:
         WebDriverWait(driver, timeout).until(
-            EC.presence_of_element_located((By.ID, "txtRazaoSocial"))
+            EC.presence_of_element_located((By.XPATH, "//label[contains(text(), 'CNPJ') or contains(text(), 'Razão Social') or contains(text(), 'Razao Social')]"))
         )
     except TimeoutException:
         logger.warning("Conteudo da aba de emitente nao carregou no tempo esperado.")
