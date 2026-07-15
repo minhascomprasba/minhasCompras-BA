@@ -131,7 +131,6 @@ export function NotasPage() {
                   <div key={nota.id} className="card card-row-layout">
                     <div>
                       <h3 style={{ color: 'var(--text-primary)', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        Nota #{nota.id}
                         <span className="text-success-bold">
                           {(nota.valor_total_nota || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </span>

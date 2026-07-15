@@ -7,6 +7,7 @@ from pathlib import Path
 from threading import Lock
 from uuid import uuid4
 
+from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.remote.webdriver import WebDriver
 from sqlalchemy import func, select
 
@@ -320,12 +321,12 @@ def submit_captcha(import_id: str, captcha_code: str, usuario_id: int) -> dict[s
         record.updated_at = _utcnow()
         session.commit()
 
-     
+
         # Produtos
         data_compra = Maps_to_products_tab(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
         wait_for_products_content(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
         parsed_page = ProductParser.parse_page(runtime.driver.page_source)
-        
+
         # Dados do Emitente
         empresa_data = Maps_to_Emitente_tab(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
         estabelecimento_id = get_or_create_estabelecimento(empresa_data)
@@ -359,6 +360,24 @@ def submit_captcha(import_id: str, captcha_code: str, usuario_id: int) -> dict[s
         return {"import_id": import_id, "status": ImportStatus.COMPLETED.value}
     except (NotFoundError, ConflictError, ValidationError):
         raise
+    except WebDriverException as exc:
+        # A sessao do navegador morreu (Chrome fechou / perdeu conexao com o
+        # DevTools). Tratamos como sessao expirada para o usuario reiniciar.
+        if session.is_active:
+            record = session.get(NfceImport, import_id)
+            if record is not None:
+                failure_time = _utcnow()
+                record.status = ImportStatus.EXPIRED.value
+                record.error_message = "Sessao do navegador encerrada. Inicie uma nova importacao."
+                record.updated_at = failure_time
+                record.finished_at = failure_time
+                session.commit()
+        should_close_runtime = True
+        raise ConflictError(
+            code="SESSION_EXPIRED",
+            message="Sessao de importacao expirada. Inicie uma nova importacao.",
+            details={"import_id": import_id},
+        ) from exc
     except Exception as exc:
         if session.is_active:
             record = session.get(NfceImport, import_id)

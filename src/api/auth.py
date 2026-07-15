@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, Request
@@ -9,33 +10,44 @@ from src.api.rate_limit import InMemoryRateLimiter
 from src.api.schemas import (
     ForgotPasswordRequest,
     MessageResponse,
+    ResendCodeRequest,
     ResetPasswordRequest,
     TokenResponse,
     UserLoginRequest,
     UserRegisterRequest,
     UserResponse,
+    VerifyEmailRequest,
 )
 from src.api.security import (
     create_access_token,
     generate_reset_token,
+    generate_verification_code,
     get_current_user_id,
     get_password_hash,
     hash_reset_token,
+    hash_verification_code,
     verify_password,
 )
-from src.api.services.email_service import send_password_reset_email
+from src.api.services.email_service import (
+    send_email_verification_code,
+    send_password_reset_email,
+)
 from src.database.connection import SessionLocal
-from src.database.models import PasswordResetToken, Usuario
+from src.database.models import EmailVerificationCode, PasswordResetToken, Usuario
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 PASSWORD_MIN_LENGTH = 8
 PASSWORD_MAX_LENGTH = 128
 password_reset_rate_limiter = InMemoryRateLimiter(settings.PASSWORD_RESET_RATE_LIMIT_PER_MIN)
+email_verification_rate_limiter = InMemoryRateLimiter(settings.EMAIL_VERIFICATION_RATE_LIMIT_PER_MIN)
 
 FORGOT_PASSWORD_SUCCESS_MESSAGE = (
     "Se o e-mail estiver cadastrado, você receberá instruções para redefinir sua senha."
 )
 RESET_PASSWORD_SUCCESS_MESSAGE = "Senha redefinida com sucesso. Você já pode fazer login."
+VERIFICATION_CODE_SENT_MESSAGE = (
+    "Enviamos um código de confirmação para o seu e-mail. Insira-o para concluir o cadastro."
+)
 
 
 def _validate_password_rules(password: str) -> None:
@@ -50,6 +62,33 @@ def _validate_password_rules(password: str) -> None:
             "INVALID_PASSWORD",
             "A senha deve ter no maximo 128 caracteres.",
             {"field": "password", "rule": "max_length", "max_length": PASSWORD_MAX_LENGTH},
+        )
+
+
+def _validate_password_strength(password: str) -> None:
+    if not re.search(r"[A-Z]", password):
+        raise ValidationError(
+            "WEAK_PASSWORD",
+            "A senha deve conter ao menos uma letra maiúscula.",
+            {"field": "password", "rule": "uppercase"},
+        )
+    if not re.search(r"[a-z]", password):
+        raise ValidationError(
+            "WEAK_PASSWORD",
+            "A senha deve conter ao menos uma letra minúscula.",
+            {"field": "password", "rule": "lowercase"},
+        )
+    if not re.search(r"\d", password):
+        raise ValidationError(
+            "WEAK_PASSWORD",
+            "A senha deve conter ao menos um número.",
+            {"field": "password", "rule": "digit"},
+        )
+    if not re.search(r"[^A-Za-z0-9]", password):
+        raise ValidationError(
+            "WEAK_PASSWORD",
+            "A senha deve conter ao menos um caractere especial.",
+            {"field": "password", "rule": "special"},
         )
 
 
@@ -70,9 +109,39 @@ def get_db():
         db.close()
 
 
-@auth_router.post("/register", response_model=TokenResponse, status_code=201)
-def register(payload: UserRegisterRequest, db: Session = Depends(get_db)):
+def _issue_verification_code(db: Session, email: str, password_hash: str) -> None:
+    now = datetime.utcnow()
+    db.query(EmailVerificationCode).filter(
+        EmailVerificationCode.email == email,
+        EmailVerificationCode.used_at.is_(None),
+    ).update({"used_at": now})
+
+    raw_code, code_hash = generate_verification_code()
+    expires_at = now + timedelta(minutes=settings.EMAIL_VERIFICATION_CODE_EXPIRATION_MINUTES)
+    verification = EmailVerificationCode(
+        email=email,
+        password_hash=password_hash,
+        code_hash=code_hash,
+        expires_at=expires_at,
+    )
+    db.add(verification)
+    db.commit()
+
+    send_email_verification_code(email, raw_code)
+
+
+@auth_router.post("/register", response_model=MessageResponse, status_code=202)
+def register(payload: UserRegisterRequest, request: Request, db: Session = Depends(get_db)):
     _validate_password_rules(payload.password)
+    _validate_password_strength(payload.password)
+
+    client_ip = _get_client_ip(request)
+    if not email_verification_rate_limiter.allow(client_ip):
+        raise RateLimitError(
+            code="RATE_LIMIT_EXCEEDED",
+            message="Limite de requisicoes excedido. Tente novamente em instantes.",
+            details={"ip": client_ip},
+        )
 
     existing_user = db.query(Usuario).filter(Usuario.email == payload.email).first()
     if existing_user:
@@ -86,8 +155,63 @@ def register(payload: UserRegisterRequest, db: Session = Depends(get_db)):
             "Nao foi possivel processar a senha informada.",
             {"field": "password", "reason": "hash_error"},
         ) from exc
-    new_user = Usuario(email=payload.email, password_hash=hashed)
+
+    _issue_verification_code(db, payload.email, hashed)
+
+    return MessageResponse(message=VERIFICATION_CODE_SENT_MESSAGE)
+
+
+@auth_router.post("/verify-email", response_model=TokenResponse, status_code=201)
+def verify_email(payload: VerifyEmailRequest, db: Session = Depends(get_db)):
+    now = datetime.utcnow()
+
+    existing_user = db.query(Usuario).filter(Usuario.email == payload.email).first()
+    if existing_user:
+        raise ApiError("EMAIL_IN_USE", "Este e-mail já está em uso.", status_code=400)
+
+    verification = (
+        db.query(EmailVerificationCode)
+        .filter(
+            EmailVerificationCode.email == payload.email,
+            EmailVerificationCode.used_at.is_(None),
+        )
+        .order_by(EmailVerificationCode.created_at.desc())
+        .first()
+    )
+
+    if not verification or verification.expires_at <= now:
+        raise ApiError(
+            "INVALID_VERIFICATION_CODE",
+            "Código inválido ou expirado. Solicite um novo código.",
+            status_code=400,
+        )
+
+    if verification.attempts >= settings.EMAIL_VERIFICATION_MAX_ATTEMPTS:
+        verification.used_at = now
+        db.commit()
+        raise ApiError(
+            "VERIFICATION_ATTEMPTS_EXCEEDED",
+            "Número máximo de tentativas excedido. Solicite um novo código.",
+            status_code=400,
+        )
+
+    if verification.code_hash != hash_verification_code(payload.code):
+        verification.attempts += 1
+        db.commit()
+        raise ApiError(
+            "INVALID_VERIFICATION_CODE",
+            "Código inválido ou expirado. Solicite um novo código.",
+            status_code=400,
+        )
+
+    new_user = Usuario(email=verification.email, password_hash=verification.password_hash)
     db.add(new_user)
+    verification.used_at = now
+    db.query(EmailVerificationCode).filter(
+        EmailVerificationCode.email == verification.email,
+        EmailVerificationCode.id != verification.id,
+        EmailVerificationCode.used_at.is_(None),
+    ).update({"used_at": now})
     db.commit()
     db.refresh(new_user)
 
@@ -96,6 +220,35 @@ def register(payload: UserRegisterRequest, db: Session = Depends(get_db)):
         access_token=token,
         user=UserResponse(id=new_user.id, email=new_user.email),
     )
+
+
+@auth_router.post("/resend-code", response_model=MessageResponse)
+def resend_code(payload: ResendCodeRequest, request: Request, db: Session = Depends(get_db)):
+    client_ip = _get_client_ip(request)
+    if not email_verification_rate_limiter.allow(client_ip):
+        raise RateLimitError(
+            code="RATE_LIMIT_EXCEEDED",
+            message="Limite de requisicoes excedido. Tente novamente em instantes.",
+            details={"ip": client_ip},
+        )
+
+    existing_user = db.query(Usuario).filter(Usuario.email == payload.email).first()
+    if existing_user:
+        raise ApiError("EMAIL_IN_USE", "Este e-mail já está em uso.", status_code=400)
+
+    pending = (
+        db.query(EmailVerificationCode)
+        .filter(
+            EmailVerificationCode.email == payload.email,
+            EmailVerificationCode.used_at.is_(None),
+        )
+        .order_by(EmailVerificationCode.created_at.desc())
+        .first()
+    )
+    if pending:
+        _issue_verification_code(db, pending.email, pending.password_hash)
+
+    return MessageResponse(message=VERIFICATION_CODE_SENT_MESSAGE)
 
 
 @auth_router.post("/login", response_model=TokenResponse)

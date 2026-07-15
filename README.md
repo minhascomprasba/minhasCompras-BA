@@ -65,6 +65,9 @@ Você deve atualizar as configurações de segurança no backend para que ele pe
 | `SMTP_USER` | Usuário/Login do serviço de SMTP | Render | `exemplo@smtp.com` |
 | `SMTP_PASSWORD` | Senha de acesso do SMTP | Render | `sua-senha-smtp` |
 | `SMTP_FROM` | Nome e e-mail que aparecerão no remetente das mensagens | Render | `Minhas Compras BA <noreply@gmail.com>` |
+| `EMAIL_VERIFICATION_CODE_EXPIRATION_MINUTES` | Validade (minutos) do código de confirmação de cadastro enviado por e-mail | Render | `15` |
+| `EMAIL_VERIFICATION_RATE_LIMIT_PER_MIN` | Limite de solicitações de código de confirmação por IP por minuto | Render | `3` |
+| `EMAIL_VERIFICATION_MAX_ATTEMPTS` | Máximo de tentativas de digitar o código antes de exigir um novo | Render | `5` |
 
 ---
 

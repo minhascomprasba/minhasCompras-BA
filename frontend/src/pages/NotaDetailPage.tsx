@@ -39,7 +39,6 @@ export function NotaDetailPage() {
       ) : nota ? (
         <div className="glass-panel detail-header-panel">
           <h1 className="detail-title">
-            Nota #{nota.id}
             {nota.valor_total_nota !== undefined && (
               <span className="detail-value-badge">
                 {nota.valor_total_nota.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}

@@ -173,7 +173,7 @@ export function ImportPage() {
           setCaptchaImageError('');
           captchaForm.reset();
           setCaptchaRefreshKey(prev => prev + 1);
-        } else if (error.code === 'CAPTCHA_EXPIRED' || error.code === 'MAX_CAPTCHA_ATTEMPTS_REACHED') {
+        } else if (error.code === 'CAPTCHA_EXPIRED' || error.code === 'MAX_CAPTCHA_ATTEMPTS_REACHED' || error.code === 'SESSION_EXPIRED') {
           setCaptchaImageSrc((prevSrc) => {
             if (prevSrc) {
               URL.revokeObjectURL(prevSrc);
@@ -183,6 +183,7 @@ export function ImportPage() {
           setCaptchaImageError('');
           setImportId(null);
           keyForm.reset();
+          setQrFeedback({ type: 'error', message: error.message });
         }
       }
     });
