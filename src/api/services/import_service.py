@@ -321,12 +321,12 @@ def submit_captcha(import_id: str, captcha_code: str, usuario_id: int) -> dict[s
         record.updated_at = _utcnow()
         session.commit()
 
-     
+
         # Produtos
         data_compra = Maps_to_products_tab(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
         wait_for_products_content(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
         parsed_page = ProductParser.parse_page(runtime.driver.page_source)
-        
+
         # Dados do Emitente
         empresa_data = Maps_to_Emitente_tab(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
         estabelecimento_id = get_or_create_estabelecimento(empresa_data)
@@ -481,8 +481,6 @@ def list_notas(page: int, page_size: int, from_date: datetime | None, to_date: d
             itens_count = session.execute(
                 select(func.count()).select_from(ItemNotaFiscal).where(ItemNotaFiscal.id_nota_fiscal == nota.id)
             ).scalar_one()
-            estabelecimento = session.get(Estabelecimento, nota.estabelecimento_id)
-            razao_social = estabelecimento.razao_social if estabelecimento is not None else None
             data.append(
                 {
                     "id": nota.id,
@@ -491,7 +489,6 @@ def list_notas(page: int, page_size: int, from_date: datetime | None, to_date: d
                     "data_compra": nota.data_compra,
                     "itens_count": itens_count,
                     "valor_total_nota": nota.valor_total_nota,
-                    "razao_social": razao_social,
                 }
             )
 
@@ -565,9 +562,7 @@ def get_nota(nota_id: int, usuario_id: int) -> dict[str, object]:
         nota = session.get(NotaFiscal, nota_id)
         if nota is None or nota.usuario_id != usuario_id:
             raise NotFoundError("NOTA_NOT_FOUND", "Nota fiscal nao encontrada.", {"nota_id": str(nota_id)})
-        estabelecimento = session.get(Estabelecimento, nota.estabelecimento_id)
-        razao_social = estabelecimento.razao_social if estabelecimento is not None else None
-        return {"id": nota.id, "codigo_acesso": nota.codigo_acesso, "created_at": nota.created_at, "data_compra": nota.data_compra, "valor_total_nota": nota.valor_total_nota, "razao_social": razao_social}
+        return {"id": nota.id, "codigo_acesso": nota.codigo_acesso, "created_at": nota.created_at, "data_compra": nota.data_compra, "valor_total_nota": nota.valor_total_nota}
     finally:
         session.close()
 

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useNota, useNotaItens } from '../features/notas/hooks/useNotasQueries';
-import { extractNfceIdentificacao } from '../features/notas/utils/nfceKey';
 import { useAuth } from '../features/auth/AuthContext';
 
 export function NotaDetailPage() {
@@ -38,23 +37,14 @@ export function NotaDetailPage() {
           <div className="spinner"></div>
         </div>
       ) : nota ? (
-        (() => {
-          const nfce = extractNfceIdentificacao(nota.codigo_acesso);
-          return (
         <div className="glass-panel detail-header-panel">
           <h1 className="detail-title">
-            {nota.razao_social || (nfce ? `NFC-e nº ${nfce.numero}` : `Nota #${nota.id}`)}
             {nota.valor_total_nota !== undefined && (
               <span className="detail-value-badge">
                 {nota.valor_total_nota.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
               </span>
             )}
           </h1>
-          {nfce && (
-            <p className="detail-text-muted">
-              <strong className="text-primary">NFC-e nº</strong> {nfce.numero} · <strong className="text-primary">Série</strong> {nfce.serie}
-            </p>
-          )}
           <p className="detail-text-highlight">
             <strong className="text-primary">Chave de Acesso:</strong> <span style={{ fontFamily: 'var(--mono)' }}>{nota.codigo_acesso}</span>
           </p>
@@ -72,8 +62,6 @@ export function NotaDetailPage() {
             <strong>Importada em:</strong> {new Date(nota.created_at).toLocaleString('pt-BR')}
           </p>
         </div>
-          );
-        })()
       ) : null}
 
       <div className="flex-between-wrap">

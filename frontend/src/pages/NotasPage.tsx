@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useNotas } from '../features/notas/hooks/useNotasQueries';
-import { extractNfceIdentificacao } from '../features/notas/utils/nfceKey';
 import { useAuth } from '../features/auth/AuthContext';
 
 export function NotasPage() {
@@ -128,12 +127,10 @@ export function NotasPage() {
                 const isExpanded = !!expandedKeys[nota.id];
                 const key = nota.codigo_acesso || '';
                 const displayKey = isExpanded ? key : `${key.substring(0, 6)}...${key.substring(key.length - 6)}`;
-                const nfce = extractNfceIdentificacao(key);
                 return (
                   <div key={nota.id} className="card card-row-layout">
                     <div>
                       <h3 style={{ color: 'var(--text-primary)', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        {nota.razao_social || (nfce ? `NFC-e nº ${nfce.numero}` : `Nota #${nota.id}`)}
                         <span className="text-success-bold">
                           {(nota.valor_total_nota || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </span>
@@ -155,9 +152,6 @@ export function NotasPage() {
                           <span className="badge badge-outline">
                             Data da compra indisponível
                           </span>
-                        )}
-                        {nfce && (
-                          <span className="badge badge-outline">Série {nfce.serie}</span>
                         )}
                         <span className="badge badge-outline">Itens: {nota.itens_count || 0}</span>
                       </div>
