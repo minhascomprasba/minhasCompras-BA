@@ -15,6 +15,7 @@ export interface Nota {
   data_compra?: string | null;
   itens_count?: number;
   valor_total_nota?: number;
+  razao_social?: string | null;
 }
 
 export interface NotaItem {

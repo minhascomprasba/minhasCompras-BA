@@ -7,6 +7,7 @@ from pathlib import Path
 from threading import Lock
 from uuid import uuid4
 
+from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.remote.webdriver import WebDriver
 from sqlalchemy import func, select
 
@@ -359,6 +360,24 @@ def submit_captcha(import_id: str, captcha_code: str, usuario_id: int) -> dict[s
         return {"import_id": import_id, "status": ImportStatus.COMPLETED.value}
     except (NotFoundError, ConflictError, ValidationError):
         raise
+    except WebDriverException as exc:
+        # A sessao do navegador morreu (Chrome fechou / perdeu conexao com o
+        # DevTools). Tratamos como sessao expirada para o usuario reiniciar.
+        if session.is_active:
+            record = session.get(NfceImport, import_id)
+            if record is not None:
+                failure_time = _utcnow()
+                record.status = ImportStatus.EXPIRED.value
+                record.error_message = "Sessao do navegador encerrada. Inicie uma nova importacao."
+                record.updated_at = failure_time
+                record.finished_at = failure_time
+                session.commit()
+        should_close_runtime = True
+        raise ConflictError(
+            code="SESSION_EXPIRED",
+            message="Sessao de importacao expirada. Inicie uma nova importacao.",
+            details={"import_id": import_id},
+        ) from exc
     except Exception as exc:
         if session.is_active:
             record = session.get(NfceImport, import_id)
@@ -462,6 +481,8 @@ def list_notas(page: int, page_size: int, from_date: datetime | None, to_date: d
             itens_count = session.execute(
                 select(func.count()).select_from(ItemNotaFiscal).where(ItemNotaFiscal.id_nota_fiscal == nota.id)
             ).scalar_one()
+            estabelecimento = session.get(Estabelecimento, nota.estabelecimento_id)
+            razao_social = estabelecimento.razao_social if estabelecimento is not None else None
             data.append(
                 {
                     "id": nota.id,
@@ -470,6 +491,7 @@ def list_notas(page: int, page_size: int, from_date: datetime | None, to_date: d
                     "data_compra": nota.data_compra,
                     "itens_count": itens_count,
                     "valor_total_nota": nota.valor_total_nota,
+                    "razao_social": razao_social,
                 }
             )
 
@@ -543,7 +565,9 @@ def get_nota(nota_id: int, usuario_id: int) -> dict[str, object]:
         nota = session.get(NotaFiscal, nota_id)
         if nota is None or nota.usuario_id != usuario_id:
             raise NotFoundError("NOTA_NOT_FOUND", "Nota fiscal nao encontrada.", {"nota_id": str(nota_id)})
-        return {"id": nota.id, "codigo_acesso": nota.codigo_acesso, "created_at": nota.created_at, "data_compra": nota.data_compra, "valor_total_nota": nota.valor_total_nota}
+        estabelecimento = session.get(Estabelecimento, nota.estabelecimento_id)
+        razao_social = estabelecimento.razao_social if estabelecimento is not None else None
+        return {"id": nota.id, "codigo_acesso": nota.codigo_acesso, "created_at": nota.created_at, "data_compra": nota.data_compra, "valor_total_nota": nota.valor_total_nota, "razao_social": razao_social}
     finally:
         session.close()
 

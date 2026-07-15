@@ -25,6 +25,13 @@ def generate_reset_token() -> tuple[str, str]:
 def hash_reset_token(raw_token: str) -> str:
     return hashlib.sha256(raw_token.encode()).hexdigest()
 
+def generate_verification_code() -> tuple[str, str]:
+    raw_code = f"{secrets.randbelow(1_000_000):06d}"
+    return raw_code, hash_verification_code(raw_code)
+
+def hash_verification_code(raw_code: str) -> str:
+    return hashlib.sha256(raw_code.encode()).hexdigest()
+
 def create_access_token(subject: str | Any) -> str:
     expire = datetime.utcnow() + timedelta(hours=settings.JWT_EXPIRATION_HOURS)
     to_encode = {"exp": expire, "sub": str(subject)}

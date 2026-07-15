@@ -11,7 +11,6 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 def build_chrome_driver(headless: bool = False) -> WebDriver:
     options = ChromeOptions()
-    options.add_experimental_option("detach", True)
     options.add_argument("--disable-extensions")
     options.add_argument("--disable-background-networking")
     options.add_argument("--disable-background-timer-throttling")

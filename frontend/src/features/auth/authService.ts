@@ -12,8 +12,18 @@ export interface AuthResponse {
 }
 
 export const authService = {
-  async register(data: Record<string, string>): Promise<AuthResponse> {
-    const response = await apiClient.post<AuthResponse>('/auth/register', data);
+  async register(data: { email: string; password: string }): Promise<{ message: string }> {
+    const response = await apiClient.post<{ message: string }>('/auth/register', data);
+    return response.data;
+  },
+
+  async verifyEmail(data: { email: string; code: string }): Promise<AuthResponse> {
+    const response = await apiClient.post<AuthResponse>('/auth/verify-email', data);
+    return response.data;
+  },
+
+  async resendCode(data: { email: string }): Promise<{ message: string }> {
+    const response = await apiClient.post<{ message: string }>('/auth/resend-code', data);
     return response.data;
   },
 

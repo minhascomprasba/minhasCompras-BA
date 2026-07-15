@@ -7,6 +7,7 @@ import { NotasPage } from '../pages/NotasPage';
 import { NotaDetailPage } from '../pages/NotaDetailPage';
 import { LoginPage } from '../pages/LoginPage';
 import { RegisterPage } from '../pages/RegisterPage';
+import { ConfirmEmailPage } from '../pages/ConfirmEmailPage';
 import { ForgotPasswordPage } from '../pages/ForgotPasswordPage';
 import { ResetPasswordPage } from '../pages/ResetPasswordPage';
 import { DashboardPage } from '../pages/DashboardPage';
@@ -37,6 +38,10 @@ const router = createBrowserRouter([
   {
     path: '/register',
     element: <RegisterPage />,
+  },
+  {
+    path: '/confirmar-email',
+    element: <ConfirmEmailPage />,
   },
   {
     path: '/esqueci-senha',

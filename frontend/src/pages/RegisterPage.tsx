@@ -3,15 +3,26 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useAuth } from '../features/auth/AuthContext';
 import { authService } from '../features/auth/authService';
 import { AppError } from '../shared/api/errors';
+
+const passwordRules = [
+  { key: 'length', label: 'Mínimo de 8 caracteres', test: (v: string) => v.length >= 8 },
+  { key: 'uppercase', label: 'Uma letra maiúscula', test: (v: string) => /[A-Z]/.test(v) },
+  { key: 'lowercase', label: 'Uma letra minúscula', test: (v: string) => /[a-z]/.test(v) },
+  { key: 'digit', label: 'Um número', test: (v: string) => /\d/.test(v) },
+  { key: 'special', label: 'Um caractere especial', test: (v: string) => /[^A-Za-z0-9]/.test(v) },
+] as const;
 
 const registerSchema = z.object({
   email: z.string().email('E-mail inválido'),
   password: z.string()
     .min(8, 'A senha deve ter no mínimo 8 caracteres')
-    .max(128, 'A senha deve ter no máximo 128 caracteres'),
+    .max(128, 'A senha deve ter no máximo 128 caracteres')
+    .regex(/[A-Z]/, 'A senha deve conter ao menos uma letra maiúscula')
+    .regex(/[a-z]/, 'A senha deve conter ao menos uma letra minúscula')
+    .regex(/\d/, 'A senha deve conter ao menos um número')
+    .regex(/[^A-Za-z0-9]/, 'A senha deve conter ao menos um caractere especial'),
   password_confirm: z.string()
 }).refine((data) => data.password === data.password_confirm, {
   message: "As senhas não coincidem",
@@ -21,24 +32,24 @@ const registerSchema = z.object({
 type RegisterFormData = z.infer<typeof registerSchema>;
 
 export function RegisterPage() {
-  const { login } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<RegisterFormData>({
+  const { register, handleSubmit, watch, formState: { errors } } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
   });
+
+  const passwordValue = watch('password') ?? '';
 
   const onSubmit = async (data: RegisterFormData) => {
     setIsLoading(true);
     setError('');
     try {
-      const response = await authService.register({ email: data.email, password: data.password });
-      login(response.access_token, response.user);
-      navigate('/notas');
+      await authService.register({ email: data.email, password: data.password });
+      navigate('/confirmar-email', { state: { email: data.email } });
     } catch (err: any) {
       if (err instanceof AppError) {
         if (err.code === 'INVALID_PASSWORD' && err.details?.rule === 'min_length') {
@@ -140,7 +151,32 @@ export function RegisterPage() {
                 )}
               </button>
             </div>
-            {errors.password && <span className="form-error-text">{errors.password.message}</span>}
+            {passwordValue.length > 0 && (
+              <ul className="password-checklist">
+                {passwordRules.map((rule) => {
+                  const passed = rule.test(passwordValue);
+                  return (
+                    <li
+                      key={rule.key}
+                      className={`password-checklist-item ${passed ? 'is-valid' : ''}`}
+                    >
+                      <span className="password-checklist-icon" aria-hidden="true">
+                        {passed ? (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        ) : (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="9" />
+                          </svg>
+                        )}
+                      </span>
+                      <span>{rule.label}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
 
           <div className="form-group auth-form-group-spaced">
@@ -182,7 +218,7 @@ export function RegisterPage() {
           </div>
 
           <button type="submit" className="btn btn-primary btn-full" disabled={isLoading}>
-            {isLoading ? 'Criando...' : 'Criar Conta'}
+            {isLoading ? 'Enviando código...' : 'Criar Conta'}
           </button>
         </form>
 

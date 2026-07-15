@@ -74,6 +74,7 @@ class NotaListItem(BaseModel):
     data_compra: datetime | None = None
     itens_count: int
     valor_total_nota: float
+    razao_social: str | None = None
 
 
 class NotaDetailResponse(BaseModel):
@@ -84,6 +85,7 @@ class NotaDetailResponse(BaseModel):
     created_at: datetime
     data_compra: datetime | None = None
     valor_total_nota: float
+    razao_social: str | None = None
 
 
 
@@ -123,6 +125,13 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
+
+class VerifyEmailRequest(BaseModel):
+    email: str = Field(..., max_length=255)
+    code: str = Field(..., min_length=6, max_length=6)
+
+class ResendCodeRequest(BaseModel):
+    email: str = Field(..., max_length=255)
 
 class ForgotPasswordRequest(BaseModel):
     email: str = Field(..., max_length=255)
