@@ -46,9 +46,8 @@ def send_password_reset_email(to_email: str, reset_url: str) -> None:
             if settings.SMTP_USER and settings.SMTP_PASSWORD:
                 server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
             server.send_message(message)
-    except smtplib.SMTPException as exc:
+    except (smtplib.SMTPException, OSError) as exc:
         logger.exception("Falha ao enviar e-mail de redefinição para %s: %s", to_email, exc)
-        raise
     else:
         logger.info("E-mail de redefinição enviado para %s", to_email)
 
@@ -86,8 +85,7 @@ def send_email_verification_code(to_email: str, code: str) -> None:
             if settings.SMTP_USER and settings.SMTP_PASSWORD:
                 server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
             server.send_message(message)
-    except smtplib.SMTPException as exc:
+    except (smtplib.SMTPException, OSError) as exc:
         logger.exception("Falha ao enviar código de confirmação para %s: %s", to_email, exc)
-        raise
     else:
         logger.info("Código de confirmação enviado para %s", to_email)

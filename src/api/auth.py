@@ -1,7 +1,7 @@
 import re
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Request
 from sqlalchemy.orm import Session
 
 from src.api import settings
@@ -109,7 +109,7 @@ def get_db():
         db.close()
 
 
-def _issue_verification_code(db: Session, email: str, password_hash: str) -> None:
+def _issue_verification_code(db: Session, email: str, password_hash: str, background_tasks: BackgroundTasks = None) -> None:
     now = datetime.utcnow()
     db.query(EmailVerificationCode).filter(
         EmailVerificationCode.email == email,
@@ -127,11 +127,14 @@ def _issue_verification_code(db: Session, email: str, password_hash: str) -> Non
     db.add(verification)
     db.commit()
 
-    send_email_verification_code(email, raw_code)
+    if background_tasks:
+        background_tasks.add_task(send_email_verification_code, email, raw_code)
+    else:
+        send_email_verification_code(email, raw_code)
 
 
 @auth_router.post("/register", response_model=MessageResponse, status_code=202)
-def register(payload: UserRegisterRequest, request: Request, db: Session = Depends(get_db)):
+def register(payload: UserRegisterRequest, request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     _validate_password_rules(payload.password)
     _validate_password_strength(payload.password)
 
@@ -156,7 +159,7 @@ def register(payload: UserRegisterRequest, request: Request, db: Session = Depen
             {"field": "password", "reason": "hash_error"},
         ) from exc
 
-    _issue_verification_code(db, payload.email, hashed)
+    _issue_verification_code(db, payload.email, hashed, background_tasks)
 
     return MessageResponse(message=VERIFICATION_CODE_SENT_MESSAGE)
 
@@ -223,7 +226,7 @@ def verify_email(payload: VerifyEmailRequest, db: Session = Depends(get_db)):
 
 
 @auth_router.post("/resend-code", response_model=MessageResponse)
-def resend_code(payload: ResendCodeRequest, request: Request, db: Session = Depends(get_db)):
+def resend_code(payload: ResendCodeRequest, request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     client_ip = _get_client_ip(request)
     if not email_verification_rate_limiter.allow(client_ip):
         raise RateLimitError(
@@ -246,7 +249,7 @@ def resend_code(payload: ResendCodeRequest, request: Request, db: Session = Depe
         .first()
     )
     if pending:
-        _issue_verification_code(db, pending.email, pending.password_hash)
+        _issue_verification_code(db, pending.email, pending.password_hash, background_tasks)
 
     return MessageResponse(message=VERIFICATION_CODE_SENT_MESSAGE)
 
@@ -290,6 +293,7 @@ def get_me(user_id: int = Depends(get_current_user_id), db: Session = Depends(ge
 def forgot_password(
     payload: ForgotPasswordRequest,
     request: Request,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
     client_ip = _get_client_ip(request)
@@ -319,7 +323,7 @@ def forgot_password(
         db.commit()
 
         reset_url = f"{settings.FRONTEND_URL}/redefinir-senha?token={raw_token}"
-        send_password_reset_email(user.email, reset_url)
+        background_tasks.add_task(send_password_reset_email, user.email, reset_url)
 
     return MessageResponse(message=FORGOT_PASSWORD_SUCCESS_MESSAGE)
 
