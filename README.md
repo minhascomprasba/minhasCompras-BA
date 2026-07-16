@@ -1,6 +1,6 @@
 # Minhas Compras BA
 
-Guia completo de manutenção, arquitetura e deploy do projeto **Minhas Compras BA** (Aplicação web para importação de NFC-e da SEFAZ BA com resolução de captcha manual).
+Guia completo de manutenção, arquitetura e deploy do projeto **Minhas Compras BA** (Aplicação web para importação de NFC-e da SEFAZ BA com resolução de captcha manual)
 
 ---
 
