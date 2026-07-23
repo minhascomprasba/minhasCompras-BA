@@ -73,7 +73,129 @@ Você deve atualizar as configurações de segurança no backend para que ele pe
 
 ## 🚀 Guia de Deploy (Produção)
 
-### 🐳 Backend (Render)
+### 🖥️ Hospedagem em Máquina Virtual (VM Linux / Ubuntu) - Recomendado
+
+Este guia permite hospedar a API FastAPI e o banco de dados PostgreSQL em uma Máquina Virtual própria (AWS EC2, DigitalOcean, Compute Engine, VPS, etc.) utilizando **Docker Compose**, **Nginx** como Proxy Reverso e **Certbot** para certificado SSL gratuito (HTTPS).
+
+#### 1. Pré-requisitos
+- Uma VM com sistema Linux (ex: **Ubuntu 22.04 LTS**).
+- Um Nome de Domínio ou Subdomínio (ex: `api.seu-dominio.com`) apontado para o **IP público** da VM no seu provedor de DNS (ex: Cloudflare, Registro.br, Route53).
+- Acesso à VM via SSH.
+
+#### 2. Instalar Docker, Docker Compose e Nginx na VM
+Acesse a sua VM via SSH e execute os comandos:
+```bash
+# Atualizar repositórios e pacotes do sistema
+sudo apt update && sudo apt upgrade -y
+
+# Instalar Docker, Docker Compose, Nginx, Git e Certbot
+sudo apt install -y docker.io docker-compose-v2 nginx certbot python3-certbot-nginx git
+
+# Habilitar e iniciar os serviços do Docker e Nginx
+sudo systemctl enable --now docker
+sudo systemctl enable --now nginx
+```
+
+#### 3. Clonar o Projeto e Configurar as Variáveis de Ambiente
+```bash
+# Clonar o repositório na VM
+git clone https://github.com/SEU-USUARIO/minhasCompras-BA.git /var/www/minhasCompras-BA
+cd /var/www/minhasCompras-BA
+
+# Criar o arquivo de variáveis de ambiente .env
+cp .env.example .env
+
+# Editar as variáveis de ambiente
+nano .env
+```
+
+No arquivo `.env`, certifique-se de configurar:
+- `JWT_SECRET`: Insira uma chave secreta forte.
+- `CORS_ALLOWED_ORIGINS`: Coloque o endereço da sua Vercel e domínios aceitos (ex: `https://seu-site.vercel.app,https://api.seu-dominio.com`).
+- `FRONTEND_URL`: URL oficial do seu frontend (ex: `https://seu-site.vercel.app`).
+- `POSTGRES_PASSWORD`: Defina uma senha segura para o banco PostgreSQL que rodará no Docker.
+- `SMTP_*`: Configurações de e-mail (opcional, para envio de recuperação de senha).
+
+#### 4. Subir a Aplicação com Docker Compose
+No diretório do projeto (`/var/www/minhasCompras-BA`), execute:
+```bash
+sudo docker compose up -d --build
+```
+Isso iniciará automaticamente:
+- O container do **PostgreSQL** (`minhascompras_db`).
+- O container da **API FastAPI** (`minhascompras_api`) com Google Chrome e Selenium pré-configurados na porta `10000`.
+
+Para verificar o status e ver os logs em tempo real:
+```bash
+# Verificar containers ativos
+sudo docker compose ps
+
+# Acompanhar os logs da API
+sudo docker compose logs -f api
+```
+
+#### 5. Configurar Nginx como Proxy Reverso e Certificado SSL (HTTPS)
+Para expor a API de forma segura na porta padrão 443 (HTTPS):
+
+1. Crie o arquivo de configuração do Nginx:
+```bash
+sudo nano /etc/nginx/sites-available/minhascompras-api
+```
+
+2. Cole o conteúdo abaixo (substituindo `api.seu-dominio.com` pelo seu domínio real):
+```nginx
+server {
+    listen 80;
+    server_name api.seu-dominio.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:10000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+3. Ative a configuração e recarregue o Nginx:
+```bash
+sudo ln -s /etc/nginx/sites-available/minhascompras-api /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+4. Gere o certificado SSL (HTTPS) gratuito com o Certbot:
+```bash
+sudo certbot --nginx -d api.seu-dominio.com
+```
+*(O Certbot atualizará o arquivo do Nginx automaticamente habilitando o redirecionamento de HTTP para HTTPS).*
+
+#### 6. Conectar o Frontend na Vercel com a Nova API da VM
+1. Acesse o painel da **Vercel** -> Selecione o projeto -> **Project Settings** -> **Environment Variables**.
+2. Altere o valor de **`VITE_API_BASE_URL`** para `https://api.seu-dominio.com/api/v1`.
+3. Vá na aba **Deployments**, clique no menu de três pontos do último deploy e selecione **Redeploy**.
+
+#### 7. Comandos Úteis de Manutenção na VM
+```bash
+# Atualizar a API após enviar alterações para o Git:
+git pull
+sudo docker compose up -d --build
+
+# Reiniciar a API e o Banco:
+sudo docker compose restart
+
+# Parar a aplicação:
+sudo docker compose down
+```
+
+---
+
+### 🐳 Backend (Render - Alternativa em Nuvem)
 O backend usa o **Docker** para garantir que as bibliotecas do Linux, o navegador Google Chrome (Chromium) e o motor Chromedriver estejam instalados de forma idêntica à de desenvolvimento.
 1. Crie um novo **Web Service** no Render e aponte para o repositório do Fork.
 2. Em **Language/Runtime**, escolha **Docker**. (Isso fará o Render ler o `Dockerfile` na raiz do projeto).
@@ -83,7 +205,7 @@ O backend usa o **Docker** para garantir que as bibliotecas do Linux, o navegado
 ### ⚡ Frontend (Vercel)
 1. Crie um novo projeto na Vercel a partir do repositório do Fork.
 2. **PASSO CRÍTICO:** Em *Configure Project*, configure o **Root Directory** para a pasta **`frontend`** (não deixe a raiz padrão do projeto).
-3. Adicione a variável de ambiente `VITE_API_BASE_URL` apontando para a URL da API criada no Render (ex: `https://nome-da-api.onrender.com/api/v1`).
+3. Adicione a variável de ambiente `VITE_API_BASE_URL` apontando para a URL da API criada (ex: `https://api.seu-dominio.com/api/v1` ou `https://nome-da-api.onrender.com/api/v1`).
 4. Clique em **Deploy**.
 
 ---
