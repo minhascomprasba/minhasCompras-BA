@@ -14,7 +14,35 @@ from src.database.connection import engine
 from src.database.models import Base
 from src.api import settings
 
-app = FastAPI(title="minhasCompras-BA API", version="1.0.0")
+API_DESCRIPTION = """
+API REST do **Minhas Compras BA**: importa notas fiscais de consumidor eletronicas
+(NFC-e) do portal da SEFAZ-BA a partir da chave de acesso de 44 digitos, com
+resolucao manual do captcha pelo usuario, e expoe os dados normalizados de notas,
+produtos, estabelecimentos e indicadores de gastos.
+
+**Autenticacao:** as rotas de importacao, consulta e dashboard exigem o header
+`Authorization: Bearer <token>`. Obtenha o token em `POST /api/v1/auth/login`
+(ou em `POST /api/v1/auth/verify-email`, no primeiro acesso) e informe-o no botao
+**Authorize**.
+
+**Formato de erro:** todas as falhas retornam
+`{"code": "...", "message": "...", "details": {...}}`.
+"""
+
+TAGS_METADATA = [
+    {"name": "health", "description": "Sondas de liveness/readiness e estatisticas publicas agregadas."},
+    {"name": "auth", "description": "Cadastro com confirmacao por e-mail, login JWT e recuperacao de senha."},
+    {"name": "imports", "description": "Ciclo de importacao de NFC-e: abertura de sessao, captcha e acompanhamento."},
+    {"name": "notas", "description": "Consulta paginada das notas fiscais importadas e de seus itens."},
+    {"name": "dashboard", "description": "Indicadores agregados por mes e geolocalizacao dos estabelecimentos."},
+]
+
+app = FastAPI(
+    title="minhasCompras-BA API",
+    version="1.0.0",
+    description=API_DESCRIPTION,
+    openapi_tags=TAGS_METADATA,
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ALLOWED_ORIGINS,

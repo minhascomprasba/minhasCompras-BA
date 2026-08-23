@@ -133,7 +133,7 @@ def _issue_verification_code(db: Session, email: str, password_hash: str, backgr
         send_email_verification_code(email, raw_code)
 
 
-@auth_router.post("/register", response_model=MessageResponse, status_code=202)
+@auth_router.post("/register", response_model=MessageResponse, status_code=202, summary="Solicita cadastro e envia codigo de confirmacao por e-mail")
 def register(payload: UserRegisterRequest, request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     _validate_password_rules(payload.password)
     _validate_password_strength(payload.password)
@@ -164,7 +164,7 @@ def register(payload: UserRegisterRequest, request: Request, background_tasks: B
     return MessageResponse(message=VERIFICATION_CODE_SENT_MESSAGE)
 
 
-@auth_router.post("/verify-email", response_model=TokenResponse, status_code=201)
+@auth_router.post("/verify-email", response_model=TokenResponse, status_code=201, summary="Confirma o codigo, cria o usuario e devolve o token JWT")
 def verify_email(payload: VerifyEmailRequest, db: Session = Depends(get_db)):
     now = datetime.utcnow()
 
@@ -225,7 +225,7 @@ def verify_email(payload: VerifyEmailRequest, db: Session = Depends(get_db)):
     )
 
 
-@auth_router.post("/resend-code", response_model=MessageResponse)
+@auth_router.post("/resend-code", response_model=MessageResponse, summary="Reenvia o codigo de confirmacao de cadastro")
 def resend_code(payload: ResendCodeRequest, request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     client_ip = _get_client_ip(request)
     if not email_verification_rate_limiter.allow(client_ip):
@@ -254,7 +254,7 @@ def resend_code(payload: ResendCodeRequest, request: Request, background_tasks: 
     return MessageResponse(message=VERIFICATION_CODE_SENT_MESSAGE)
 
 
-@auth_router.post("/login", response_model=TokenResponse)
+@auth_router.post("/login", response_model=TokenResponse, summary="Autentica por e-mail e senha e devolve o token JWT")
 def login(payload: UserLoginRequest, db: Session = Depends(get_db)):
     _validate_password_rules(payload.password)
 
@@ -281,7 +281,7 @@ def login(payload: UserLoginRequest, db: Session = Depends(get_db)):
     )
 
 
-@auth_router.get("/me", response_model=UserResponse)
+@auth_router.get("/me", response_model=UserResponse, summary="Dados do usuario autenticado")
 def get_me(user_id: int = Depends(get_current_user_id), db: Session = Depends(get_db)):
     user = db.query(Usuario).filter(Usuario.id == user_id).first()
     if not user:
@@ -289,7 +289,7 @@ def get_me(user_id: int = Depends(get_current_user_id), db: Session = Depends(ge
     return UserResponse(id=user.id, email=user.email)
 
 
-@auth_router.post("/forgot-password", response_model=MessageResponse)
+@auth_router.post("/forgot-password", response_model=MessageResponse, summary="Envia link de redefinicao de senha por e-mail")
 def forgot_password(
     payload: ForgotPasswordRequest,
     request: Request,
@@ -328,7 +328,7 @@ def forgot_password(
     return MessageResponse(message=FORGOT_PASSWORD_SUCCESS_MESSAGE)
 
 
-@auth_router.post("/reset-password", response_model=MessageResponse)
+@auth_router.post("/reset-password", response_model=MessageResponse, summary="Redefine a senha a partir do token recebido por e-mail")
 def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db)):
     _validate_password_rules(payload.password)
 
