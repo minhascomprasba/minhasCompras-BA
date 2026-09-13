@@ -3218,13 +3218,31 @@ body.menu-open {
   align-items: flex-end;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 1rem 1rem 0.5rem;
+  padding: 1rem 0.5rem 0.5rem;
+}
+
+.admin-bar-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  gap: 0.4rem;
+  flex: 1;
+  min-width: 0;
 }
 
 .admin-bar {
   width: 100%;
   max-width: 2.5rem;
   border-radius: 4px 4px 0 0;
+  flex-shrink: 0;
+}
+
+.admin-bar-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 
 /* Market intelligence */
@@ -3270,10 +3288,16 @@ body.menu-open {
   margin: 0;
 }
 
+.admin-map-placeholder-stats {
+  font-size: 0.8rem !important;
+  color: var(--text-secondary) !important;
+  font-weight: 500;
+}
+
 /* Telemetry */
 .admin-telemetry-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1.5rem;
 }
 
@@ -3299,30 +3323,69 @@ body.menu-open {
   flex-shrink: 0;
 }
 
-.admin-donut {
+.admin-donut-ring {
+  position: relative;
   width: 100px;
   height: 100px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
-.admin-donut--channels {
-  border: 12px solid var(--brand-green);
-  border-top-color: var(--brand-blue-light);
-  border-left-color: var(--warning);
-}
-
-.admin-donut--payments {
-  border: 12px solid var(--brand-blue-light);
-  border-right-color: #ec4899;
-  border-bottom-color: var(--brand-green);
-}
-
-.admin-donut--catalog {
+.admin-donut-ring--small {
   width: 80px;
   height: 80px;
-  border: 10px solid var(--brand-green);
-  border-top-color: var(--warning);
+}
+
+.admin-donut-hole {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: var(--bg-card);
+}
+
+.admin-donut-ring--small .admin-donut-hole {
+  width: 60px;
+  height: 60px;
+}
+
+.admin-donut-legend {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.admin-donut-legend-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.admin-donut-legend-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-donut-legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.admin-donut-legend-value {
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .admin-catalog-layout {
