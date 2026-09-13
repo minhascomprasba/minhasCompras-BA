@@ -1,5 +1,9 @@
 import { Link } from 'react-router-dom';
 import type { AdminLog, LogStatus } from '../types';
+import { InfoTooltip } from './InfoTooltip';
+
+const TOOLTIP =
+  'Agiliza o suporte técnico: o administrador identifica na interface o motivo de cada falha (limite de tentativas de captcha, timeout da SEFAZ, mudança de seletor) sem precisar abrir o terminal SSH de produção.';
 
 interface AdminLogsTableProps {
   logs: AdminLog[];
@@ -15,8 +19,11 @@ export function AdminLogsTable({ logs }: AdminLogsTableProps) {
   return (
     <div className="card admin-logs-card">
       <div className="admin-logs-header">
-        <div>
-          <h3 className="admin-logs-title">Logs de Monitoramento</h3>
+        <div className="admin-logs-title-block">
+          <div className="admin-logs-title-row">
+            <h3 className="admin-logs-title">Logs de Monitoramento</h3>
+            <InfoTooltip content={TOOLTIP} />
+          </div>
           <p className="admin-logs-subtitle">Últimas falhas e expirações de importação</p>
         </div>
         <Link to="/notas" className="admin-logs-link">

@@ -1,7 +1,11 @@
-import type { AdesaoPonto } from '../types';
+import type { AdesaoSemana } from '../types';
+import { MetricHead } from './MetricHead';
+
+const TOOLTIP =
+  'Cruza a entrada de novos usuários com a produtividade da plataforma: revela se o crescimento do banco de dados é puxado por muitos usuários novos ou pela alta frequência dos antigos (retenção).';
 
 interface AdminGrowthChartProps {
-  pontos: AdesaoPonto[];
+  pontos: AdesaoSemana[];
 }
 
 interface ChartPoint {
@@ -9,16 +13,15 @@ interface ChartPoint {
   y: number;
 }
 
-function normalizePoints(pontos: AdesaoPonto[]): ChartPoint[] {
-  const values = pontos.map((p) => p.usuarios);
+function normalizeValues(values: number[]): ChartPoint[] {
+  const n = values.length;
   const min = Math.min(...values);
   const max = Math.max(...values);
   const spread = max - min || 1;
-  const n = pontos.length;
 
-  return pontos.map((p, i) => ({
+  return values.map((v, i) => ({
     x: n === 1 ? 50 : (i / (n - 1)) * 100,
-    y: 90 - ((p.usuarios - min) / spread) * 80,
+    y: 88 - ((v - min) / spread) * 76,
   }));
 }
 
@@ -37,18 +40,46 @@ function buildSmoothPath(points: ChartPoint[]): string {
   return d;
 }
 
+const USUARIOS_COLOR = '#17c85f';
+const NOTAS_COLOR = '#3a8fe0';
+
 export function AdminGrowthChart({ pontos }: AdminGrowthChartProps) {
-  const chartPoints = normalizePoints(pontos);
-  const path = buildSmoothPath(chartPoints);
+  const usuariosPts = normalizeValues(pontos.map((p) => p.usuarios));
+  const notasPts = normalizeValues(pontos.map((p) => p.notas));
+  const usuariosPath = buildSmoothPath(usuariosPts);
+  const notasPath = buildSmoothPath(notasPts);
 
   return (
     <div className="card admin-chart-card">
-      <h3 className="admin-chart-title">Crescimento de Adesão</h3>
+      <MetricHead
+        title="Crescimento e Adesão (Usuários x Notas)"
+        tooltip={TOOLTIP}
+      />
+      <div className="admin-chart-legend">
+        <span className="admin-chart-legend-item">
+          <span className="admin-chart-legend-dot" style={{ background: USUARIOS_COLOR }} />
+          Usuários
+        </span>
+        <span className="admin-chart-legend-item">
+          <span className="admin-chart-legend-dot" style={{ background: NOTAS_COLOR }} />
+          Notas Importadas
+        </span>
+      </div>
       <div className="admin-chart-placeholder">
         <svg className="admin-chart-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
-          <path d={path} fill="none" stroke="#17c85f" strokeWidth="2" />
-          {chartPoints.map((p, i) => (
-            <circle key={i} cx={p.x} cy={p.y} fill="var(--bg-main)" r="1.5" stroke="#17c85f" strokeWidth="1" />
+          <path d={usuariosPath} fill="none" stroke={USUARIOS_COLOR} strokeWidth="2" />
+          <path
+            d={notasPath}
+            fill="none"
+            stroke={NOTAS_COLOR}
+            strokeWidth="2"
+            strokeDasharray="3 2"
+          />
+          {usuariosPts.map((p, i) => (
+            <circle key={`u-${i}`} cx={p.x} cy={p.y} fill="var(--bg-main)" r="1.5" stroke={USUARIOS_COLOR} strokeWidth="1" />
+          ))}
+          {notasPts.map((p, i) => (
+            <circle key={`n-${i}`} cx={p.x} cy={p.y} fill="var(--bg-main)" r="1.5" stroke={NOTAS_COLOR} strokeWidth="1" />
           ))}
         </svg>
       </div>

@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import type { AdminKpi, KpiIconKey } from '../types';
+import { InfoTooltip } from './InfoTooltip';
 
 interface AdminKpiGridProps {
   kpis: AdminKpi[];
@@ -84,8 +85,16 @@ export function AdminKpiGrid({ kpis }: AdminKpiGridProps) {
               {visual.icon}
             </div>
             <div className="admin-kpi-content">
-              <p className="admin-kpi-label">{kpi.label}</p>
+              <div className="admin-kpi-label-row">
+                <p className="admin-kpi-label">{kpi.label}</p>
+                <InfoTooltip content={kpi.description} />
+              </div>
               <p className="admin-kpi-value">{kpi.value}</p>
+              {kpi.extraMetric && (
+                <p className="admin-kpi-extra">
+                  {kpi.extraMetric.label}: {kpi.extraMetric.value}
+                </p>
+              )}
               <p className={`admin-kpi-trend admin-kpi-trend--${kpi.trendDirection}`}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   {kpi.trendDirection === 'up' ? (

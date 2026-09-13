@@ -1,5 +1,9 @@
 import type { ReactElement } from 'react';
 import type { TopProduto } from '../types';
+import { MetricHead } from './MetricHead';
+
+const TOOLTIP =
+  'Preço médio estadual de itens essenciais da cesta básica coletiva, insumo para estudos de custo de vida na Bahia. A exibição limitada ao Top 5–10 preserva a limpeza visual e a velocidade de renderização; análises exaustivas ficam para relatórios sob demanda.';
 
 interface AdminTopProductsProps {
   produtos: TopProduto[];
@@ -44,7 +48,7 @@ const variationVisual = (variacao: number): { className: string; icon: ReactElem
 export function AdminTopProducts({ produtos }: AdminTopProductsProps) {
   return (
     <div className="card admin-chart-card">
-      <h3 className="admin-chart-title">Top Produtos (Inteligência)</h3>
+      <MetricHead title="Top Produtos na Bahia" tooltip={TOOLTIP} />
       <div className="table-container">
         <table className="table">
           <thead>

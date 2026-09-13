@@ -1,35 +1,54 @@
 import type { ScraperDia } from '../types';
+import { MetricHead } from './MetricHead';
+
+const TOOLTIP =
+  'Isola a causa raiz de problemas operacionais. Verde = COMPLETED (operação normal); Amarelo = EXPIRED (desistência do captcha, fricção humana/UX); Vermelho = FAILED (erro de código, bloqueio de IP ou instabilidade da SEFAZ).';
 
 interface AdminScraperChartProps {
   dias: ScraperDia[];
 }
 
-const BAR_MAX_COLOR = 'rgba(23, 200, 95, 0.8)';
-const BAR_MIN_COLOR = 'rgba(245, 158, 11, 0.8)';
-const BAR_DEFAULT_COLOR = 'rgba(58, 143, 224, 0.8)';
-
 export function AdminScraperChart({ dias }: AdminScraperChartProps) {
-  const maxTaxa = Math.max(...dias.map((d) => d.taxa));
-  const minTaxa = Math.min(...dias.map((d) => d.taxa));
-
   return (
     <div className="card admin-chart-card">
-      <h3 className="admin-chart-title">Performance do Scraper</h3>
+      <MetricHead title="Desempenho Diário do Scraper" tooltip={TOOLTIP} />
+      <div className="admin-chart-legend">
+        <span className="admin-chart-legend-item">
+          <span className="admin-chart-legend-dot admin-chart-legend-dot--completed" />
+          COMPLETED
+        </span>
+        <span className="admin-chart-legend-item">
+          <span className="admin-chart-legend-dot admin-chart-legend-dot--expired" />
+          EXPIRED
+        </span>
+        <span className="admin-chart-legend-item">
+          <span className="admin-chart-legend-dot admin-chart-legend-dot--failed" />
+          FAILED
+        </span>
+      </div>
       <div className="admin-bar-chart">
-        {dias.map((d) => {
-          const color =
-            d.taxa === maxTaxa
-              ? BAR_MAX_COLOR
-              : d.taxa === minTaxa
-                ? BAR_MIN_COLOR
-                : BAR_DEFAULT_COLOR;
-          return (
-            <div key={d.dia} className="admin-bar-column">
-              <div className="admin-bar" style={{ height: `${d.taxa}%`, background: color }} />
-              <span className="admin-bar-label">{d.dia}</span>
+        {dias.map((d) => (
+          <div key={d.dia} className="admin-bar-column">
+            <div className="admin-bar-stack">
+              <div
+                className="admin-bar-seg admin-bar-seg--completed"
+                style={{ flex: d.completed }}
+                title={`COMPLETED ${d.completed}%`}
+              />
+              <div
+                className="admin-bar-seg admin-bar-seg--expired"
+                style={{ flex: d.expired }}
+                title={`EXPIRED ${d.expired}%`}
+              />
+              <div
+                className="admin-bar-seg admin-bar-seg--failed"
+                style={{ flex: d.failed }}
+                title={`FAILED ${d.failed}%`}
+              />
             </div>
-          );
-        })}
+            <span className="admin-bar-label">{d.dia}</span>
+          </div>
+        ))}
       </div>
     </div>
   );

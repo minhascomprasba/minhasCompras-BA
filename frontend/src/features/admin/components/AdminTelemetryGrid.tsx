@@ -1,4 +1,12 @@
 import type { AdminTelemetria, QualidadeCatalogo, TelemetriaSlice } from '../types';
+import { InfoTooltip } from './InfoTooltip';
+
+const CHANNELS_TOOLTIP =
+  'Direciona o esforço da equipe de desenvolvimento: se 70%+ dos usuários usam a câmera em tempo real, os devs priorizam a otimização de bibliotecas de vídeo móvel em vez de refatorar formulários de digitação.';
+const PAYMENTS_TOOLTIP =
+  'Dados sociológicos e de inclusão financeira: mostra a adesão do cidadão baiano a pagamentos instantâneos (PIX) versus meios tradicionais no varejo físico.';
+const CATALOG_TOOLTIP =
+  'Governança da base de dados: itens SEM GTIN exigem agrupamentos heurísticos por NCM e descrição. A proporção ajuda os pesquisadores a avaliar a precisão da catalogação.';
 
 interface AdminTelemetryGridProps {
   telemetria: AdminTelemetria;
@@ -52,8 +60,8 @@ function DonutLegend({ slices }: DonutLegendProps) {
 
 function CatalogQuality({ qualidade }: { qualidade: QualidadeCatalogo }) {
   const slices: TelemetriaSlice[] = [
-    { label: 'NCM Válido', percentual: qualidade.ncmValido, color: 'var(--brand-green)' },
-    { label: 'Incompleto', percentual: qualidade.incompleto, color: 'var(--warning)' },
+    { label: 'Com GTIN', percentual: qualidade.comGtin, color: 'var(--brand-green)' },
+    { label: 'Sem GTIN', percentual: qualidade.semGtin, color: 'var(--warning)' },
   ];
 
   return (
@@ -64,15 +72,15 @@ function CatalogQuality({ qualidade }: { qualidade: QualidadeCatalogo }) {
       <div className="admin-catalog-stats">
         <div>
           <p className="admin-catalog-stat-value admin-catalog-stat-value--success">
-            {qualidade.ncmValido}%
+            {qualidade.comGtin}%
           </p>
-          <p className="admin-catalog-stat-label">NCM Válido</p>
+          <p className="admin-catalog-stat-label">Com GTIN</p>
         </div>
         <div>
           <p className="admin-catalog-stat-value admin-catalog-stat-value--warning">
-            {qualidade.incompleto}%
+            {qualidade.semGtin}%
           </p>
-          <p className="admin-catalog-stat-label">Incompleto</p>
+          <p className="admin-catalog-stat-label">Sem GTIN</p>
         </div>
       </div>
     </div>
@@ -83,7 +91,10 @@ export function AdminTelemetryGrid({ telemetria }: AdminTelemetryGridProps) {
   return (
     <div className="admin-telemetry-grid">
       <div className="card admin-telemetry-card">
-        <h3 className="admin-telemetry-title">Canais de Importação</h3>
+        <div className="admin-telemetry-title-row">
+          <h3 className="admin-telemetry-title">Canais de Importação</h3>
+          <InfoTooltip content={CHANNELS_TOOLTIP} />
+        </div>
         <div className="admin-donut-wrapper">
           <DonutRing slices={telemetria.canaisImportacao} />
         </div>
@@ -91,7 +102,10 @@ export function AdminTelemetryGrid({ telemetria }: AdminTelemetryGridProps) {
       </div>
 
       <div className="card admin-telemetry-card">
-        <h3 className="admin-telemetry-title">Meios de Pagamento</h3>
+        <div className="admin-telemetry-title-row">
+          <h3 className="admin-telemetry-title">Formas de Pagamento</h3>
+          <InfoTooltip content={PAYMENTS_TOOLTIP} />
+        </div>
         <div className="admin-donut-wrapper">
           <DonutRing slices={telemetria.meiosPagamento} />
         </div>
@@ -99,7 +113,10 @@ export function AdminTelemetryGrid({ telemetria }: AdminTelemetryGridProps) {
       </div>
 
       <div className="card admin-telemetry-card">
-        <h3 className="admin-telemetry-title">Qualidade do Catálogo</h3>
+        <div className="admin-telemetry-title-row">
+          <h3 className="admin-telemetry-title">Qualidade do Catálogo (GTIN)</h3>
+          <InfoTooltip content={CATALOG_TOOLTIP} />
+        </div>
         <CatalogQuality qualidade={telemetria.qualidadeCatalogo} />
       </div>
     </div>

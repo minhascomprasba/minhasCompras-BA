@@ -2,6 +2,11 @@ export type TrendDirection = 'up' | 'down';
 
 export type KpiIconKey = 'citizens' | 'receipts' | 'items' | 'volume' | 'stability';
 
+export interface KpiExtraMetric {
+  label: string;
+  value: string;
+}
+
 export interface AdminKpi {
   id: string;
   icon: KpiIconKey;
@@ -9,16 +14,21 @@ export interface AdminKpi {
   value: string;
   trendLabel: string;
   trendDirection: TrendDirection;
+  description: string;
+  extraMetric?: KpiExtraMetric;
 }
 
-export interface AdesaoPonto {
+export interface AdesaoSemana {
   semana: string;
   usuarios: number;
+  notas: number;
 }
 
 export interface ScraperDia {
   dia: string;
-  taxa: number;
+  completed: number;
+  expired: number;
+  failed: number;
 }
 
 export interface TopProduto {
@@ -30,6 +40,7 @@ export interface TopProduto {
 export interface AlcanceGeografico {
   totalCidades: number;
   redesMonitoradas: number;
+  redesLideres: string[];
   nota: string;
 }
 
@@ -40,8 +51,8 @@ export interface TelemetriaSlice {
 }
 
 export interface QualidadeCatalogo {
-  ncmValido: number;
-  incompleto: number;
+  comGtin: number;
+  semGtin: number;
 }
 
 export interface AdminTelemetria {
@@ -63,7 +74,7 @@ export interface AdminLog {
 export interface AdminDashboardData {
   mesAno: string;
   kpis: AdminKpi[];
-  crescimentoAdesao: AdesaoPonto[];
+  crescimentoAdesao: AdesaoSemana[];
   performanceScraper: ScraperDia[];
   topProdutos: TopProduto[];
   alcanceGeografico: AlcanceGeografico;
