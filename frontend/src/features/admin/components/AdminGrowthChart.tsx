@@ -1,60 +1,59 @@
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from 'recharts';
 import type { AdesaoSemana } from '../types';
 import { MetricHead } from './MetricHead';
 
-const TOOLTIP =
+const TOOLTIP_INFO =
   'Cruza a entrada de novos usuários com a produtividade da plataforma: revela se o crescimento do banco de dados é puxado por muitos usuários novos ou pela alta frequência dos antigos (retenção).';
+
+const USUARIOS_COLOR = '#17c85f';
+const NOTAS_COLOR = '#3a8fe0';
 
 interface AdminGrowthChartProps {
   pontos: AdesaoSemana[];
 }
 
-interface ChartPoint {
-  x: number;
-  y: number;
-}
-
-function normalizeValues(values: number[]): ChartPoint[] {
-  const n = values.length;
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const spread = max - min || 1;
-
-  return values.map((v, i) => ({
-    x: n === 1 ? 50 : (i / (n - 1)) * 100,
-    y: 88 - ((v - min) / spread) * 76,
-  }));
-}
-
-function buildSmoothPath(points: ChartPoint[]): string {
-  if (points.length === 0) return '';
-  if (points.length === 1) return `M ${points[0].x},${points[0].y} L ${points[0].x},${points[0].y}`;
-
-  let d = `M ${points[0].x},${points[0].y}`;
-  for (let i = 0; i < points.length - 1; i++) {
-    const midX = (points[i].x + points[i + 1].x) / 2;
-    const midY = (points[i].y + points[i + 1].y) / 2;
-    d += ` Q ${points[i].x},${points[i].y} ${midX},${midY}`;
-  }
-  const last = points[points.length - 1];
-  d += ` T ${last.x},${last.y}`;
-  return d;
-}
-
-const USUARIOS_COLOR = '#17c85f';
-const NOTAS_COLOR = '#3a8fe0';
-
 export function AdminGrowthChart({ pontos }: AdminGrowthChartProps) {
-  const usuariosPts = normalizeValues(pontos.map((p) => p.usuarios));
-  const notasPts = normalizeValues(pontos.map((p) => p.notas));
-  const usuariosPath = buildSmoothPath(usuariosPts);
-  const notasPath = buildSmoothPath(notasPts);
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="chart-tooltip">
+          <p className="chart-tooltip-title" style={{ marginBottom: '0.25rem' }}>
+            Semana: {label}
+          </p>
+          {payload.map((entry: any, index: number) => (
+            <p
+              key={index}
+              style={{
+                margin: 0,
+                fontSize: '0.8rem',
+                color: entry.color,
+                fontWeight: 500,
+              }}
+            >
+              {entry.name}: {entry.value.toLocaleString('pt-BR')}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="card admin-chart-card">
       <MetricHead
         title="Crescimento e Adesão (Usuários x Notas)"
-        tooltip={TOOLTIP}
+        tooltip={TOOLTIP_INFO}
       />
+
       <div className="admin-chart-legend">
         <span className="admin-chart-legend-item">
           <span className="admin-chart-legend-dot" style={{ background: USUARIOS_COLOR }} />
@@ -65,23 +64,63 @@ export function AdminGrowthChart({ pontos }: AdminGrowthChartProps) {
           Notas Importadas
         </span>
       </div>
-      <div className="admin-chart-placeholder">
-        <svg className="admin-chart-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
-          <path d={usuariosPath} fill="none" stroke={USUARIOS_COLOR} strokeWidth="2" />
-          <path
-            d={notasPath}
-            fill="none"
-            stroke={NOTAS_COLOR}
-            strokeWidth="2"
-            strokeDasharray="3 2"
-          />
-          {usuariosPts.map((p, i) => (
-            <circle key={`u-${i}`} cx={p.x} cy={p.y} fill="var(--bg-main)" r="1.5" stroke={USUARIOS_COLOR} strokeWidth="1" />
-          ))}
-          {notasPts.map((p, i) => (
-            <circle key={`n-${i}`} cx={p.x} cy={p.y} fill="var(--bg-main)" r="1.5" stroke={NOTAS_COLOR} strokeWidth="1" />
-          ))}
-        </svg>
+
+      <div style={{ width: '100%', height: '260px', marginTop: 'auto' }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={pontos} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <defs>
+              <linearGradient id="colorUsuarios" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={USUARIOS_COLOR} stopOpacity={0.35} />
+                <stop offset="95%" stopColor={USUARIOS_COLOR} stopOpacity={0.0} />
+              </linearGradient>
+              <linearGradient id="colorNotas" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={NOTAS_COLOR} stopOpacity={0.25} />
+                <stop offset="95%" stopColor={NOTAS_COLOR} stopOpacity={0.0} />
+              </linearGradient>
+            </defs>
+
+            <CartesianGrid stroke="var(--border-color)" strokeDasharray="3 3" vertical={false} />
+
+            <XAxis
+              dataKey="semana"
+              stroke="var(--text-muted)"
+              fontSize={12}
+              tickLine={false}
+              axisLine={false}
+            />
+            <YAxis
+              stroke="var(--text-muted)"
+              fontSize={12}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(val) => (val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val)}
+            />
+
+            <Tooltip content={<CustomTooltip />} />
+
+            <Area
+              type="monotone"
+              dataKey="usuarios"
+              name="Usuários"
+              stroke={USUARIOS_COLOR}
+              strokeWidth={2.5}
+              fill="url(#colorUsuarios)"
+              dot={{ r: 3, fill: USUARIOS_COLOR, stroke: 'var(--bg-main)', strokeWidth: 1 }}
+              activeDot={{ r: 5, fill: USUARIOS_COLOR }}
+            />
+            <Area
+              type="monotone"
+              dataKey="notas"
+              name="Notas Importadas"
+              stroke={NOTAS_COLOR}
+              strokeWidth={2}
+              strokeDasharray="4 3"
+              fill="url(#colorNotas)"
+              dot={{ r: 3, fill: NOTAS_COLOR, stroke: 'var(--bg-main)', strokeWidth: 1 }}
+              activeDot={{ r: 5, fill: NOTAS_COLOR }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
