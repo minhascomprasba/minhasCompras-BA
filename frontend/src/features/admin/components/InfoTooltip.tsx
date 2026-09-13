@@ -1,12 +1,36 @@
+import { useEffect, useRef, useState } from 'react';
+
+const TOOLTIP_MAX_WIDTH = 280;
+
 interface InfoTooltipProps {
   content: string;
   title?: string;
   align?: 'left' | 'right';
 }
 
-export function InfoTooltip({ content, title, align = 'left' }: InfoTooltipProps) {
+export function InfoTooltip({ content, title, align }: InfoTooltipProps) {
+  const [flip, setFlip] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const decide = () => {
+      const el = buttonRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const bubbleWidth = Math.min(TOOLTIP_MAX_WIDTH, window.innerWidth * 0.72);
+      setFlip(rect.left + bubbleWidth > window.innerWidth);
+    };
+    decide();
+    window.addEventListener('resize', decide);
+    return () => window.removeEventListener('resize', decide);
+  }, []);
+
+  const forceRight = align === 'right';
+  const bubbleClass = forceRight || flip ? 'info-tip-bubble info-tip-bubble--right' : 'info-tip-bubble';
+
   return (
     <button
+      ref={buttonRef}
       type="button"
       className="info-tip"
       aria-label={title ? `Mais informações: ${title}` : 'Mais informações'}
@@ -27,10 +51,7 @@ export function InfoTooltip({ content, title, align = 'left' }: InfoTooltipProps
           <line x1="12" y1="8" x2="12.01" y2="8" />
         </svg>
       </span>
-      <span
-        className={`info-tip-bubble${align === 'right' ? ' info-tip-bubble--right' : ''}`}
-        role="tooltip"
-      >
+      <span className={bubbleClass} role="tooltip">
         {title ? <strong>{title}</strong> : null}
         {content}
       </span>
