@@ -58,6 +58,10 @@ export function NotaDetailPage() {
               <strong className="text-primary">Compra em:</strong> não capturada nesta importação
             </p>
           )}
+          <p>
+            <strong className="text-primary">Meio de pagamento:</strong>{' '}
+            {nota.meio_pagamento || 'não capturado nesta importação'}
+          </p>
           <p className="detail-text-muted">
             <strong>Importada em:</strong> {new Date(nota.created_at).toLocaleString('pt-BR')}
           </p>

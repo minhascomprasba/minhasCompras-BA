@@ -154,6 +154,11 @@ export function NotasPage() {
                           </span>
                         )}
                         <span className="badge badge-outline">Itens: {nota.itens_count || 0}</span>
+                        {nota.meio_pagamento ? (
+                          <span className="badge badge-outline">Pagamento: {nota.meio_pagamento}</span>
+                        ) : (
+                          <span className="badge badge-outline">Pagamento: não capturado</span>
+                        )}
                       </div>
                     </div>
                     <Link to={`/notas/${nota.id}`} className="btn btn-secondary">
