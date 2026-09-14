@@ -119,6 +119,7 @@ def bulk_insert_produtos_with_nota_id(
     usuario_id: int,
     estabelecimento_id: int,
     data_compra: datetime | None = None,
+    meio_pagamento: str | None = None,
 ) -> tuple[int, int]:
 
     logger = setup_logger(log_file="logs/phase4.log", logger_name="phase4")
@@ -147,12 +148,15 @@ def bulk_insert_produtos_with_nota_id(
                 estabelecimento_id=estabelecimento_id,
                 valor_total_nota=0.0,
                 data_compra=data_compra,
+                meio_pagamento=meio_pagamento,
             )
             session.add(nota_fiscal)
             session.flush()
         else:
             if data_compra is not None:
                 nota_fiscal.data_compra = data_compra
+            if meio_pagamento:
+                nota_fiscal.meio_pagamento = meio_pagamento
             nota_fiscal.estabelecimento_id = estabelecimento_id
 
         session.execute(
