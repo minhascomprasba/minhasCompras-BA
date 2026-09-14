@@ -323,7 +323,9 @@ def submit_captcha(import_id: str, captcha_code: str, usuario_id: int) -> dict[s
 
 
         # Produtos
-        data_compra = Maps_to_products_tab(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
+        page_meta = Maps_to_products_tab(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
+        data_compra = page_meta.get("data_compra")
+        meio_pagamento = page_meta.get("meio_pagamento")
         wait_for_products_content(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
         parsed_page = ProductParser.parse_page(runtime.driver.page_source)
 
@@ -334,7 +336,8 @@ def submit_captcha(import_id: str, captcha_code: str, usuario_id: int) -> dict[s
         products = parsed_page["produtos"]
         
         data_compra = data_compra or parsed_page.get("data_compra")
-        if data_compra is None:
+        meio_pagamento = meio_pagamento or parsed_page.get("meio_pagamento")
+        if data_compra is None or meio_pagamento is None:
             debug_path = Path("data/debug/last_nfce_page.html")
             debug_path.parent.mkdir(parents=True, exist_ok=True)
             debug_path.write_text(runtime.driver.page_source, encoding="utf-8")
@@ -345,6 +348,7 @@ def submit_captcha(import_id: str, captcha_code: str, usuario_id: int) -> dict[s
             usuario_id,
             data_compra=data_compra,
             estabelecimento_id=estabelecimento_id,
+            meio_pagamento=meio_pagamento,
         )
 
         finished_at = _utcnow()
@@ -489,6 +493,7 @@ def list_notas(page: int, page_size: int, from_date: datetime | None, to_date: d
                     "data_compra": nota.data_compra,
                     "itens_count": itens_count,
                     "valor_total_nota": nota.valor_total_nota,
+                    "meio_pagamento": nota.meio_pagamento,
                 }
             )
 
@@ -562,7 +567,7 @@ def get_nota(nota_id: int, usuario_id: int) -> dict[str, object]:
         nota = session.get(NotaFiscal, nota_id)
         if nota is None or nota.usuario_id != usuario_id:
             raise NotFoundError("NOTA_NOT_FOUND", "Nota fiscal nao encontrada.", {"nota_id": str(nota_id)})
-        return {"id": nota.id, "codigo_acesso": nota.codigo_acesso, "created_at": nota.created_at, "data_compra": nota.data_compra, "valor_total_nota": nota.valor_total_nota}
+        return {"id": nota.id, "codigo_acesso": nota.codigo_acesso, "created_at": nota.created_at, "data_compra": nota.data_compra, "valor_total_nota": nota.valor_total_nota, "meio_pagamento": nota.meio_pagamento}
     finally:
         session.close()
 

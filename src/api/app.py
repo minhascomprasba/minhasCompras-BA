@@ -37,6 +37,8 @@ def _ensure_schema_updates() -> None:
             columns = {column["name"] for column in inspector.get_columns("notas_fiscais")}
             if "data_compra" not in columns:
                 connection.execute(text(f"ALTER TABLE notas_fiscais ADD COLUMN data_compra {column_type}"))
+            if "meio_pagamento" not in columns:
+                connection.execute(text("ALTER TABLE notas_fiscais ADD COLUMN meio_pagamento VARCHAR"))
 
         if inspector.has_table("produto"):
             produto_columns = {column["name"] for column in inspector.get_columns("produto")}

@@ -280,12 +280,246 @@ class ProductParser:
 
         return parsed
 
+    _PAYMENT_CODE_RE = re.compile(r"^\d{1,2}\s*-\s*.+")
+    _PAYMENT_NAME_RE = re.compile(
+        r"dinheiro|cheque|cartao|credito loja|vale |pix|pagamento instantaneo|"
+        r"boleto|deposito|transferencia|fidelidade|cashback|sem pagamento|outros"
+    )
+    _PAYMENT_SKIP_LABEL_KEYS = {
+        "qtd. total de itens",
+        "valor total r$",
+        "descontos r$",
+        "valor a pagar r$",
+        "forma de pagamento",
+        "valor pago r$",
+        "valor pago",
+    }
+    # Codigos do campo tPag (grupo YA da NFe/NFCe).
+    _TPAG_LABELS = {
+        "01": "Dinheiro",
+        "02": "Cheque",
+        "03": "Cartão de Crédito",
+        "04": "Cartão de Débito",
+        "05": "Crédito em Loja",
+        "10": "Vale Alimentação",
+        "11": "Vale Refeição",
+        "12": "Vale Presente",
+        "13": "Vale Combustível",
+        "15": "Boleto Bancário",
+        "16": "Depósito Bancário",
+        "17": "PIX Dinâmico",
+        "18": "Transferência Bancária / Carteira Digital",
+        "19": "Cashback / Crédito de Fidelidade",
+        "20": "PIX Estático",
+        "21": "Crédito em Loja",
+        "22": "Pagamento Eletrônico não Informado",
+        "90": "Sem Pagamento",
+        "99": "Outros",
+    }
+    # Valores que existem na nota mas nao dizem como o cliente pagou.
+    _GENERIC_PAYMENT_KEYS = {
+        "outros",
+        "diversos",
+        "pagamento diversos",
+        "pagamentos diversos",
+        "pagamento eletronico nao informado",
+        "nao informado",
+    }
+    _MEIO_LABEL_KEYS = ("meio de pagamento", "forma de pagamento", "tipo de pagamento")
+    _DESCRICAO_LABEL_KEYS = ("descricao do meio de pagamento", "descricao do pagamento")
+    _BANDEIRA_LABEL_KEYS = (
+        "bandeira da operadora de cartao de credito e/ou debito",
+        "bandeira da operadora",
+        "bandeira",
+    )
+
+    @classmethod
+    def _split_payment_code(cls, value: str) -> tuple[str | None, str]:
+        text = cls._normalize_text(value)
+        match = re.match(r"^(\d{1,2})\s*-\s*(.*)$", text)
+        if match:
+            return match.group(1).zfill(2), cls._normalize_text(match.group(2))
+        if re.fullmatch(r"\d{1,2}", text):
+            return text.zfill(2), ""
+        return None, text
+
+    @classmethod
+    def _format_meio(cls, value: str) -> str:
+        """Preserva o texto como a nota apresenta ("99 - Outros"), completando
+        apenas quando a pagina traz o codigo tPag sem descricao."""
+        text = cls._normalize_text(value)
+        code, description = cls._split_payment_code(text)
+        if code is not None and not description and code in cls._TPAG_LABELS:
+            return f"{code} - {cls._TPAG_LABELS[code]}"
+        return text
+
+    @classmethod
+    def is_generic_meio_pagamento(cls, value: str | None) -> bool:
+        if not value:
+            return True
+
+        code, description = cls._split_payment_code(value)
+        if code == "99":
+            return True
+
+        key = cls._normalize_label_key(description or value)
+        key = re.sub(r"\s*\(.*\)\s*$", "", key).strip()
+        return key in cls._GENERIC_PAYMENT_KEYS
+
+    @classmethod
+    def prefer_meio_pagamento(cls, *candidates: str | None) -> str | None:
+        specific = [item for item in candidates if item and not cls.is_generic_meio_pagamento(item)]
+        if specific:
+            return specific[0]
+        generic = [item for item in candidates if item]
+        return generic[0] if generic else None
+
+    @classmethod
+    def _is_payment_label(cls, value: str) -> bool:
+        text = cls._normalize_text(value)
+        if not text:
+            return False
+
+        key = cls._normalize_label_key(text)
+        if key in cls._PAYMENT_SKIP_LABEL_KEYS or "tributo" in key:
+            return False
+
+        if not cls._PAYMENT_CODE_RE.match(text):
+            return False
+
+        return bool(cls._PAYMENT_NAME_RE.search(key))
+
+    @classmethod
+    def _collect_label_value_pairs(cls, root: Tag) -> dict[str, list[str]]:
+        """Na aba de cobranca os rotulos ficam em uma linha e os valores na
+        seguinte, alinhados por coluna. Ler por posicao evita confundir
+        'Ind. Forma de Pagamento' com 'Meio de Pagamento'."""
+        pairs: dict[str, list[str]] = {}
+        pending_labels: list[str] | None = None
+
+        for row in root.find_all("tr"):
+            if row.find("table") is not None:
+                continue
+
+            cells = row.find_all(["td", "th"])
+            if not cells:
+                continue
+
+            texts = [cls._normalize_text(cell.get_text(" ", strip=True)) for cell in cells]
+            if any(cell.find("label") for cell in cells):
+                pending_labels = [cls._normalize_label_key(text) for text in texts]
+                continue
+
+            if pending_labels is None:
+                continue
+
+            for label_key, value in zip(pending_labels, texts):
+                if label_key and value:
+                    pairs.setdefault(label_key, []).append(value)
+            pending_labels = None
+
+        return pairs
+
+    @classmethod
+    def _collect_meios_from_linha_forma(cls, soup: Tag) -> list[str]:
+        linha_forma = soup.find(id="linhaForma")
+        if not isinstance(linha_forma, Tag):
+            return []
+
+        meios: list[str] = []
+        for sibling in linha_forma.find_next_siblings("div"):
+            if not isinstance(sibling, Tag):
+                continue
+            if sibling.get("id") != "linhaTotal":
+                break
+
+            classes = sibling.get("class") or []
+            if not isinstance(classes, list):
+                classes = [str(classes)]
+            if "spcTop" in classes:
+                break
+
+            label = sibling.find("label", class_="tx") or sibling.find("label")
+            if not isinstance(label, Tag):
+                break
+
+            text = cls._normalize_text(label.get_text(" ", strip=True))
+            if not text or "tributo" in cls._normalize_label_key(text):
+                break
+
+            has_tx_class = isinstance(sibling.find("label", class_="tx"), Tag)
+            if has_tx_class or cls._is_payment_label(text):
+                meios.append(text)
+                continue
+            break
+
+        return list(dict.fromkeys(meios))
+
+    @classmethod
+    def _parse_meio_pagamento(cls, soup: Tag, html_content: str = "", logger: Any | None = None) -> str | None:
+        scope = soup.find(id="Cobranca")
+        pairs = cls._collect_label_value_pairs(scope if isinstance(scope, Tag) else soup)
+
+        def values_for(label_keys: tuple[str, ...]) -> list[str]:
+            found: list[str] = []
+            for label_key in label_keys:
+                found.extend(pairs.get(label_key, []))
+            return list(dict.fromkeys(found))
+
+        meios = values_for(cls._MEIO_LABEL_KEYS) or cls._collect_meios_from_linha_forma(soup)
+        descricoes = values_for(cls._DESCRICAO_LABEL_KEYS)
+        bandeiras = values_for(cls._BANDEIRA_LABEL_KEYS)
+
+        if not meios and html_content:
+            forma_match = re.search(r"Forma de pagamento", html_content, flags=re.IGNORECASE)
+            if forma_match:
+                region = html_content[forma_match.start() : forma_match.start() + 800]
+                meios = [
+                    match
+                    for match in re.findall(r"\d{1,2}\s*-\s*[A-Za-zÀ-ÿ][^\n<]+", region)
+                    if cls._is_payment_label(match)
+                ]
+                if meios and logger is not None:
+                    logger.info("Fase 3: meio de pagamento extraido via regex.")
+
+        resolved = cls.prefer_meio_pagamento(*(cls._format_meio(value) for value in meios))
+        if not cls.is_generic_meio_pagamento(resolved):
+            return resolved
+
+        # tPag generico ("99 - Outros"): a descricao ou o grupo de cartao ainda
+        # podem dizer como o cliente pagou.
+        descricao_especifica = next(
+            (
+                cls._format_meio(descricao)
+                for descricao in descricoes
+                if not cls.is_generic_meio_pagamento(descricao)
+            ),
+            None,
+        )
+        if descricao_especifica:
+            return descricao_especifica
+
+        if bandeiras:
+            return f"Cartão ({bandeiras[0]})"
+
+        return resolved
+
     @classmethod
     def extract_data_compra(cls, html_content: str) -> datetime | None:
         logger = setup_logger(log_file="logs/phase3.log", logger_name="phase3")
         soup = BeautifulSoup(html_content, "lxml")
         try:
             return cls._parse_data_compra(soup, html_content=html_content, logger=logger)
+        finally:
+            soup.decompose()
+            del soup
+
+    @classmethod
+    def extract_meio_pagamento(cls, html_content: str) -> str | None:
+        logger = setup_logger(log_file="logs/phase3.log", logger_name="phase3")
+        soup = BeautifulSoup(html_content, "lxml")
+        try:
+            return cls._parse_meio_pagamento(soup, html_content=html_content, logger=logger)
         finally:
             soup.decompose()
             del soup
@@ -363,9 +597,16 @@ class ProductParser:
             else:
                 logger.warning("Fase 3: data/hora da compra nao encontrada no HTML.")
 
+            meio_pagamento = cls._parse_meio_pagamento(soup, html_content=html_content, logger=logger)
+            if meio_pagamento:
+                logger.info("Fase 3: meio de pagamento extraido: %s.", meio_pagamento)
+            else:
+                logger.warning("Fase 3: meio de pagamento nao encontrado no HTML.")
+
             return {
                 "produtos": cls._parse_products(soup, logger),
                 "data_compra": data_compra,
+                "meio_pagamento": meio_pagamento,
             }
         finally:
             soup.decompose()

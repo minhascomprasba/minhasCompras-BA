@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
@@ -15,6 +16,7 @@ from utils.logger import setup_logger
 from .selectors import (
     EMITENTE_TAB_BUTTON,
     IDENTIFICACAO_TAB_BUTTON_IDS,
+    PAGAMENTO_TAB_BUTTON_IDS,
     PRODUTOS_TAB_BUTTON_ID,
     VISUALIZAR_ABAS_BUTTON_ID,
 )
@@ -80,6 +82,13 @@ def _extract_purchase_datetime(driver: WebDriver, logger) -> datetime | None:
     return data_compra
 
 
+def _extract_meio_pagamento(driver: WebDriver, logger) -> str | None:
+    meio_pagamento = ProductParser.extract_meio_pagamento(driver.page_source)
+    if meio_pagamento:
+        logger.info("Fase 2: meio de pagamento encontrado na pagina atual: %s", meio_pagamento)
+    return meio_pagamento
+
+
 def _extract_purchase_datetime_from_identificacao_tabs(driver: WebDriver, timeout: int, logger) -> datetime | None:
     for tab_id in IDENTIFICACAO_TAB_BUTTON_IDS:
         if not _try_click_tab(driver, tab_id, timeout):
@@ -94,12 +103,81 @@ def _extract_purchase_datetime_from_identificacao_tabs(driver: WebDriver, timeou
     return None
 
 
-def Maps_to_products_tab(driver: WebDriver, timeout: int) -> datetime | None:
+def _list_aba_button_ids(driver: WebDriver) -> list[str]:
+    ids: list[str] = []
+    for element in driver.find_elements(By.CSS_SELECTOR, "[id^='btn_aba']"):
+        element_id = element.get_attribute("id")
+        if element_id:
+            ids.append(element_id)
+    return ids
+
+
+def _payment_tab_ids_to_try(driver: WebDriver) -> list[str]:
+    discovered = _list_aba_button_ids(driver)
+    tokens = ("cobr", "pag", "total", "valor", "adic")
+    extra = [
+        element_id
+        for element_id in discovered
+        if any(token in element_id.casefold() for token in tokens)
+    ]
+    ordered: list[str] = []
+    for element_id in (*PAGAMENTO_TAB_BUTTON_IDS, *extra):
+        if element_id not in ordered:
+            ordered.append(element_id)
+    return ordered
+
+
+def _wait_tab_active(driver: WebDriver, tab_id: str, timeout: int) -> None:
+    """A SEFAZ marca a aba ativa trocando a imagem para '..._on.gif'."""
+
+    def _is_active(current_driver: WebDriver) -> bool:
+        elements = current_driver.find_elements(By.ID, tab_id)
+        if not elements:
+            return False
+        return "_on." in (elements[0].get_attribute("src") or "")
+
+    try:
+        WebDriverWait(driver, min(timeout, 8)).until(_is_active)
+    except TimeoutException:
+        logger_warning = "Fase 2: aba '%s' nao ficou ativa no tempo esperado."
+        setup_logger(log_file="logs/phase2.log", logger_name="phase2").warning(logger_warning, tab_id)
+
+
+def _extract_meio_pagamento_from_tabs(driver: WebDriver, timeout: int, logger) -> str | None:
+    best: str | None = None
+    saved_debug = False
+
+    for tab_id in _payment_tab_ids_to_try(driver):
+        if not _try_click_tab(driver, tab_id, timeout):
+            continue
+
+        logger.info("Fase 2: aba '%s' aberta para buscar meio de pagamento.", tab_id)
+        _wait_tab_active(driver, tab_id, timeout)
+
+        current = ProductParser.extract_meio_pagamento(driver.page_source)
+        if not current:
+            if not saved_debug:
+                _save_debug_html(driver, "last_nfce_pagamento.html")
+            continue
+
+        logger.info("Fase 2: meio de pagamento encontrado na aba '%s': %s", tab_id, current)
+        _save_debug_html(driver, "last_nfce_pagamento.html")
+        saved_debug = True
+
+        best = ProductParser.prefer_meio_pagamento(current, best)
+        if not ProductParser.is_generic_meio_pagamento(best):
+            return best
+
+    return best
+
+
+def Maps_to_products_tab(driver: WebDriver, timeout: int) -> dict[str, Any]:
     logger = setup_logger(log_file="logs/phase2.log", logger_name="phase2")
     logger.info("Iniciando Fase 2: navegacao para aba de Produtos / Servicos.")
 
     data_compra = _extract_purchase_datetime(driver, logger)
-    if data_compra is None:
+    meio_pagamento = _extract_meio_pagamento(driver, logger)
+    if data_compra is None or ProductParser.is_generic_meio_pagamento(meio_pagamento):
         _save_debug_html(driver, "last_nfce_summary.html")
 
     try:
@@ -130,16 +208,32 @@ def Maps_to_products_tab(driver: WebDriver, timeout: int) -> datetime | None:
         raise RuntimeError("Falha ao carregar pagina de visualizacao em abas.") from exc
 
     logger.info("Pagina de abas carregada: %s", driver.current_url)
+    aba_ids = _list_aba_button_ids(driver)
+    if aba_ids:
+        logger.info("Fase 2: abas disponiveis: %s", ", ".join(aba_ids))
 
     if data_compra is None:
         data_compra = _extract_purchase_datetime(driver, logger)
 
+    meio_nas_abas = _extract_meio_pagamento(driver, logger)
+    meio_pagamento = ProductParser.prefer_meio_pagamento(meio_nas_abas, meio_pagamento)
+
     if data_compra is None:
         data_compra = _extract_purchase_datetime_from_identificacao_tabs(driver, timeout, logger)
 
-    if data_compra is None:
+    if ProductParser.is_generic_meio_pagamento(meio_pagamento):
+        meio_nas_tabs = _extract_meio_pagamento_from_tabs(driver, timeout, logger)
+        meio_pagamento = ProductParser.prefer_meio_pagamento(meio_nas_tabs, meio_pagamento)
+
+    if data_compra is None or ProductParser.is_generic_meio_pagamento(meio_pagamento):
         _save_debug_html(driver, "last_nfce_abas.html")
-        logger.warning("Fase 2: data da compra nao encontrada antes da aba de produtos.")
+        if data_compra is None:
+            logger.warning("Fase 2: data da compra nao encontrada antes da aba de produtos.")
+        if ProductParser.is_generic_meio_pagamento(meio_pagamento):
+            logger.warning(
+                "Fase 2: meio de pagamento generico ou ausente antes da aba de produtos: %s",
+                meio_pagamento,
+            )
 
     try:
         WebDriverWait(driver, timeout).until(
@@ -159,7 +253,10 @@ def Maps_to_products_tab(driver: WebDriver, timeout: int) -> datetime | None:
         raise
 
     logger.info("Fase 2 concluida com sucesso.")
-    return data_compra
+    return {
+        "data_compra": data_compra,
+        "meio_pagamento": meio_pagamento,
+    }
 
 
 
