@@ -62,6 +62,9 @@ export function AuthenticatedLayout() {
               <NavLink to="/dashboard" className={navLinkClass} onClick={closeMenu}>
                 Dashboard
               </NavLink>
+              <NavLink to="/admin" className={navLinkClass} onClick={closeMenu}>
+                Admin
+              </NavLink>
               <NavLink to="/notas" className={navLinkClass} onClick={closeMenu}>
                 Notas
               </NavLink>

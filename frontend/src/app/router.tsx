@@ -11,6 +11,7 @@ import { ConfirmEmailPage } from '../pages/ConfirmEmailPage';
 import { ForgotPasswordPage } from '../pages/ForgotPasswordPage';
 import { ResetPasswordPage } from '../pages/ResetPasswordPage';
 import { DashboardPage } from '../pages/DashboardPage';
+import { AdminPage } from '../pages/AdminPage';
 import { MapPage } from '../pages/MapPage';
 import { AuthenticatedLayout } from '../components/AuthenticatedLayout';
 import { useAuth } from '../features/auth/AuthContext';
@@ -50,6 +51,11 @@ const router = createBrowserRouter([
   {
     path: '/redefinir-senha',
     element: <ResetPasswordPage />,
+  },
+  {
+    path: '/admin',
+    element: <AuthenticatedLayout />,
+    children: [{ index: true, element: <AdminPage /> }],
   },
   {
     element: <PrivateRoute><AuthenticatedLayout /></PrivateRoute>,
