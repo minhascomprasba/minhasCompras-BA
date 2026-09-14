@@ -51,7 +51,7 @@ export function AdminScraperChart({ dias }: AdminScraperChartProps) {
       <div className="admin-chart-legend">
         <span className="admin-chart-legend-item">
           <span className="admin-chart-legend-dot admin-chart-legend-dot--completed" />
-          COncluídas
+          Concluídas
         </span>
         <span className="admin-chart-legend-item">
           <span className="admin-chart-legend-dot admin-chart-legend-dot--expired" />
