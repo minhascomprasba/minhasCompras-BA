@@ -12,19 +12,44 @@ import { ForgotPasswordPage } from '../pages/ForgotPasswordPage';
 import { ResetPasswordPage } from '../pages/ResetPasswordPage';
 import { DashboardPage } from '../pages/DashboardPage';
 import { AdminPage } from '../pages/AdminPage';
+import { AdminUsersPage } from '../pages/AdminUsersPage';
 import { MapPage } from '../pages/MapPage';
 import { AuthenticatedLayout } from '../components/AuthenticatedLayout';
 import { useAuth } from '../features/auth/AuthContext';
 import { NotFoundPage } from '../pages/NotFoundPage';
 
+function RouteSpinner() {
+  return (
+    <div className="container" style={{ textAlign: 'center', marginTop: '4rem' }}>
+      <div className="spinner"></div>
+    </div>
+  );
+}
+
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
-  
+
   if (isLoading) {
-    return <div className="container" style={{ textAlign: 'center', marginTop: '4rem' }}><div className="spinner"></div></div>;
+    return <RouteSpinner />;
   }
-  
+
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
+}
+
+function AdminRoute({ requireSuperAdmin = false }: { requireSuperAdmin?: boolean }) {
+  const { isAuthenticated, isLoading, isAdmin, isSuperAdmin } = useAuth();
+
+  if (isLoading) {
+    return <RouteSpinner />;
+  }
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  if (requireSuperAdmin ? !isSuperAdmin : !isAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <AuthenticatedLayout />;
 }
 
 const router = createBrowserRouter([
@@ -54,8 +79,13 @@ const router = createBrowserRouter([
   },
   {
     path: '/admin',
-    element: <AuthenticatedLayout />,
+    element: <AdminRoute />,
     children: [{ index: true, element: <AdminPage /> }],
+  },
+  {
+    path: '/admin/usuarios',
+    element: <AdminRoute requireSuperAdmin />,
+    children: [{ index: true, element: <AdminUsersPage /> }],
   },
   {
     element: <PrivateRoute><AuthenticatedLayout /></PrivateRoute>,

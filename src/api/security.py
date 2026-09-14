@@ -1,5 +1,6 @@
 import hashlib
 import secrets
+from collections.abc import Callable
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -9,6 +10,8 @@ from pwdlib import PasswordHash
 
 from src.api import settings
 from src.api.errors import ApiError
+from src.database.connection import SessionLocal
+from src.database.models import ADMIN_ROLES, Usuario, UserRole
 
 password_hash = PasswordHash.recommended()
 
@@ -54,3 +57,38 @@ def get_current_user_id(request: Request) -> int:
         raise ApiError(code="UNAUTHORIZED", message="Token expirado.", status_code=401)
     except (jwt.PyJWTError, ValueError):
         raise ApiError(code="UNAUTHORIZED", message="Não autorizado.", status_code=401)
+
+
+def get_current_user(user_id: int = Depends(get_current_user_id)) -> Usuario:
+    """Carrega o usuario autenticado do banco.
+
+    A permissao vem sempre do banco, e nao do token, para que a alteracao de
+    papel feita no painel tenha efeito imediato sem exigir novo login.
+    """
+    session = SessionLocal()
+    try:
+        usuario = session.get(Usuario, user_id)
+        if usuario is None:
+            raise ApiError(code="USER_NOT_FOUND", message="Usuário não encontrado.", status_code=404)
+        session.expunge(usuario)
+        return usuario
+    finally:
+        session.close()
+
+
+def require_roles(*allowed_roles: str) -> Callable[[Usuario], Usuario]:
+    def dependency(usuario: Usuario = Depends(get_current_user)) -> Usuario:
+        if usuario.role not in allowed_roles:
+            raise ApiError(
+                code="FORBIDDEN",
+                message="Você não tem permissão para acessar este recurso.",
+                status_code=403,
+                details={"required_roles": ", ".join(allowed_roles)},
+            )
+        return usuario
+
+    return dependency
+
+
+require_admin = require_roles(*ADMIN_ROLES)
+require_super_admin = require_roles(UserRole.SUPER_ADMIN.value)

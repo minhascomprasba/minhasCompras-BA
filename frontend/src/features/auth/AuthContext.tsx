@@ -2,12 +2,15 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { authService } from './authService';
-import type { User } from './authService';
+import type { User, UserRole } from './authService';
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  role: UserRole | null;
+  isAdmin: boolean;
+  isSuperAdmin: boolean;
   login: (token: string, user: User) => void;
   logout: () => void;
 }
@@ -59,8 +62,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const role = user?.role ?? null;
+  const isSuperAdmin = role === 'SUPER_ADMIN';
+  const isAdmin = isSuperAdmin || role === 'ADMIN';
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated: !!user,
+        isLoading,
+        role,
+        isAdmin,
+        isSuperAdmin,
+        login,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

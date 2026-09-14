@@ -11,12 +11,22 @@ class Base(DeclarativeBase):
     pass
 
 
+class UserRole(str, Enum):
+    USER = "USER"
+    ADMIN = "ADMIN"
+    SUPER_ADMIN = "SUPER_ADMIN"
+
+
+ADMIN_ROLES = (UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value)
+
+
 class Usuario(Base):
     __tablename__ = "usuarios"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     email: Mapped[str] = mapped_column(String, unique=True, nullable=False, index=True)
     password_hash: Mapped[str] = mapped_column(String, nullable=False)
+    role: Mapped[str] = mapped_column(String(20), nullable=False, default=UserRole.USER.value, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
     notas: Mapped[list[NotaFiscal]] = relationship(back_populates="usuario")
@@ -89,6 +99,12 @@ class ImportStatus(str, Enum):
     EXPIRED = "EXPIRED"
 
 
+class ImportSource(str, Enum):
+    QR_CODE = "QR_CODE"
+    PHOTO = "PHOTO"
+    MANUAL = "MANUAL"
+
+
 class NfceImport(Base):
     __tablename__ = "nfce_imports"
 
@@ -96,6 +112,7 @@ class NfceImport(Base):
     usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), nullable=False, index=True)
     access_key: Mapped[str] = mapped_column(String(44), nullable=False, index=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    source: Mapped[str | None] = mapped_column(String(20), nullable=True, index=True)
     captcha_image_path: Mapped[str | None] = mapped_column(String, nullable=True)
     attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     error_message: Mapped[str | None] = mapped_column(String, nullable=True)

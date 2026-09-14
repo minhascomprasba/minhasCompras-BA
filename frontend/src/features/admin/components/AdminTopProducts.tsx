@@ -54,27 +54,37 @@ export function AdminTopProducts({ produtos }: AdminTopProductsProps) {
           <thead>
             <tr>
               <th>Produto</th>
+              <th style={{ textAlign: 'right' }}>Compras</th>
               <th style={{ textAlign: 'right' }}>Preço Médio</th>
               <th style={{ textAlign: 'right' }}>Variação</th>
             </tr>
           </thead>
           <tbody>
-            {produtos.map((produto) => {
-              const variation = variationVisual(produto.variacaoPercentual);
-              const absVariation = `${Math.abs(produto.variacaoPercentual).toFixed(1)}%`;
-              return (
-                <tr key={produto.nome}>
-                  <td>{produto.nome}</td>
-                  <td style={{ textAlign: 'right' }}>{formatBRL(produto.precoMedio)}</td>
-                  <td style={{ textAlign: 'right' }}>
-                    <span className={`admin-variation ${variation.className}`}>
-                      {variation.icon}
-                      {absVariation}
-                    </span>
-                  </td>
-                </tr>
-              );
-            })}
+            {produtos.length === 0 ? (
+              <tr>
+                <td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
+                  Nenhum item catalogado no período selecionado.
+                </td>
+              </tr>
+            ) : (
+              produtos.map((produto) => {
+                const variation = variationVisual(produto.variacaoPercentual);
+                const absVariation = `${Math.abs(produto.variacaoPercentual).toFixed(1)}%`;
+                return (
+                  <tr key={produto.nome}>
+                    <td>{produto.nome}</td>
+                    <td style={{ textAlign: 'right' }}>{produto.ocorrencias}</td>
+                    <td style={{ textAlign: 'right' }}>{formatBRL(produto.precoMedio)}</td>
+                    <td style={{ textAlign: 'right' }}>
+                      <span className={`admin-variation ${variation.className}`}>
+                        {variation.icon}
+                        {absVariation}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>

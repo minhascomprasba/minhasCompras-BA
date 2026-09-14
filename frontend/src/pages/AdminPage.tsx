@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useAdminData } from '../features/admin/hooks/useAdminData';
 import { AdminHeader } from '../features/admin/components/AdminHeader';
 import { AdminKpiGrid } from '../features/admin/components/AdminKpiGrid';
@@ -7,9 +8,13 @@ import { AdminTopProducts } from '../features/admin/components/AdminTopProducts'
 import { AdminMapPlaceholder } from '../features/admin/components/AdminMapPlaceholder';
 import { AdminTelemetryGrid } from '../features/admin/components/AdminTelemetryGrid';
 import { AdminLogsTable } from '../features/admin/components/AdminLogsTable';
+import type { AdminPeriod } from '../features/admin/types';
+import { useAuth } from '../features/auth/AuthContext';
 
 export function AdminPage() {
-  const { data, isLoading, isError } = useAdminData();
+  const [period, setPeriod] = useState<AdminPeriod>('30d');
+  const { isSuperAdmin } = useAuth();
+  const { data, isLoading, isError, error, isFetching } = useAdminData(period);
 
   if (isLoading) {
     return (
@@ -42,10 +47,7 @@ export function AdminPage() {
             <line x1="12" y1="16" x2="12.01" y2="16"></line>
           </svg>
           <h2>Erro ao carregar indicadores</h2>
-          <p>
-            Ocorreu um erro ao carregar os dados administrativos. Por favor, tente novamente mais
-            tarde.
-          </p>
+          <p>{error?.message || 'Ocorreu um erro ao carregar os dados administrativos. Tente novamente mais tarde.'}</p>
         </div>
       </div>
     );
@@ -53,13 +55,19 @@ export function AdminPage() {
 
   return (
     <div className="container admin-container">
-      <AdminHeader mesAno={data.mesAno} />
+      <AdminHeader
+        period={period}
+        onPeriodChange={setPeriod}
+        janelaLabel={data.janelaLabel}
+        isRefreshing={isFetching}
+        showUsersLink={isSuperAdmin}
+      />
 
       <AdminKpiGrid kpis={data.kpis} />
 
       <div className="admin-charts-grid">
-        <AdminGrowthChart pontos={data.crescimentoAdesao} />
-        <AdminScraperChart dias={data.performanceScraper} />
+        <AdminGrowthChart pontos={data.crescimentoAdesao} bucketLabel={data.bucketLabel} />
+        <AdminScraperChart dias={data.performanceScraper} bucketLabel={data.bucketLabel} />
       </div>
 
       <div className="admin-charts-grid">

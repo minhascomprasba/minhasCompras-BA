@@ -4,14 +4,15 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from sqlalchemy import inspect, text
+from sqlalchemy import func, inspect, text
 
 from src.api.errors import ApiError
 from src.api.routers import router
+from src.api.admin import admin_router
 from src.api.auth import auth_router
 from src.api.schemas import ErrorResponse
-from src.database.connection import engine
-from src.database.models import Base
+from src.database.connection import SessionLocal, engine
+from src.database.models import Base, Usuario, UserRole
 from src.api import settings
 
 app = FastAPI(title="minhasCompras-BA API", version="1.0.0")
@@ -24,6 +25,7 @@ app.add_middleware(
 )
 app.include_router(router)
 app.include_router(auth_router, prefix=settings.API_PREFIX)
+app.include_router(admin_router, prefix=settings.API_PREFIX)
 
 
 def _ensure_schema_updates() -> None:
@@ -47,11 +49,51 @@ def _ensure_schema_updates() -> None:
                     text(f"ALTER TABLE produto ADD COLUMN sem_gtin {boolean_type} NOT NULL DEFAULT {boolean_default}")
                 )
 
+        if inspector.has_table("usuarios"):
+            usuario_columns = {column["name"] for column in inspector.get_columns("usuarios")}
+            if "role" not in usuario_columns:
+                connection.execute(
+                    text(
+                        "ALTER TABLE usuarios ADD COLUMN role VARCHAR(20) NOT NULL "
+                        f"DEFAULT '{UserRole.USER.value}'"
+                    )
+                )
+
+        if inspector.has_table("nfce_imports"):
+            import_columns = {column["name"] for column in inspector.get_columns("nfce_imports")}
+            if "source" not in import_columns:
+                connection.execute(text("ALTER TABLE nfce_imports ADD COLUMN source VARCHAR(20)"))
+
+
+def _bootstrap_super_admins() -> None:
+    """Promove a super admin os e-mails listados em SUPER_ADMIN_EMAILS.
+
+    E o unico caminho para criar o primeiro super admin: a partir dele a
+    promocao de outros usuarios acontece pelo painel administrativo.
+    """
+    if not settings.SUPER_ADMIN_EMAILS:
+        return
+
+    session = SessionLocal()
+    try:
+        usuarios = (
+            session.query(Usuario)
+            .filter(func.lower(Usuario.email).in_(settings.SUPER_ADMIN_EMAILS))
+            .all()
+        )
+        for usuario in usuarios:
+            if usuario.role != UserRole.SUPER_ADMIN.value:
+                usuario.role = UserRole.SUPER_ADMIN.value
+        session.commit()
+    finally:
+        session.close()
+
 
 @app.on_event("startup")
 def on_startup() -> None:
     Base.metadata.create_all(bind=engine)
     _ensure_schema_updates()
+    _bootstrap_super_admins()
 
 
 @app.exception_handler(ApiError)

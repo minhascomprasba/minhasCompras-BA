@@ -11,9 +11,12 @@ interface AdminLogsTableProps {
 
 const statusConfig: Record<LogStatus, { badgeClass: string; label: string }> = {
   scraper_falha: { badgeClass: 'badge-error', label: 'Falha Scraper' },
-  camera_erro: { badgeClass: 'badge-warning', label: 'Erro Câmera' },
-  bloqueio_ip: { badgeClass: 'badge-error', label: 'Bloqueio IP' },
+  captcha_expirado: { badgeClass: 'badge-warning', label: 'Captcha Expirado' },
+  limite_captcha: { badgeClass: 'badge-error', label: 'Limite de Captcha' },
+  timeout_sefaz: { badgeClass: 'badge-error', label: 'Timeout SEFAZ' },
 };
+
+const fallbackStatus = { badgeClass: 'badge-outline', label: 'Indefinido' };
 
 export function AdminLogsTable({ logs }: AdminLogsTableProps) {
   return (
@@ -46,20 +49,28 @@ export function AdminLogsTable({ logs }: AdminLogsTableProps) {
             </tr>
           </thead>
           <tbody>
-            {logs.map((log) => {
-              const status = statusConfig[log.status];
-              return (
-                <tr key={log.idNota}>
-                  <td className="admin-mono">{log.dataHora}</td>
-                  <td className="admin-mono">{log.idNota}</td>
-                  <td>{log.tentativas}</td>
-                  <td>{log.erro}</td>
-                  <td>
-                    <span className={`badge ${status.badgeClass}`}>{status.label}</span>
-                  </td>
-                </tr>
-              );
-            })}
+            {logs.length === 0 ? (
+              <tr>
+                <td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
+                  Nenhuma falha registrada no período. O robô operou sem incidentes.
+                </td>
+              </tr>
+            ) : (
+              logs.map((log) => {
+                const status = statusConfig[log.status] ?? fallbackStatus;
+                return (
+                  <tr key={log.importId}>
+                    <td className="admin-mono">{log.dataHora}</td>
+                    <td className="admin-mono">{log.idNota}</td>
+                    <td>{log.tentativas}</td>
+                    <td>{log.erro}</td>
+                    <td>
+                      <span className={`badge ${status.badgeClass}`}>{status.label}</span>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>

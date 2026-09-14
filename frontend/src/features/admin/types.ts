@@ -1,6 +1,10 @@
+import type { UserRole } from '../auth/authService';
+
 export type TrendDirection = 'up' | 'down';
 
 export type KpiIconKey = 'citizens' | 'receipts' | 'items' | 'volume' | 'stability';
+
+export type AdminPeriod = '7d' | '30d' | 'mes' | 'ano' | 'geral';
 
 export interface KpiExtraMetric {
   label: string;
@@ -35,6 +39,7 @@ export interface TopProduto {
   nome: string;
   precoMedio: number;
   variacaoPercentual: number;
+  ocorrencias: number;
 }
 
 export interface AlcanceGeografico {
@@ -53,6 +58,7 @@ export interface TelemetriaSlice {
 export interface QualidadeCatalogo {
   comGtin: number;
   semGtin: number;
+  produtosCatalogados: number;
 }
 
 export interface AdminTelemetria {
@@ -61,9 +67,10 @@ export interface AdminTelemetria {
   qualidadeCatalogo: QualidadeCatalogo;
 }
 
-export type LogStatus = 'scraper_falha' | 'camera_erro' | 'bloqueio_ip';
+export type LogStatus = 'scraper_falha' | 'captcha_expirado' | 'limite_captcha' | 'timeout_sefaz';
 
 export interface AdminLog {
+  importId: string;
   dataHora: string;
   idNota: string;
   tentativas: number;
@@ -72,7 +79,11 @@ export interface AdminLog {
 }
 
 export interface AdminDashboardData {
+  periodo: AdminPeriod;
+  periodoLabel: string;
   mesAno: string;
+  janelaLabel: string;
+  bucketLabel: string;
   kpis: AdminKpi[];
   crescimentoAdesao: AdesaoSemana[];
   performanceScraper: ScraperDia[];
@@ -80,4 +91,22 @@ export interface AdminDashboardData {
   alcanceGeografico: AlcanceGeografico;
   telemetria: AdminTelemetria;
   logs: AdminLog[];
+}
+
+export interface AdminUsuario {
+  id: number;
+  email: string;
+  role: UserRole;
+  created_at: string;
+  notas_count: number;
+  itens_count: number;
+  ultima_atividade: string | null;
+}
+
+export interface PaginatedAdminUsuarios {
+  data: AdminUsuario[];
+  page: number;
+  page_size: number;
+  total: number;
+  resumo_perfis: Record<string, number>;
 }

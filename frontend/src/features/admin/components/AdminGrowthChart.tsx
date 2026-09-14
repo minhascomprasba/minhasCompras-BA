@@ -18,15 +18,16 @@ const NOTAS_COLOR = '#3a8fe0';
 
 interface AdminGrowthChartProps {
   pontos: AdesaoSemana[];
+  bucketLabel: string;
 }
 
-export function AdminGrowthChart({ pontos }: AdminGrowthChartProps) {
+export function AdminGrowthChart({ pontos, bucketLabel }: AdminGrowthChartProps) {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
         <div className="chart-tooltip">
           <p className="chart-tooltip-title" style={{ marginBottom: '0.25rem' }}>
-            Semana: {label}
+            {bucketLabel}: {label}
           </p>
           {payload.map((entry: any, index: number) => (
             <p
@@ -65,6 +66,9 @@ export function AdminGrowthChart({ pontos }: AdminGrowthChartProps) {
         </span>
       </div>
 
+      {pontos.length === 0 ? (
+        <div className="admin-chart-placeholder">Sem histórico suficiente para o período.</div>
+      ) : (
       <div style={{ width: '100%', height: '260px', marginTop: 'auto' }}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={pontos} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -122,6 +126,7 @@ export function AdminGrowthChart({ pontos }: AdminGrowthChartProps) {
           </AreaChart>
         </ResponsiveContainer>
       </div>
+      )}
     </div>
   );
 }

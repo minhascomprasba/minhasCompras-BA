@@ -82,6 +82,10 @@ function CatalogQuality({ qualidade }: { qualidade: QualidadeCatalogo }) {
           </p>
           <p className="admin-catalog-stat-label">Sem GTIN</p>
         </div>
+        <div>
+          <p className="admin-catalog-stat-value">{qualidade.produtosCatalogados}</p>
+          <p className="admin-catalog-stat-label">Produtos no período</p>
+        </div>
       </div>
     </div>
   );

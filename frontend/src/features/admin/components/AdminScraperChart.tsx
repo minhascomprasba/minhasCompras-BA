@@ -15,15 +15,21 @@ const TOOLTIP_INFO =
 
 interface AdminScraperChartProps {
   dias: ScraperDia[];
+  bucketLabel: string;
 }
 
-export function AdminScraperChart({ dias }: AdminScraperChartProps) {
+export function AdminScraperChart({ dias, bucketLabel }: AdminScraperChartProps) {
+  const totalImportacoes = dias.reduce(
+    (total, dia) => total + dia.completed + dia.expired + dia.failed,
+    0
+  );
+
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
         <div className="chart-tooltip">
           <p className="chart-tooltip-title" style={{ marginBottom: '0.35rem' }}>
-            Dia: {label}
+            {bucketLabel}: {label}
           </p>
           {payload.map((entry: any, index: number) => (
             <p
@@ -35,7 +41,7 @@ export function AdminScraperChart({ dias }: AdminScraperChartProps) {
                 fontWeight: 500,
               }}
             >
-              {entry.name}: {entry.value}%
+              {entry.name}: {entry.value}
             </p>
           ))}
         </div>
@@ -46,7 +52,7 @@ export function AdminScraperChart({ dias }: AdminScraperChartProps) {
 
   return (
     <div className="card admin-chart-card">
-      <MetricHead title="Desempenho Diário do Scraper" tooltip={TOOLTIP_INFO} />
+      <MetricHead title="Desempenho do Scraper por Período" tooltip={TOOLTIP_INFO} />
 
       <div className="admin-chart-legend">
         <span className="admin-chart-legend-item">
@@ -63,6 +69,11 @@ export function AdminScraperChart({ dias }: AdminScraperChartProps) {
         </span>
       </div>
 
+      {totalImportacoes === 0 ? (
+        <div className="admin-chart-placeholder">
+          Nenhuma importação finalizada no período selecionado.
+        </div>
+      ) : (
       <div style={{ width: '100%', height: '260px', marginTop: 'auto' }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={dias} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -80,8 +91,7 @@ export function AdminScraperChart({ dias }: AdminScraperChartProps) {
               fontSize={12}
               tickLine={false}
               axisLine={false}
-              domain={[0, 100]}
-              tickFormatter={(val) => `${val}%`}
+              allowDecimals={false}
             />
 
             <Tooltip content={<CustomTooltip />} />
@@ -109,6 +119,7 @@ export function AdminScraperChart({ dias }: AdminScraperChartProps) {
           </BarChart>
         </ResponsiveContainer>
       </div>
+      )}
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { QrCodeScanner } from '../features/imports/components/QrCodeScanner';
 import { extractAccessKeyFromQrContent, validateAccessKey } from '../features/imports/utils/extractAccessKey';
 import { scanQrCodeFromFile } from '../features/imports/utils/scanQrFromFile';
 import { ImageUploadIcon, QrCodeIcon } from '../components/ImportActionIcons';
+import type { ImportSource } from '../features/imports/types';
 
 const accessKeySchema = z.object({
   access_key: z
@@ -35,6 +36,8 @@ export function ImportPage() {
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isFileScanning, setIsFileScanning] = useState(false);
   const [qrFeedback, setQrFeedback] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
+  // Canal usado para preencher a chave: alimenta a telemetria do painel admin.
+  const [source, setSource] = useState<ImportSource>('MANUAL');
 
   const startImportMutation = useStartImport();
   const submitCaptchaMutation = useSubmitCaptcha(importId || '');
@@ -97,13 +100,14 @@ export function ImportPage() {
     };
   }, [captchaImageSrc]);
 
-  const applyAccessKey = (accessKey: string) => {
+  const applyAccessKey = (accessKey: string, origin: ImportSource) => {
     keyForm.setValue('access_key', accessKey, { shouldValidate: true, shouldDirty: true });
     keyForm.clearErrors('access_key');
+    setSource(origin);
     setQrFeedback({ type: 'success', message: 'Chave de acesso preenchida. Confira os dados e clique em Avançar.' });
   };
 
-  const handleQrDecodedText = (decodedText: string) => {
+  const handleQrDecodedText = (decodedText: string, origin: ImportSource) => {
     const accessKey = extractAccessKeyFromQrContent(decodedText);
     if (!accessKey) {
       setQrFeedback({
@@ -119,7 +123,7 @@ export function ImportPage() {
       return;
     }
 
-    applyAccessKey(accessKey);
+    applyAccessKey(accessKey, origin);
   };
 
   const handleFileSelected = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -134,7 +138,7 @@ export function ImportPage() {
 
     try {
       const decodedText = await scanQrCodeFromFile(file);
-      handleQrDecodedText(decodedText);
+      handleQrDecodedText(decodedText, 'PHOTO');
     } catch {
       setQrFeedback({
         type: 'error',
@@ -146,7 +150,7 @@ export function ImportPage() {
   };
 
   const onKeySubmit = (data: AccessKeyFormData) => {
-    startImportMutation.mutate(data, {
+    startImportMutation.mutate({ ...data, source }, {
       onSuccess: (response) => {
         setIsCaptchaLoading(true);
         setCaptchaImageSrc((prevSrc) => {
@@ -198,7 +202,7 @@ export function ImportPage() {
       <QrCodeScanner
         isOpen={isScannerOpen}
         onClose={() => setIsScannerOpen(false)}
-        onScan={handleQrDecodedText}
+        onScan={(decodedText) => handleQrDecodedText(decodedText, 'QR_CODE')}
       />
 
       {!importId ? (
@@ -270,7 +274,10 @@ export function ImportPage() {
                 className={`form-input ${keyForm.formState.errors.access_key ? 'error' : ''}`}
                 maxLength={44}
                 {...keyForm.register('access_key', {
-                  onChange: () => setQrFeedback(null),
+                  onChange: () => {
+                    setQrFeedback(null);
+                    setSource('MANUAL');
+                  },
                 })}
               />
               {keyForm.formState.errors.access_key && (

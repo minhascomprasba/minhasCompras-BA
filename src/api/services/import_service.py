@@ -14,7 +14,15 @@ from sqlalchemy import func, select
 from src.api import settings
 from src.api.errors import ConflictError, NotFoundError, ValidationError
 from src.database.connection import SessionLocal
-from src.database.models import Estabelecimento, ImportStatus, ItemNotaFiscal, NfceImport, NotaFiscal, Produto
+from src.database.models import (
+    Estabelecimento,
+    ImportSource,
+    ImportStatus,
+    ItemNotaFiscal,
+    NfceImport,
+    NotaFiscal,
+    Produto,
+)
 from src.phase1.auth_flow import refresh_captcha_image, start_auth_session, submit_captcha_attempt
 from src.phase2.navigation import Maps_to_Emitente_tab, Maps_to_products_tab, wait_for_products_content
 from src.phase3.parser import EmpresaParser, ProductParser
@@ -112,9 +120,23 @@ def cleanup_expired_import_sessions() -> None:
         session.close()
 
 
-def start_import(access_key: str, usuario_id: int) -> dict[str, object]:
+def _normalize_source(source: str | None) -> str:
+    if not source:
+        return ImportSource.MANUAL.value
+    normalized = source.strip().upper()
+    if normalized not in {item.value for item in ImportSource}:
+        raise ValidationError(
+            code="INVALID_IMPORT_SOURCE",
+            message="Canal de importacao invalido.",
+            details={"field": "source"},
+        )
+    return normalized
+
+
+def start_import(access_key: str, usuario_id: int, source: str | None = None) -> dict[str, object]:
     cleanup_expired_import_sessions()
     normalized_key = _validate_access_key(access_key)
+    normalized_source = _normalize_source(source)
     import_id = _build_import_id()
     now = _utcnow()
     expires_at = now + timedelta(seconds=settings.CAPTCHA_TTL_SECONDS)
@@ -136,6 +158,7 @@ def start_import(access_key: str, usuario_id: int) -> dict[str, object]:
             usuario_id=usuario_id,
             access_key=normalized_key,
             status=ImportStatus.WAITING_CAPTCHA.value,
+            source=normalized_source,
             captcha_image_path=captcha_path.as_posix(),
             attempts=0,
             error_message=None,
