@@ -60,6 +60,7 @@ class NotaFiscal(Base):
     codigo_acesso: Mapped[str] = mapped_column(String(44), nullable=False, index=True)
     valor_total_nota: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     data_compra: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    meio_pagamento: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
     usuario: Mapped[Usuario] = relationship(back_populates="notas")
