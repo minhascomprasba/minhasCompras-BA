@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
 import { ROLE_LABELS } from '../features/auth/authService';
+import { QuickScan } from './QuickScan';
 
 export function AuthenticatedLayout() {
   const { user, logout, role, isAdmin, isSuperAdmin } = useAuth();
@@ -102,6 +103,8 @@ export function AuthenticatedLayout() {
       <main className="app-main">
         <Outlet />
       </main>
+
+      <QuickScan />
 
       <footer className="app-footer">
         &copy; {new Date().getFullYear()} Minhas Compras BA. Todos os direitos reservados.
