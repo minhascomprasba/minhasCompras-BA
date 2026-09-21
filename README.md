@@ -38,7 +38,7 @@ Se em algum momento a URL do Frontend (Vercel) ou do Backend (Render) mudar, as 
 ### 1. Se a URL do Backend (Render) Mudar:
 Você deve atualizar o endereço da API no frontend para que ele saiba onde enviar as requisições:
 1. Vá no painel da **Vercel** -> Selecione o projeto -> **Project Settings** -> **Environment Variables**.
-2. Altere o valor da variável **`VITE_API_BASE_URL`** para a nova URL do Render, mantendo o prefixo `/api/v1` no final (Exemplo: `https://nova-url-do-backend.onrender.com/api/v1`).
+2. Altere o valor da variável **`NEXT_PUBLIC_API_URL`** para a nova URL do Render, mantendo o prefixo `/api/v1` no final (Exemplo: `https://nova-url-do-backend.onrender.com/api/v1`).
 3. **CRÍTICO:** Como o Vite injeta variáveis em tempo de compilação, você deve ir na aba **Deployments** da Vercel, selecionar o último deploy e clicar em **Redeploy** para recompilar o código com a nova URL.
 
 ### 2. Se a URL do Frontend (Vercel) Mudar:
@@ -55,7 +55,7 @@ Você deve atualizar as configurações de segurança no backend para que ele pe
 | Variável | Descrição | Onde Configurar | Exemplo de Valor |
 | :--- | :--- | :--- | :--- |
 | `DATABASE_URL` | String de conexão com o banco de dados PostgreSQL | Render | `postgresql://user:pass@host/db?sslmode=require` |
-| `VITE_API_BASE_URL` | Endereço da API backend para o frontend consumir | Vercel | `https://minhascompras-ba.onrender.com/api/v1` |
+| `NEXT_PUBLIC_API_URL` | Endereço da API backend para o frontend consumir | Vercel | `https://minhascompras-ba.onrender.com/api/v1` |
 | `CORS_ALLOWED_ORIGINS`| Domínios permitidos a fazer requisições à API (separados por vírgula) | Render | `http://localhost:5173,https://site.vercel.app` |
 | `FRONTEND_URL` | Endereço oficial do frontend para redirecionamentos e e-mails | Render | `https://site.vercel.app` |
 | `HEADLESS` | Define se o Selenium roda sem interface visual (`true` em prod) | Render / Local | `true` (Render) / `false` (Local) |
@@ -177,7 +177,7 @@ sudo certbot --nginx -d api.seu-dominio.com
 
 #### 6. Conectar o Frontend na Vercel com a Nova API da VM
 1. Acesse o painel da **Vercel** -> Selecione o projeto -> **Project Settings** -> **Environment Variables**.
-2. Altere o valor de **`VITE_API_BASE_URL`** para `https://api.seu-dominio.com/api/v1`.
+2. Altere o valor de **`NEXT_PUBLIC_API_URL`** para `https://api.seu-dominio.com/api/v1`.
 3. Vá na aba **Deployments**, clique no menu de três pontos do último deploy e selecione **Redeploy**.
 
 #### 7. Comandos Úteis de Manutenção na VM
@@ -205,7 +205,7 @@ O backend usa o **Docker** para garantir que as bibliotecas do Linux, o navegado
 ### ⚡ Frontend (Vercel)
 1. Crie um novo projeto na Vercel a partir do repositório do Fork.
 2. **PASSO CRÍTICO:** Em *Configure Project*, configure o **Root Directory** para a pasta **`frontend`** (não deixe a raiz padrão do projeto).
-3. Adicione a variável de ambiente `VITE_API_BASE_URL` apontando para a URL da API criada (ex: `https://api.seu-dominio.com/api/v1` ou `https://nome-da-api.onrender.com/api/v1`).
+3. Adicione a variável de ambiente `NEXT_PUBLIC_API_URL` apontando para a URL da API criada (ex: `https://api.seu-dominio.com/api/v1` ou `https://nome-da-api.onrender.com/api/v1`).
 4. Clique em **Deploy**.
 
 ---

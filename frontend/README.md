@@ -11,8 +11,9 @@ Aplicacao React + Vite para autenticacao, importacao de NFC-e e consulta de nota
 
 ## Ambiente
 
-- `VITE_API_BASE_URL`: URL base da API com prefixo `/api/v1`.
+- `NEXT_PUBLIC_API_URL`: URL base da API com prefixo `/api/v1`.
   - Exemplo local: `http://localhost:10000/api/v1`
+  - Fallback legado: `VITE_API_BASE_URL` (ainda aceito).
 
 ## Integracao com backend em producao
 
