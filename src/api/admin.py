@@ -23,9 +23,11 @@ admin_router = APIRouter(prefix="/admin", tags=["admin"])
 @admin_router.get("/metrics", response_model=AdminDashboardResponse)
 def admin_metrics(
     period: str = Query(default="30d", description="7d | 30d | mes | ano | geral"),
+    month: str | None = Query(default=None, description="YYYY-MM (quando period=mes)"),
+    year: str | None = Query(default=None, description="YYYY (quando period=ano)"),
     _: Usuario = Depends(require_admin),
 ) -> AdminDashboardResponse:
-    return AdminDashboardResponse(**get_admin_dashboard(period))
+    return AdminDashboardResponse(**get_admin_dashboard(period, month=month, year=year))
 
 
 @admin_router.get("/usuarios", response_model=PaginatedAdminUsuariosResponse)

@@ -178,7 +178,50 @@ def _format_date(moment: datetime) -> str:
     return moment.strftime("%d/%m/%Y")
 
 
-def _resolve_window(period: str, now: datetime, earliest: datetime | None) -> PeriodWindow:
+def _parse_month_ref(month: str | None, fallback: datetime) -> datetime:
+    """Interpreta YYYY-MM; em caso de invalido, usa o mes do fallback."""
+    if not month:
+        return fallback
+    try:
+        year_s, month_s = month.strip().split("-", 1)
+        year_i = int(year_s)
+        month_i = int(month_s)
+        if month_i < 1 or month_i > 12:
+            raise ValueError("mes fora do intervalo")
+        return fallback.replace(year=year_i, month=month_i, day=1, hour=0, minute=0, second=0, microsecond=0)
+    except (TypeError, ValueError):
+        raise ValidationError(
+            code="INVALID_MONTH",
+            message="Mes informado e invalido. Use o formato YYYY-MM.",
+            details={"field": "month", "value": month or ""},
+        )
+
+
+def _parse_year_ref(year: str | None, fallback: datetime) -> datetime:
+    """Interpreta YYYY; em caso de invalido, usa o ano do fallback."""
+    if not year:
+        return fallback
+    try:
+        year_i = int(year.strip())
+        if year_i < 2000 or year_i > 2100:
+            raise ValueError("ano fora do intervalo")
+        return fallback.replace(year=year_i, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+    except (TypeError, ValueError):
+        raise ValidationError(
+            code="INVALID_YEAR",
+            message="Ano informado e invalido. Use o formato YYYY.",
+            details={"field": "year", "value": year or ""},
+        )
+
+
+def _resolve_window(
+    period: str,
+    now: datetime,
+    earliest: datetime | None,
+    *,
+    month: str | None = None,
+    year: str | None = None,
+) -> PeriodWindow:
     end = now
     mes_ano = f"{PORTUGUESE_MONTHS[now.month]} {now.year}"
 
@@ -215,36 +258,46 @@ def _resolve_window(period: str, now: datetime, earliest: datetime | None) -> Pe
         )
 
     if period == PERIOD_MONTH:
-        start = _start_of_month(now)
+        anchor = _parse_month_ref(month, now)
+        start = _start_of_month(anchor)
+        month_end = _add_month(start)
+        is_current_month = start.year == now.year and start.month == now.month
+        # Mes atual: ate agora; mes passado: janela fechada no fim do mes.
+        window_end = now if is_current_month else month_end
+        bucket_end = (_start_of_day(now) + timedelta(days=1)) if is_current_month else month_end
         previous_end = start
         previous_start = _start_of_month(start - timedelta(days=1))
+        label_mes = f"{PORTUGUESE_MONTHS[start.month]} {start.year}"
         return PeriodWindow(
             key=period,
             label="Mês a Mês",
-            mes_ano=mes_ano,
-            janela_label=f"{mes_ano} (comparado a {PORTUGUESE_MONTHS[previous_start.month]} {previous_start.year})",
+            mes_ano=label_mes,
+            janela_label=f"{label_mes} (comparado a {PORTUGUESE_MONTHS[previous_start.month]} {previous_start.year})",
             bucket_label="Semana",
             start=start,
-            end=end,
+            end=window_end,
             previous_start=previous_start,
             previous_end=previous_end,
-            buckets=_weekly_buckets(start, _start_of_day(now) + timedelta(days=1)),
+            buckets=_weekly_buckets(start, bucket_end),
         )
 
     if period == PERIOD_YEAR:
-        start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        anchor = _parse_year_ref(year, now)
+        start = anchor.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        year_end = start.replace(year=start.year + 1)
+        window_end = now if start.year == now.year else year_end
         previous_start = start.replace(year=start.year - 1)
         return PeriodWindow(
             key=period,
             label="Ano a Ano",
-            mes_ano=f"Ano {now.year}",
-            janela_label=f"{now.year} (comparado a {previous_start.year})",
+            mes_ano=f"Ano {start.year}",
+            janela_label=f"{start.year} (comparado a {previous_start.year})",
             bucket_label="Mês",
             start=start,
-            end=end,
+            end=window_end,
             previous_start=previous_start,
             previous_end=start,
-            buckets=_monthly_buckets(start, _add_month(_start_of_month(now))),
+            buckets=_monthly_buckets(start, year_end if start.year != now.year else _add_month(_start_of_month(now))),
         )
 
     history_start = _start_of_month(earliest or now)
@@ -721,12 +774,23 @@ def _build_logs(session: Session, window: PeriodWindow) -> list[dict[str, object
     ]
 
 
-def get_admin_dashboard(period: str | None) -> dict[str, object]:
+def get_admin_dashboard(
+    period: str | None,
+    *,
+    month: str | None = None,
+    year: str | None = None,
+) -> dict[str, object]:
     normalized = normalize_period(period)
     session = SessionLocal()
     try:
         earliest = session.execute(select(func.min(Usuario.created_at))).scalar()
-        window = _resolve_window(normalized, datetime.utcnow(), earliest)
+        window = _resolve_window(
+            normalized,
+            datetime.utcnow(),
+            earliest,
+            month=month,
+            year=year,
+        )
         return {
             "periodo": window.key,
             "periodoLabel": window.label,

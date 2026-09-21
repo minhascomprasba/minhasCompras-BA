@@ -11,10 +11,15 @@ import { AdminLogsTable } from '../features/admin/components/AdminLogsTable';
 import type { AdminPeriod } from '../features/admin/types';
 import { useAuth } from '../features/auth/AuthContext';
 
+function currentMonthKey(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
 export function AdminPage() {
   const [period, setPeriod] = useState<AdminPeriod>('30d');
-  const [selectedMonth, setSelectedMonth] = useState<string>('2026-10');
-  const [selectedYear, setSelectedYear] = useState<string>('2026');
+  const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthKey);
+  const [selectedYear, setSelectedYear] = useState<string>(() => String(new Date().getFullYear()));
 
   const { isSuperAdmin } = useAuth();
   const { data, isLoading, isError, error, isFetching } = useAdminData(
