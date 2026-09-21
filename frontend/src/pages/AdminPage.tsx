@@ -13,8 +13,15 @@ import { useAuth } from '../features/auth/AuthContext';
 
 export function AdminPage() {
   const [period, setPeriod] = useState<AdminPeriod>('30d');
+  const [selectedMonth, setSelectedMonth] = useState<string>('2026-10');
+  const [selectedYear, setSelectedYear] = useState<string>('2026');
+
   const { isSuperAdmin } = useAuth();
-  const { data, isLoading, isError, error, isFetching } = useAdminData(period);
+  const { data, isLoading, isError, error, isFetching } = useAdminData(
+    period,
+    selectedMonth,
+    selectedYear
+  );
 
   if (isLoading) {
     return (
@@ -58,6 +65,10 @@ export function AdminPage() {
       <AdminHeader
         period={period}
         onPeriodChange={setPeriod}
+        selectedMonth={selectedMonth}
+        onMonthChange={setSelectedMonth}
+        selectedYear={selectedYear}
+        onYearChange={setSelectedYear}
         janelaLabel={data.janelaLabel}
         isRefreshing={isFetching}
         showUsersLink={isSuperAdmin}

@@ -1,4 +1,4 @@
-import { apiClient } from '../../../shared/api/client';
+import { getMockAdminData } from '../mockAdminData';
 import type { UserRole } from '../../auth/authService';
 import type {
   AdminDashboardData,
@@ -15,22 +15,33 @@ export interface ListUsuariosParams {
 }
 
 export const adminService = {
-  async getAdminData(period: AdminPeriod): Promise<AdminDashboardData> {
-    const response = await apiClient.get<AdminDashboardData>('/admin/metrics', {
-      params: { period },
-    });
-    return response.data;
+  async getAdminData(
+    period: AdminPeriod,
+    selectedMonth?: string,
+    selectedYear?: string
+  ): Promise<AdminDashboardData> {
+    return getMockAdminData(period, selectedMonth, selectedYear);
   },
 
-  async listUsuarios(params: ListUsuariosParams = {}): Promise<PaginatedAdminUsuarios> {
-    const response = await apiClient.get<PaginatedAdminUsuarios>('/admin/usuarios', { params });
-    return response.data;
+  async listUsuarios(_params: ListUsuariosParams = {}): Promise<PaginatedAdminUsuarios> {
+    return {
+      data: [],
+      page: 1,
+      page_size: 20,
+      total: 0,
+      resumo_perfis: { USER: 10, ADMIN: 2, SUPER_ADMIN: 1 },
+    };
   },
 
   async updateUsuarioRole(usuarioId: number, role: UserRole): Promise<AdminUsuario> {
-    const response = await apiClient.patch<AdminUsuario>(`/admin/usuarios/${usuarioId}/role`, {
+    return {
+      id: usuarioId,
+      email: 'mock@admin.com',
       role,
-    });
-    return response.data;
+      created_at: new Date().toISOString(),
+      notas_count: 5,
+      itens_count: 20,
+      ultima_atividade: new Date().toISOString(),
+    };
   },
 };

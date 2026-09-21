@@ -2,7 +2,7 @@ import type { AlcanceGeografico } from '../types';
 import { MetricHead } from './MetricHead';
 
 const TOOLTIP =
-  'Comprova a descentralização do projeto: mostra se o app está concentrado em Feira de Santana (sede da UEFS) ou se já alcançou Salvador e municípios do interior baiano, além de mapear as redes comerciais onde o cidadão mais consome.';
+  'Distribuição geográfica das compras por município e principais redes comerciais registradas pelos usuários.';
 
 interface AdminMapPlaceholderProps {
   alcance: AlcanceGeografico;
@@ -29,7 +29,7 @@ export function AdminMapPlaceholder({ alcance }: AdminMapPlaceholderProps) {
         </svg>
         <p>{alcance.nota}</p>
         <p className="admin-map-placeholder-stats">
-          {alcance.totalCidades} municípios &bull; {alcance.redesMonitoradas} redes monitoradas
+          {alcance.totalCidades} municípios &bull; {alcance.redesMonitoradas} redes registradas
         </p>
         <div className="admin-map-redes">
           {alcance.redesLideres.map((rede) => (

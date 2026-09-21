@@ -5,10 +5,10 @@ import type { UserRole } from '../../auth/authService';
 import type { AdminDashboardData, AdminPeriod, AdminUsuario, PaginatedAdminUsuarios } from '../types';
 import type { AppError } from '../../../shared/api/errors';
 
-export function useAdminData(period: AdminPeriod) {
+export function useAdminData(period: AdminPeriod, selectedMonth?: string, selectedYear?: string) {
   return useQuery<AdminDashboardData, AppError>({
-    queryKey: ['admin', 'metrics', period],
-    queryFn: () => adminService.getAdminData(period),
+    queryKey: ['admin', 'metrics', period, selectedMonth, selectedYear],
+    queryFn: () => adminService.getAdminData(period, selectedMonth, selectedYear),
     staleTime: 5 * 60 * 1000,
   });
 }
