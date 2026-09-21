@@ -3,7 +3,7 @@ import type { TopProduto } from '../types';
 import { MetricHead } from './MetricHead';
 
 const TOOLTIP =
-  'Preço médio estadual de itens essenciais da cesta básica coletiva, insumo para estudos de custo de vida na Bahia. A exibição limitada ao Top 5–10 preserva a limpeza visual e a velocidade de renderização; análises exaustivas ficam para relatórios sob demanda.';
+  'Produtos mais comprados pelos usuários no período e seus respectivos preços médios na Bahia.';
 
 interface AdminTopProductsProps {
   produtos: TopProduto[];
