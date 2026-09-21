@@ -266,5 +266,3 @@ O scraper foi construído utilizando Selenium e Beautiful Soup 4 devido à compl
 
 ### 2. Inicialização Automática e Updates de Esquema
 O projeto não utiliza migrations complexas (como Alembic) para simplificar a entrega acadêmica. A aplicação implementa um helper no arquivo `src/api/app.py` chamado `_ensure_schema_updates()` que roda em conjunto com o `create_all()` no startup da API. Esse helper faz checagens nativas de tabelas existentes no banco e executa comandos `ALTER TABLE` nativos se novas colunas (como `data_compra` ou `sem_gtin`) estiverem ausentes.
-
-
