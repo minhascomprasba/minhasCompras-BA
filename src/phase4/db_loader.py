@@ -179,9 +179,8 @@ def bulk_insert_produtos_with_nota_id(
 
         agregados: dict[int, dict[str, float]] = {}
 
-        total_nota = 0.0
-        total_desconto_nota = 0.0
-        total_pago_nota = 0.0
+        total_pago_calc = 0.0
+        total_desconto_calc = 0.0
 
         for index, produto_scraped in enumerate(produtos, start=1):
             try:
@@ -189,9 +188,8 @@ def bulk_insert_produtos_with_nota_id(
                 qtd = _coerce_required_float(produto_scraped.get("quantidade"), "quantidade")
                 valor_desconto = _coerce_optional_float(produto_scraped.get("valor_desconto"))
                 valor_pago = _coerce_optional_float(produto_scraped.get("valor_pago"), default=max(vt - valor_desconto, 0.0))
-                total_nota += vt
-                total_desconto_nota += valor_desconto
-                total_pago_nota += valor_pago
+                total_desconto_calc += valor_desconto
+                total_pago_calc += valor_pago
 
                 ean = _coerce_optional_str(produto_scraped.get("codigo_ean_comercial"))
                 ncm = _coerce_optional_str(produto_scraped.get("codigo_ncm_comercial"))
@@ -208,13 +206,11 @@ def bulk_insert_produtos_with_nota_id(
 
                 if produto_banco.id in agregados:
                     agregados[produto_banco.id]["quantidade"] += qtd
-                    agregados[produto_banco.id]["valor_total"] += vt
                     agregados[produto_banco.id]["valor_desconto"] += valor_desconto
                     agregados[produto_banco.id]["valor_pago"] += valor_pago
                 else:
                     agregados[produto_banco.id] = {
                         "quantidade": qtd,
-                        "valor_total": vt,
                         "valor_desconto": valor_desconto,
                         "valor_pago": valor_pago,
                     }
@@ -222,15 +218,14 @@ def bulk_insert_produtos_with_nota_id(
             except ValueError as exc:
                 raise ValueError(f"Produto invalido na posicao {index}: {exc}") from exc
 
-        nota_fiscal.valor_total_nota = total_nota
-        # O bloco de totais da nota (quando disponivel) e mais confiavel que a
-        # soma dos itens: muitas notas so informam o desconto ali, sem
-        # detalhar por item.
-        nota_fiscal.valor_desconto_nota = (
-            valor_desconto_nota if valor_desconto_nota is not None else total_desconto_nota
+        # valor_total_nota e o valor PAGO (liquido). O bloco de totais da nota
+        # (quando disponivel) e mais confiavel que a soma dos itens: muitas
+        # notas so informam o desconto ali, sem detalhar por item.
+        nota_fiscal.valor_total_nota = (
+            valor_pago_nota if valor_pago_nota is not None else total_pago_calc
         )
-        nota_fiscal.valor_pago_nota = (
-            valor_pago_nota if valor_pago_nota is not None else total_pago_nota
+        nota_fiscal.valor_desconto_nota = (
+            valor_desconto_nota if valor_desconto_nota is not None else total_desconto_calc
         )
 
         records_itens = [
@@ -239,12 +234,11 @@ def bulk_insert_produtos_with_nota_id(
                 id_produto=produto_id,
                 quantidade=dados["quantidade"],
                 valor_unitario=(
-                    dados["valor_total"] / dados["quantidade"]
+                    dados["valor_pago"] / dados["quantidade"]
                     if dados["quantidade"] > 0
                     else 0.0
                 ),
                 valor_desconto=dados["valor_desconto"],
-                valor_pago=dados["valor_pago"],
             )
             for produto_id, dados in agregados.items()
         ]

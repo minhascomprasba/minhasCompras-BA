@@ -519,7 +519,6 @@ def list_notas(page: int, page_size: int, from_date: datetime | None, to_date: d
                     "itens_count": itens_count,
                     "valor_total_nota": nota.valor_total_nota,
                     "valor_desconto_nota": nota.valor_desconto_nota,
-                    "valor_pago_nota": nota.valor_pago_nota,
                     "meio_pagamento": nota.meio_pagamento,
                 }
             )
@@ -601,7 +600,6 @@ def get_nota(nota_id: int, usuario_id: int) -> dict[str, object]:
             "data_compra": nota.data_compra,
             "valor_total_nota": nota.valor_total_nota,
             "valor_desconto_nota": nota.valor_desconto_nota,
-            "valor_pago_nota": nota.valor_pago_nota,
             "meio_pagamento": nota.meio_pagamento,
         }
     finally:
@@ -640,7 +638,6 @@ def list_items(nota_id: int, page: int, page_size: int, usuario_id: int) -> dict
                 "valor_unitario": item.valor_unitario,
                 "valor_total": round(item.quantidade * item.valor_unitario, 2),
                 "valor_desconto": item.valor_desconto,
-                "valor_pago": item.valor_pago,
                 "unidade_comercial": produto.unidade_comercial,
                 "codigo_ean_comercial": produto.codigo_ean_comercial,
                 "codigo_NCM_comercial": produto.codigo_NCM_comercial,

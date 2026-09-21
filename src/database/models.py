@@ -68,9 +68,10 @@ class NotaFiscal(Base):
     usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), nullable=False, index=True)
     estabelecimento_id: Mapped[int] = mapped_column(ForeignKey("estabelecimento.id"), nullable=False, index=True)
     codigo_acesso: Mapped[str] = mapped_column(String(44), nullable=False, index=True)
+    # valor_total_nota e o valor PAGO (liquido, ja descontado). O valor bruto,
+    # se precisar, e valor_total_nota + valor_desconto_nota.
     valor_total_nota: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     valor_desconto_nota: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
-    valor_pago_nota: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     data_compra: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     meio_pagamento: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
@@ -86,10 +87,10 @@ class ItemNotaFiscal(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     id_produto: Mapped[int] = mapped_column(ForeignKey("produto.id"), nullable=False, index=True)
     id_nota_fiscal: Mapped[int] = mapped_column(ForeignKey("notas_fiscais.id"), nullable=False, index=True)
+    # valor_unitario e o preco unitario PAGO (liquido, ja descontado).
     valor_unitario: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     quantidade: Mapped[int] = mapped_column(Float, nullable=False, default=0)
     valor_desconto: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
-    valor_pago: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     
     nota_fiscal: Mapped[NotaFiscal] = relationship(back_populates="itens") 
     
