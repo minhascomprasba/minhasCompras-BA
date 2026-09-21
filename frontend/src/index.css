@@ -372,6 +372,103 @@ a:hover { color: var(--primary-hover); }
   border-radius: var(--radius-md);
 }
 
+.qr-scanner-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.qr-scanner-actions .btn {
+  flex: 1;
+}
+
+.qr-scanner-gallery-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  background: var(--success-bg);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: var(--radius-md);
+  color: var(--success);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: var(--transition);
+  animation: fadeIn 0.25s ease-out;
+}
+
+.qr-scanner-gallery-hint:hover:not(:disabled) {
+  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow: var(--shadow-md);
+}
+
+.qr-scanner-gallery-hint:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.qr-scanner-gallery-hint-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Botão de acesso rápido para escanear uma nota fiscal (FAB) */
+.scan-fab {
+  position: fixed;
+  right: calc(1.5rem + var(--safe-right));
+  bottom: calc(2rem + var(--safe-bottom));
+  z-index: 500;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(23, 200, 95, 0.45);
+  animation: pulse-glow 2.5s infinite;
+  transition: var(--transition);
+}
+
+.scan-fab:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 12px 30px rgba(23, 200, 95, 0.55);
+}
+
+.scan-fab:active {
+  transform: scale(0.96);
+}
+
+.scan-fab svg {
+  width: 30px;
+  height: 30px;
+}
+
+/* Oculta o FAB quando o menu mobile está aberto para evitar sobreposição */
+body.menu-open .scan-fab {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  .qr-scanner-actions {
+    flex-direction: column;
+  }
+  .qr-scanner-actions .btn {
+    width: 100%;
+    min-height: 44px; /* Touch target minimum on mobile */
+  }
+}
+
 .import-actions {
   display: flex;
   flex-direction: column;
