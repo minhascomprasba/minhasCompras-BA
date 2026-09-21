@@ -180,6 +180,9 @@ class MapaPontoResponse(BaseModel):
     cidade: str | None = None
     estado: str | None = None
     cep: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    endereco: str | None = None
     notas_count: int
     notas: list[MapaNotaItem] = Field(default_factory=list)
 

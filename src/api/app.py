@@ -77,6 +77,13 @@ def _ensure_schema_updates() -> None:
             if "source" not in import_columns:
                 connection.execute(text("ALTER TABLE nfce_imports ADD COLUMN source VARCHAR(20)"))
 
+        if inspector.has_table("estabelecimento"):
+            est_columns = {column["name"] for column in inspector.get_columns("estabelecimento")}
+            if "latitude" not in est_columns:
+                connection.execute(text("ALTER TABLE estabelecimento ADD COLUMN latitude FLOAT"))
+            if "longitude" not in est_columns:
+                connection.execute(text("ALTER TABLE estabelecimento ADD COLUMN longitude FLOAT"))
+
 
 def _bootstrap_super_admins() -> None:
     """Promove a super admin os e-mails listados em SUPER_ADMIN_EMAILS.

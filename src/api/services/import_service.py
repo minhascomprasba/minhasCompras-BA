@@ -537,7 +537,13 @@ def list_notas(page: int, page_size: int, from_date: datetime | None, to_date: d
 def list_estabelecimentos_mapa(usuario_id: int) -> list[dict[str, object]]:
     """Estabelecimentos (com CEP) onde o usuario possui notas, agregados por
     local e ja trazendo a lista de notas de cada estabelecimento. Usado pela
-    pagina de Mapa."""
+    pagina de Mapa.
+
+    Coordenadas faltantes sao geocodificadas em batch (1 request por CEP unico)
+    e persistidas em estabelecimento.latitude/longitude para cargas seguintes.
+    """
+    from src.api.services.geocode_service import ensure_coords_batch, format_address
+
     session = SessionLocal()
     try:
         purchase_date = func.coalesce(NotaFiscal.data_compra, NotaFiscal.created_at)
@@ -550,8 +556,20 @@ def list_estabelecimentos_mapa(usuario_id: int) -> list[dict[str, object]]:
             .order_by(purchase_date.desc())
         ).all()
 
+        # Batch geocode de lojas ainda sem lat/lng (persistido no banco).
+        unique_est: dict[int, Estabelecimento] = {}
+        for est, _nota in rows:
+            unique_est.setdefault(est.id, est)
+        ensure_coords_batch(session, list(unique_est.values()))
+        # Recarrega coordenadas apos o commit do batch.
+        for est_id in list(unique_est.keys()):
+            refreshed = session.get(Estabelecimento, est_id)
+            if refreshed is not None:
+                unique_est[est_id] = refreshed
+
         grouped: dict[int, dict[str, object]] = {}
         for est, nota in rows:
+            est = unique_est.get(est.id, est)
             entry = grouped.get(est.id)
             if entry is None:
                 entry = {
@@ -562,6 +580,9 @@ def list_estabelecimentos_mapa(usuario_id: int) -> list[dict[str, object]]:
                     "cidade": est.cidade,
                     "estado": est.estado,
                     "cep": est.cep,
+                    "latitude": est.latitude,
+                    "longitude": est.longitude,
+                    "endereco": format_address(est.logradouro, est.bairro, est.cidade, est.estado),
                     "notas": [],
                 }
                 grouped[est.id] = entry

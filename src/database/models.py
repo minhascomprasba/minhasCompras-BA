@@ -143,6 +143,8 @@ class Estabelecimento(Base):
     cidade: Mapped[str] = mapped_column(String, nullable=False)
     estado: Mapped[str] = mapped_column(String, nullable=False)
     cep: Mapped[str | None] = mapped_column(String, nullable=True)
+    latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
 
 
 

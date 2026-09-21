@@ -264,6 +264,8 @@ def get_or_create_estabelecimento(empresa_data: dict | None) -> int | None:
     if empresa_data is None:
         return None
 
+    from src.api.services.geocode_service import geocode_and_persist_estabelecimento
+
     session = SessionLocal()
     try:
         existing = session.query(Estabelecimento).filter_by(cnpj=empresa_data["cnpj"]).first()
@@ -281,6 +283,9 @@ def get_or_create_estabelecimento(empresa_data: dict | None) -> int | None:
             cep=empresa_data.get("cep"),
         )
         session.add(novo)
+        session.flush()
+        # Persiste lat/lng na criacao; lojas antigas sao preenchidas em batch no /mapa.
+        geocode_and_persist_estabelecimento(session, novo)
         session.commit()
         session.refresh(novo)
         return novo.id
