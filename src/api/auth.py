@@ -207,15 +207,10 @@ def verify_email(payload: VerifyEmailRequest, db: Session = Depends(get_db)):
             status_code=400,
         )
 
-    initial_role = (
-        UserRole.SUPER_ADMIN.value
-        if verification.email.lower() in settings.SUPER_ADMIN_EMAILS
-        else UserRole.USER.value
-    )
     new_user = Usuario(
         email=verification.email,
         password_hash=verification.password_hash,
-        role=initial_role,
+        role=UserRole.USER.value,
     )
     db.add(new_user)
     verification.used_at = now

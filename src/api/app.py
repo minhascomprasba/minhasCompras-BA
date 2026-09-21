@@ -4,15 +4,15 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from sqlalchemy import func, inspect, text
+from sqlalchemy import inspect, text
 
 from src.api.errors import ApiError
 from src.api.routers import router
 from src.api.admin import admin_router
 from src.api.auth import auth_router
 from src.api.schemas import ErrorResponse
-from src.database.connection import SessionLocal, engine
-from src.database.models import Base, Usuario, UserRole
+from src.database.connection import engine
+from src.database.models import Base, UserRole
 from src.api import settings
 
 app = FastAPI(title="minhasCompras-BA API", version="1.0.0")
@@ -113,35 +113,10 @@ def _ensure_schema_updates() -> None:
                 connection.execute(text("ALTER TABLE estabelecimento ADD COLUMN longitude FLOAT"))
 
 
-def _bootstrap_super_admins() -> None:
-    """Promove a super admin os e-mails listados em SUPER_ADMIN_EMAILS.
-
-    E o unico caminho para criar o primeiro super admin: a partir dele a
-    promocao de outros usuarios acontece pelo painel administrativo.
-    """
-    if not settings.SUPER_ADMIN_EMAILS:
-        return
-
-    session = SessionLocal()
-    try:
-        usuarios = (
-            session.query(Usuario)
-            .filter(func.lower(Usuario.email).in_(settings.SUPER_ADMIN_EMAILS))
-            .all()
-        )
-        for usuario in usuarios:
-            if usuario.role != UserRole.SUPER_ADMIN.value:
-                usuario.role = UserRole.SUPER_ADMIN.value
-        session.commit()
-    finally:
-        session.close()
-
-
 @app.on_event("startup")
 def on_startup() -> None:
     Base.metadata.create_all(bind=engine)
     _ensure_schema_updates()
-    _bootstrap_super_admins()
 
 
 @app.exception_handler(ApiError)
