@@ -45,34 +45,33 @@ FINAL_IMPORT_STATUSES = (
 )
 
 KPI_DESCRIPTIONS = {
-    "citizens": (
-        "Métrica primária de alcance social. Mede a penetração da tecnologia desenvolvida na UEFS "
-        "junto à sociedade civil."
-    ),
-    "receipts": (
-        "Mede o engajamento contínuo: um número crescente de notas por usuário comprova que a "
-        "ferramenta se tornou um hábito real de controle financeiro, e não um uso único descartável."
-    ),
-    "items": (
-        "Representa o tamanho real da base de conhecimento: cada item catalogado alimenta a base "
-        "estatística de preços da Bahia, tornando a amostra cada vez mais densa e confiável para "
-        "pesquisas."
-    ),
-    "volume": (
-        "Demonstra a relevância econômica do projeto: o volume financeiro consolidado traduz o "
-        "impacto do software em números compreensíveis para fomento, imprensa e comunidade acadêmica."
-    ),
-    "stability": (
-        "Observabilidade da infraestrutura: taxa de sucesso e tempo médio do robô que interage com o "
-        "portal da SEFAZ-BA. Quedas sinalizam a necessidade de manutenção antes que os usuários "
-        "comecem a reclamar."
-    ),
+    "citizens": "Total de usuários cadastrados e novas contas criadas no período.",
+    "receipts": "Total de notas fiscais e cupons de compra importados na plataforma.",
+    "items": "Quantidade de produtos individuais registrados a partir das notas.",
+    "volume": "Soma do valor financeiro total de todas as compras registradas.",
+    "stability": "Percentual de sucesso e tempo médio para consultar e importar notas na SEFAZ.",
+}
+
+# Sufixo do trendLabel dos KPIs, alinhado ao mockAdminData.
+TREND_PERIOD_SUFFIX = {
+    PERIOD_7D: "nos 7 dias",
+    PERIOD_30D: "no período",
+    PERIOD_MONTH: "no mês",
+    PERIOD_YEAR: "no ano",
+}
+
+# Texto de comparação da estabilidade, alinhado ao mock.
+STABILITY_COMPARE_SUFFIX = {
+    PERIOD_7D: "vs semana anterior",
+    PERIOD_30D: "vs período anterior",
+    PERIOD_MONTH: "vs mês anterior",
+    PERIOD_YEAR: "vs ano anterior",
 }
 
 CHANNEL_LABELS = {
     ImportSource.QR_CODE.value: ("QR Code", "var(--brand-green)"),
-    ImportSource.PHOTO.value: ("Foto / Câmera", "var(--brand-blue-light)"),
-    ImportSource.MANUAL.value: ("Chave Manual", "var(--warning)"),
+    ImportSource.PHOTO.value: ("Foto / Arquivo", "var(--brand-blue-light)"),
+    ImportSource.MANUAL.value: ("Chave Digitada", "var(--warning)"),
 }
 UNKNOWN_SLICE_COLOR = "var(--text-muted)"
 EMPTY_SLICE_COLOR = "var(--border-color)"
@@ -155,7 +154,7 @@ def _weekly_buckets(start: datetime, end: datetime) -> tuple[Bucket, ...]:
     index = 1
     while cursor < end:
         next_cursor = min(cursor + timedelta(days=7), end)
-        buckets.append(Bucket(label=f"S{index}", start=cursor, end=next_cursor))
+        buckets.append(Bucket(label=f"Semana {index}", start=cursor, end=next_cursor))
         cursor = next_cursor
         index += 1
     return tuple(buckets)
@@ -177,6 +176,27 @@ def _monthly_buckets(start: datetime, end: datetime) -> tuple[Bucket, ...]:
 def _format_date(moment: datetime) -> str:
     return moment.strftime("%d/%m/%Y")
 
+
+def _format_date_short(moment: datetime) -> str:
+    """Dia/mês sem ano — formato do subtítulo do mock (ex.: 24/10)."""
+    return moment.strftime("%d/%m")
+
+
+def _yearly_buckets(start: datetime, end: datetime) -> tuple[Bucket, ...]:
+    buckets: list[Bucket] = []
+    year = start.year
+    while datetime(year, 1, 1) < end:
+        year_start = datetime(year, 1, 1)
+        year_end = datetime(year + 1, 1, 1)
+        buckets.append(
+            Bucket(
+                label=str(year),
+                start=max(year_start, start),
+                end=min(year_end, end),
+            )
+        )
+        year += 1
+    return tuple(buckets)
 
 def _parse_month_ref(month: str | None, fallback: datetime) -> datetime:
     """Interpreta YYYY-MM; em caso de invalido, usa o mes do fallback."""
@@ -232,7 +252,7 @@ def _resolve_window(
             key=period,
             label="Últimos 7 dias",
             mes_ano=mes_ano,
-            janela_label=f"{_format_date(start)} a {_format_date(now)}",
+            janela_label=f"{_format_date_short(start)} a {_format_date(now)}",
             bucket_label="Dia",
             start=start,
             end=end,
@@ -248,7 +268,7 @@ def _resolve_window(
             key=period,
             label="Últimos 30 dias",
             mes_ano=mes_ano,
-            janela_label=f"{_format_date(start)} a {_format_date(now)}",
+            janela_label=f"{_format_date_short(start)} a {_format_date(now)}",
             bucket_label="Semana",
             start=start,
             end=end,
@@ -272,7 +292,7 @@ def _resolve_window(
             key=period,
             label="Mês a Mês",
             mes_ano=label_mes,
-            janela_label=f"{label_mes} (comparado a {PORTUGUESE_MONTHS[previous_start.month]} {previous_start.year})",
+            janela_label=f"{PORTUGUESE_MONTHS[start.month]}/{start.year}",
             bucket_label="Semana",
             start=start,
             end=window_end,
@@ -291,7 +311,7 @@ def _resolve_window(
             key=period,
             label="Ano a Ano",
             mes_ano=f"Ano {start.year}",
-            janela_label=f"{start.year} (comparado a {previous_start.year})",
+            janela_label=f"Ano {start.year} (vs {previous_start.year})",
             bucket_label="Mês",
             start=start,
             end=window_end,
@@ -300,18 +320,19 @@ def _resolve_window(
             buckets=_monthly_buckets(start, year_end if start.year != now.year else _add_month(_start_of_month(now))),
         )
 
-    history_start = _start_of_month(earliest or now)
+    history_start = (earliest or now).replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+    bucket_end = _add_month(_start_of_month(now))
     return PeriodWindow(
         key=PERIOD_ALL,
         label="Geral (Todo o Histórico)",
-        mes_ano="Todo o histórico",
-        janela_label=f"desde {_format_date(history_start)}",
-        bucket_label="Mês",
+        mes_ano="Todo o Histórico",
+        janela_label=f"Desde {history_start.year}",
+        bucket_label="Ano",
         start=None,
         end=end,
         previous_start=None,
         previous_end=None,
-        buckets=_monthly_buckets(history_start, _add_month(_start_of_month(now))),
+        buckets=_yearly_buckets(history_start, bucket_end),
     )
 
 
@@ -424,29 +445,47 @@ def _build_kpis(session: Session, window: PeriodWindow) -> list[dict[str, object
         _scraper_stats(session, *previous) if window.has_previous else (None, None, 0)
     )
 
+    trend_suffix = TREND_PERIOD_SUFFIX.get(window.key, "no período")
+    is_geral = window.key == PERIOD_ALL
+
     if taxa is None:
         estabilidade_valor = "—"
-        estabilidade_trend = "Nenhuma importação finalizada no período"
+        estabilidade_trend = "Nenhuma importação finalizada no período" if not is_geral else "Média histórica"
         estabilidade_direcao = "down"
     else:
         estabilidade_valor = f"{_decimal(taxa)}%"
-        if taxa_anterior is None or finalizados_anteriores == 0:
+        if is_geral:
+            estabilidade_trend = "Média histórica"
+            estabilidade_direcao = "up" if taxa >= 90 else "down"
+        elif taxa_anterior is None or finalizados_anteriores == 0:
             estabilidade_trend = f"{_thousands(finalizados)} importações finalizadas"
             estabilidade_direcao = "up" if taxa >= 90 else "down"
         else:
             delta_pp = taxa - taxa_anterior
             sinal = "+" if delta_pp >= 0 else "-"
-            estabilidade_trend = f"{sinal}{_decimal(abs(delta_pp))} p.p. vs anterior"
+            compare = STABILITY_COMPARE_SUFFIX.get(window.key, "vs período anterior")
+            estabilidade_trend = f"{sinal}{_decimal(abs(delta_pp))}% {compare}"
             estabilidade_direcao = _direction(taxa, taxa_anterior)
+
+    if is_geral:
+        citizens_trend = "Total acumulado"
+        receipts_trend = "Total acumulado"
+        items_trend = "Total acumulado"
+        volume_trend = "Total acumulado"
+    else:
+        citizens_trend = f"+{_format_quantity(usuarios_periodo)} {trend_suffix}"
+        receipts_trend = f"+{_format_quantity(notas_periodo)} {trend_suffix}"
+        items_trend = f"+{_format_quantity(itens_periodo)} {trend_suffix}"
+        volume_trend = f"+{_format_money(volume_periodo)} {trend_suffix}"
 
     return [
         {
             "id": "citizens",
             "icon": "citizens",
-            "label": "Cidadãos Cadastrados",
+            "label": "Usuários Cadastrados",
             "value": _format_quantity(usuarios_total),
-            "trendLabel": f"+{_format_quantity(usuarios_periodo)} no período",
-            "trendDirection": _direction(usuarios_periodo, usuarios_anterior),
+            "trendLabel": citizens_trend,
+            "trendDirection": _direction(usuarios_periodo, usuarios_anterior) if not is_geral else "up",
             "description": KPI_DESCRIPTIONS["citizens"],
         },
         {
@@ -454,8 +493,8 @@ def _build_kpis(session: Session, window: PeriodWindow) -> list[dict[str, object
             "icon": "receipts",
             "label": "Notas Fiscais Importadas",
             "value": _format_quantity(notas_total),
-            "trendLabel": f"+{_format_quantity(notas_periodo)} no período",
-            "trendDirection": _direction(notas_periodo, notas_anterior),
+            "trendLabel": receipts_trend,
+            "trendDirection": _direction(notas_periodo, notas_anterior) if not is_geral else "up",
             "description": KPI_DESCRIPTIONS["receipts"],
         },
         {
@@ -463,8 +502,8 @@ def _build_kpis(session: Session, window: PeriodWindow) -> list[dict[str, object
             "icon": "items",
             "label": "Itens Digitalizados",
             "value": _format_quantity(itens_total),
-            "trendLabel": f"+{_format_quantity(itens_periodo)} no período",
-            "trendDirection": _direction(itens_periodo, itens_anterior),
+            "trendLabel": items_trend,
+            "trendDirection": _direction(itens_periodo, itens_anterior) if not is_geral else "up",
             "description": KPI_DESCRIPTIONS["items"],
         },
         {
@@ -472,14 +511,14 @@ def _build_kpis(session: Session, window: PeriodWindow) -> list[dict[str, object
             "icon": "volume",
             "label": "Volume Financeiro Rastreado",
             "value": _format_money(volume_total),
-            "trendLabel": f"+{_format_money(volume_periodo)} no período",
-            "trendDirection": _direction(volume_periodo, volume_anterior),
+            "trendLabel": volume_trend,
+            "trendDirection": _direction(volume_periodo, volume_anterior) if not is_geral else "up",
             "description": KPI_DESCRIPTIONS["volume"],
         },
         {
             "id": "stability",
             "icon": "stability",
-            "label": "Estabilidade do Scraper",
+            "label": "Desempenho da Coleta",
             "value": estabilidade_valor,
             "trendLabel": estabilidade_trend,
             "trendDirection": estabilidade_direcao,
@@ -620,9 +659,9 @@ def _build_alcance(session: Session, window: PeriodWindow) -> dict[str, object]:
 
     if cidades:
         cidade_lider, notas_lider = max(cidades.items(), key=lambda item: item[1])
-        nota = f"{cidade_lider} lidera o período com {_thousands(notas_lider)} notas importadas"
+        nota = f"{cidade_lider} lidera no período com {_thousands(notas_lider)} notas cadastradas"
     else:
-        nota = "Nenhuma nota importada no período selecionado"
+        nota = "Nenhuma nota cadastrada no período selecionado"
 
     return {
         "totalCidades": len(cidades),
