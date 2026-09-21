@@ -47,7 +47,35 @@ def _ensure_schema_updates() -> None:
                 )
                 # Notas antigas nao tinham desconto rastreado: valor_total_nota
                 # ja era o valor pago (sem desconto conhecido), permanece igual.
-
+            # Bancos antigos (ex.: Neon) podem ter notas_fiscais sem o FK de estabelecimento.
+            # Nullable de proposito: notas ja existentes ficam NULL ate serem preenchidas;
+            # create_all em banco novo ja cria a coluna NOT NULL via model.
+            if "estabelecimento_id" not in columns:
+                connection.execute(text("ALTER TABLE notas_fiscais ADD COLUMN estabelecimento_id INTEGER"))
+                if engine.dialect.name == "postgresql":
+                    connection.execute(
+                        text(
+                            "CREATE INDEX IF NOT EXISTS ix_notas_fiscais_estabelecimento_id "
+                            "ON notas_fiscais (estabelecimento_id)"
+                        )
+                    )
+                    if inspector.has_table("estabelecimento"):
+                        connection.execute(
+                            text(
+                                "DO $$ BEGIN "
+                                "ALTER TABLE notas_fiscais ADD CONSTRAINT fk_notas_fiscais_estabelecimento_id "
+                                "FOREIGN KEY (estabelecimento_id) REFERENCES estabelecimento(id); "
+                                "EXCEPTION WHEN duplicate_object THEN NULL; "
+                                "END $$"
+                            )
+                        )
+                else:
+                    connection.execute(
+                        text(
+                            "CREATE INDEX IF NOT EXISTS ix_notas_fiscais_estabelecimento_id "
+                            "ON notas_fiscais (estabelecimento_id)"
+                        )
+                    )
         if inspector.has_table("itens_nota_fiscal"):
             item_columns = {column["name"] for column in inspector.get_columns("itens_nota_fiscal")}
             if "valor_desconto" not in item_columns:
