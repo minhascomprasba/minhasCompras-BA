@@ -105,7 +105,7 @@ def create_import(payload: ImportCreateRequest, request: Request, user_id: int =
             details={"ip": client_ip},
         )
 
-    created = start_import(payload.access_key, user_id)
+    created = start_import(payload.access_key, user_id, payload.source)
     return ImportCreateResponse(**created)
 
 

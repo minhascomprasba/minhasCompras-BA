@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,7 +8,9 @@ import { importsService } from '../features/imports/services/importsService';
 import { QrCodeScanner } from '../features/imports/components/QrCodeScanner';
 import { extractAccessKeyFromQrContent, validateAccessKey } from '../features/imports/utils/extractAccessKey';
 import { scanQrCodeFromFile } from '../features/imports/utils/scanQrFromFile';
+import { consumeQuickScan } from '../features/imports/utils/quickScanStorage';
 import { ImageUploadIcon, QrCodeIcon } from '../components/ImportActionIcons';
+import type { ImportSource } from '../features/imports/types';
 
 const accessKeySchema = z.object({
   access_key: z
@@ -26,6 +28,7 @@ type CaptchaFormData = z.infer<typeof captchaSchema>;
 
 export function ImportPage() {
   const navigate = useNavigate();
+  const locationKey = useLocation().key;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importId, setImportId] = useState<string | null>(null);
   const [captchaRefreshKey, setCaptchaRefreshKey] = useState(0);
@@ -35,6 +38,8 @@ export function ImportPage() {
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isFileScanning, setIsFileScanning] = useState(false);
   const [qrFeedback, setQrFeedback] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
+  // Canal usado para preencher a chave: alimenta a telemetria do painel admin.
+  const [source, setSource] = useState<ImportSource>('MANUAL');
 
   const startImportMutation = useStartImport();
   const submitCaptchaMutation = useSubmitCaptcha(importId || '');
@@ -48,6 +53,69 @@ export function ImportPage() {
     resolver: zodResolver(captchaSchema),
     defaultValues: { captcha_code: '' },
   });
+
+  const applyAccessKey = (accessKey: string, origin: ImportSource) => {
+    keyForm.setValue('access_key', accessKey, { shouldValidate: true, shouldDirty: true });
+    keyForm.clearErrors('access_key');
+    setSource(origin);
+    setQrFeedback({ type: 'success', message: 'Chave de acesso preenchida. Confira os dados e clique em Avançar.' });
+  };
+
+  const resetImport = () => {
+    setImportId(null);
+    setCaptchaImageSrc((prevSrc) => {
+      if (prevSrc) {
+        URL.revokeObjectURL(prevSrc);
+      }
+      return null;
+    });
+    setCaptchaImageError('');
+    setCaptchaRefreshKey(0);
+    keyForm.reset();
+    startImportMutation.reset();
+    captchaForm.reset();
+  };
+
+  const startImportWithKey = (accessKey: string, source: ImportSource) => {
+    startImportMutation.mutate({ access_key: accessKey, source }, {
+      onSuccess: (response) => {
+        setIsCaptchaLoading(true);
+        setCaptchaImageSrc((prevSrc) => {
+          if (prevSrc) {
+            URL.revokeObjectURL(prevSrc);
+          }
+          return null;
+        });
+        setCaptchaImageError('');
+        setImportId(response.import_id);
+        setCaptchaRefreshKey(0);
+      },
+    });
+  };
+
+  // Consume a chave vinda do scanner rápido (botão de acesso rápido na interface).
+  // Roda a cada navegação para /importar para suportar novas leituras sem remontar a página.
+  useEffect(() => {
+    const pending = consumeQuickScan();
+    if (!pending.accessKey) {
+      return;
+    }
+
+    const validationError = validateAccessKey(pending.accessKey);
+    if (validationError) {
+      setQrFeedback({ type: 'error', message: validationError });
+      return;
+    }
+
+    const origin = pending.source ?? 'QR_CODE';
+    resetImport();
+    applyAccessKey(pending.accessKey, origin);
+
+    if (pending.autoSubmit) {
+      startImportWithKey(pending.accessKey, origin);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locationKey]);
 
   useEffect(() => {
     if (!importId) {
@@ -97,29 +165,22 @@ export function ImportPage() {
     };
   }, [captchaImageSrc]);
 
-  const applyAccessKey = (accessKey: string) => {
-    keyForm.setValue('access_key', accessKey, { shouldValidate: true, shouldDirty: true });
-    keyForm.clearErrors('access_key');
-    setQrFeedback({ type: 'success', message: 'Chave de acesso preenchida. Confira os dados e clique em Avançar.' });
-  };
-
-  const handleQrDecodedText = (decodedText: string) => {
+  const handleQrDecodedText = (decodedText: string, origin: ImportSource): string | null => {
     const accessKey = extractAccessKeyFromQrContent(decodedText);
     if (!accessKey) {
-      setQrFeedback({
-        type: 'error',
-        message: 'QR Code lido, mas não foi possível extrair a chave de 44 dígitos da nota fiscal.',
-      });
-      return;
+      const message = 'QR Code lido, mas não foi possível extrair a chave de 44 dígitos da nota fiscal.';
+      setQrFeedback({ type: 'error', message });
+      return message;
     }
 
     const validationError = validateAccessKey(accessKey);
     if (validationError) {
       setQrFeedback({ type: 'error', message: validationError });
-      return;
+      return validationError;
     }
 
-    applyAccessKey(accessKey);
+    applyAccessKey(accessKey, origin);
+    return null;
   };
 
   const handleFileSelected = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -134,7 +195,7 @@ export function ImportPage() {
 
     try {
       const decodedText = await scanQrCodeFromFile(file);
-      handleQrDecodedText(decodedText);
+      handleQrDecodedText(decodedText, 'PHOTO');
     } catch {
       setQrFeedback({
         type: 'error',
@@ -146,20 +207,7 @@ export function ImportPage() {
   };
 
   const onKeySubmit = (data: AccessKeyFormData) => {
-    startImportMutation.mutate(data, {
-      onSuccess: (response) => {
-        setIsCaptchaLoading(true);
-        setCaptchaImageSrc((prevSrc) => {
-          if (prevSrc) {
-            URL.revokeObjectURL(prevSrc);
-          }
-          return null;
-        });
-        setCaptchaImageError('');
-        setImportId(response.import_id);
-        setCaptchaRefreshKey(0);
-      },
-    });
+    startImportWithKey(data.access_key, source);
   };
 
   const onCaptchaSubmit = (data: CaptchaFormData) => {
@@ -198,7 +246,8 @@ export function ImportPage() {
       <QrCodeScanner
         isOpen={isScannerOpen}
         onClose={() => setIsScannerOpen(false)}
-        onScan={handleQrDecodedText}
+        onScan={(decodedText) => handleQrDecodedText(decodedText, 'QR_CODE')}
+        onFile={(decodedText) => handleQrDecodedText(decodedText, 'PHOTO')}
       />
 
       {!importId ? (
@@ -270,7 +319,10 @@ export function ImportPage() {
                 className={`form-input ${keyForm.formState.errors.access_key ? 'error' : ''}`}
                 maxLength={44}
                 {...keyForm.register('access_key', {
-                  onChange: () => setQrFeedback(null),
+                  onChange: () => {
+                    setQrFeedback(null);
+                    setSource('MANUAL');
+                  },
                 })}
               />
               {keyForm.formState.errors.access_key && (

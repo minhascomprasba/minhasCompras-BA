@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
+import { ROLE_LABELS } from '../features/auth/authService';
+import { QuickScan } from './QuickScan';
 
 export function AuthenticatedLayout() {
-  const { user, logout } = useAuth();
+  const { user, logout, role, isAdmin, isSuperAdmin } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -62,6 +64,16 @@ export function AuthenticatedLayout() {
               <NavLink to="/dashboard" className={navLinkClass} onClick={closeMenu}>
                 Dashboard
               </NavLink>
+              {isAdmin && (
+                <NavLink to="/admin" className={navLinkClass} onClick={closeMenu} end>
+                  Admin
+                </NavLink>
+              )}
+              {isSuperAdmin && (
+                <NavLink to="/admin/usuarios" className={navLinkClass} onClick={closeMenu}>
+                  Usuários
+                </NavLink>
+              )}
               <NavLink to="/notas" className={navLinkClass} onClick={closeMenu}>
                 Notas
               </NavLink>
@@ -77,6 +89,9 @@ export function AuthenticatedLayout() {
               <span className="user-email" title={user?.email || ''}>
                 {user?.email ? (user.email.length > 24 ? `${user.email.substring(0, 21)}...` : user.email) : ''}
               </span>
+              {role && role !== 'USER' && (
+                <span className={`role-badge role-badge--${role.toLowerCase()}`}>{ROLE_LABELS[role]}</span>
+              )}
               <button onClick={handleLogout} className="btn btn-secondary btn-sm btn-logout">
                 Sair
               </button>
@@ -88,6 +103,8 @@ export function AuthenticatedLayout() {
       <main className="app-main">
         <Outlet />
       </main>
+
+      <QuickScan />
 
       <footer className="app-footer">
         &copy; {new Date().getFullYear()} Minhas Compras BA. Todos os direitos reservados.

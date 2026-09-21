@@ -11,12 +11,22 @@ class Base(DeclarativeBase):
     pass
 
 
+class UserRole(str, Enum):
+    USER = "USER"
+    ADMIN = "ADMIN"
+    SUPER_ADMIN = "SUPER_ADMIN"
+
+
+ADMIN_ROLES = (UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value)
+
+
 class Usuario(Base):
     __tablename__ = "usuarios"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     email: Mapped[str] = mapped_column(String, unique=True, nullable=False, index=True)
     password_hash: Mapped[str] = mapped_column(String, nullable=False)
+    role: Mapped[str] = mapped_column(String(20), nullable=False, default=UserRole.USER.value, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
     notas: Mapped[list[NotaFiscal]] = relationship(back_populates="usuario")
@@ -58,8 +68,12 @@ class NotaFiscal(Base):
     usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), nullable=False, index=True)
     estabelecimento_id: Mapped[int] = mapped_column(ForeignKey("estabelecimento.id"), nullable=False, index=True)
     codigo_acesso: Mapped[str] = mapped_column(String(44), nullable=False, index=True)
+    # valor_total_nota e o valor PAGO (liquido, ja descontado). O valor bruto,
+    # se precisar, e valor_total_nota + valor_desconto_nota.
     valor_total_nota: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    valor_desconto_nota: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     data_compra: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    meio_pagamento: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
     usuario: Mapped[Usuario] = relationship(back_populates="notas")
@@ -73,8 +87,10 @@ class ItemNotaFiscal(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     id_produto: Mapped[int] = mapped_column(ForeignKey("produto.id"), nullable=False, index=True)
     id_nota_fiscal: Mapped[int] = mapped_column(ForeignKey("notas_fiscais.id"), nullable=False, index=True)
+    # valor_unitario e o preco unitario PAGO (liquido, ja descontado).
     valor_unitario: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     quantidade: Mapped[int] = mapped_column(Float, nullable=False, default=0)
+    valor_desconto: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     
     nota_fiscal: Mapped[NotaFiscal] = relationship(back_populates="itens") 
     
@@ -88,6 +104,12 @@ class ImportStatus(str, Enum):
     EXPIRED = "EXPIRED"
 
 
+class ImportSource(str, Enum):
+    QR_CODE = "QR_CODE"
+    PHOTO = "PHOTO"
+    MANUAL = "MANUAL"
+
+
 class NfceImport(Base):
     __tablename__ = "nfce_imports"
 
@@ -95,6 +117,7 @@ class NfceImport(Base):
     usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), nullable=False, index=True)
     access_key: Mapped[str] = mapped_column(String(44), nullable=False, index=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    source: Mapped[str | None] = mapped_column(String(20), nullable=True, index=True)
     captcha_image_path: Mapped[str | None] = mapped_column(String, nullable=True)
     attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     error_message: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -120,6 +143,8 @@ class Estabelecimento(Base):
     cidade: Mapped[str] = mapped_column(String, nullable=False)
     estado: Mapped[str] = mapped_column(String, nullable=False)
     cep: Mapped[str | None] = mapped_column(String, nullable=True)
+    latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
 
 
 

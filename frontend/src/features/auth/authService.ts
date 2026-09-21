@@ -1,8 +1,17 @@
 import { apiClient } from '../../shared/api/client';
 
+export type UserRole = 'USER' | 'ADMIN' | 'SUPER_ADMIN';
+
+export const ROLE_LABELS: Record<UserRole, string> = {
+  USER: 'Usuário',
+  ADMIN: 'Admin',
+  SUPER_ADMIN: 'Super Admin',
+};
+
 export interface User {
   id: number;
   email: string;
+  role: UserRole;
 }
 
 export interface AuthResponse {

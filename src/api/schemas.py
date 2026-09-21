@@ -22,6 +22,7 @@ class ReadyResponse(BaseModel):
 
 class ImportCreateRequest(BaseModel):
     access_key: str = Field(min_length=44, max_length=44)
+    source: str | None = Field(default=None, max_length=20)
 
 
 class ImportCreateResponse(BaseModel):
@@ -74,6 +75,8 @@ class NotaListItem(BaseModel):
     data_compra: datetime | None = None
     itens_count: int
     valor_total_nota: float
+    valor_desconto_nota: float
+    meio_pagamento: str | None = None
 
 
 class NotaDetailResponse(BaseModel):
@@ -84,6 +87,8 @@ class NotaDetailResponse(BaseModel):
     created_at: datetime
     data_compra: datetime | None = None
     valor_total_nota: float
+    valor_desconto_nota: float
+    meio_pagamento: str | None = None
 
 
 
@@ -96,6 +101,7 @@ class ItemListItem(BaseModel):
     quantidade: float
     valor_unitario: float
     valor_total: float
+    valor_desconto: float
     unidade_comercial: str | None
     codigo_ean_comercial: str | None
     codigo_NCM_comercial: str | None
@@ -118,6 +124,7 @@ class UserLoginRequest(BaseModel):
 class UserResponse(BaseModel):
     id: int
     email: str
+    role: str = "USER"
 
 class TokenResponse(BaseModel):
     access_token: str
@@ -173,6 +180,9 @@ class MapaPontoResponse(BaseModel):
     cidade: str | None = None
     estado: str | None = None
     cep: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    endereco: str | None = None
     notas_count: int
     notas: list[MapaNotaItem] = Field(default_factory=list)
 
@@ -211,4 +221,111 @@ class DashboardDataResponse(BaseModel):
     gastosPorCategoria: list[GastoPorCategoriaResponse]
     produtosFrequentes: list[ProdutoFrequenteResponse]
     gruposNcmSemGtin: list[GrupoNcmSemGtinResponse] = Field(default_factory=list)
+
+
+class KpiExtraMetricResponse(BaseModel):
+    label: str
+    value: str
+
+
+class AdminKpiResponse(BaseModel):
+    id: str
+    icon: str
+    label: str
+    value: str
+    trendLabel: str
+    trendDirection: str
+    description: str
+    extraMetric: KpiExtraMetricResponse | None = None
+
+
+class AdesaoPontoResponse(BaseModel):
+    semana: str
+    usuarios: int
+    notas: int
+
+
+class ScraperDiaResponse(BaseModel):
+    dia: str
+    completed: int
+    expired: int
+    failed: int
+
+
+class TopProdutoResponse(BaseModel):
+    nome: str
+    precoMedio: float
+    variacaoPercentual: float
+    ocorrencias: int = 0
+
+
+class AlcanceGeograficoResponse(BaseModel):
+    totalCidades: int
+    redesMonitoradas: int
+    redesLideres: list[str] = Field(default_factory=list)
+    nota: str
+
+
+class TelemetriaSliceResponse(BaseModel):
+    label: str
+    percentual: float
+    color: str
+
+
+class QualidadeCatalogoResponse(BaseModel):
+    comGtin: int
+    semGtin: int
+    produtosCatalogados: int = 0
+
+
+class AdminTelemetriaResponse(BaseModel):
+    canaisImportacao: list[TelemetriaSliceResponse]
+    meiosPagamento: list[TelemetriaSliceResponse]
+    qualidadeCatalogo: QualidadeCatalogoResponse
+
+
+class AdminLogResponse(BaseModel):
+    importId: str
+    dataHora: str
+    idNota: str
+    tentativas: int
+    erro: str
+    status: str
+
+
+class AdminDashboardResponse(BaseModel):
+    periodo: str
+    periodoLabel: str
+    mesAno: str
+    janelaLabel: str
+    bucketLabel: str
+    kpis: list[AdminKpiResponse]
+    crescimentoAdesao: list[AdesaoPontoResponse]
+    performanceScraper: list[ScraperDiaResponse]
+    topProdutos: list[TopProdutoResponse]
+    alcanceGeografico: AlcanceGeograficoResponse
+    telemetria: AdminTelemetriaResponse
+    logs: list[AdminLogResponse]
+
+
+class AdminUsuarioResponse(BaseModel):
+    id: int
+    email: str
+    role: str
+    created_at: datetime
+    notas_count: int = 0
+    itens_count: int = 0
+    ultima_atividade: datetime | None = None
+
+
+class PaginatedAdminUsuariosResponse(BaseModel):
+    data: list[AdminUsuarioResponse]
+    page: int
+    page_size: int
+    total: int
+    resumo_perfis: dict[str, int] = Field(default_factory=dict)
+
+
+class UpdateUsuarioRoleRequest(BaseModel):
+    role: str = Field(..., max_length=20)
 

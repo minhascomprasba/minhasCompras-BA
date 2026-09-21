@@ -11,3 +11,13 @@ IDENTIFICACAO_TAB_BUTTON_IDS = (
     "btn_aba_dados_gerais",
     "btn_aba_nfce",
 )
+PAGAMENTO_TAB_BUTTON_IDS = (
+    "btn_aba_cobranca",
+    "btn_aba_pagamento",
+    "btn_aba_cobranca_pagamento",
+    "btn_aba_totais",
+    "btn_aba_valores",
+    "btn_aba_inf_adic",
+    "btn_aba_infadic",
+    "btn_aba_informacoes_adicionais",
+)

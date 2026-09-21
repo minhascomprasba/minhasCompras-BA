@@ -14,7 +14,15 @@ from sqlalchemy import func, select
 from src.api import settings
 from src.api.errors import ConflictError, NotFoundError, ValidationError
 from src.database.connection import SessionLocal
-from src.database.models import Estabelecimento, ImportStatus, ItemNotaFiscal, NfceImport, NotaFiscal, Produto
+from src.database.models import (
+    Estabelecimento,
+    ImportSource,
+    ImportStatus,
+    ItemNotaFiscal,
+    NfceImport,
+    NotaFiscal,
+    Produto,
+)
 from src.phase1.auth_flow import refresh_captcha_image, start_auth_session, submit_captcha_attempt
 from src.phase2.navigation import Maps_to_Emitente_tab, Maps_to_products_tab, wait_for_products_content
 from src.phase3.parser import EmpresaParser, ProductParser
@@ -112,9 +120,23 @@ def cleanup_expired_import_sessions() -> None:
         session.close()
 
 
-def start_import(access_key: str, usuario_id: int) -> dict[str, object]:
+def _normalize_source(source: str | None) -> str:
+    if not source:
+        return ImportSource.MANUAL.value
+    normalized = source.strip().upper()
+    if normalized not in {item.value for item in ImportSource}:
+        raise ValidationError(
+            code="INVALID_IMPORT_SOURCE",
+            message="Canal de importacao invalido.",
+            details={"field": "source"},
+        )
+    return normalized
+
+
+def start_import(access_key: str, usuario_id: int, source: str | None = None) -> dict[str, object]:
     cleanup_expired_import_sessions()
     normalized_key = _validate_access_key(access_key)
+    normalized_source = _normalize_source(source)
     import_id = _build_import_id()
     now = _utcnow()
     expires_at = now + timedelta(seconds=settings.CAPTCHA_TTL_SECONDS)
@@ -136,6 +158,7 @@ def start_import(access_key: str, usuario_id: int) -> dict[str, object]:
             usuario_id=usuario_id,
             access_key=normalized_key,
             status=ImportStatus.WAITING_CAPTCHA.value,
+            source=normalized_source,
             captcha_image_path=captcha_path.as_posix(),
             attempts=0,
             error_message=None,
@@ -323,7 +346,9 @@ def submit_captcha(import_id: str, captcha_code: str, usuario_id: int) -> dict[s
 
 
         # Produtos
-        data_compra = Maps_to_products_tab(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
+        page_meta = Maps_to_products_tab(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
+        data_compra = page_meta.get("data_compra")
+        meio_pagamento = page_meta.get("meio_pagamento")
         wait_for_products_content(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
         parsed_page = ProductParser.parse_page(runtime.driver.page_source)
 
@@ -334,7 +359,8 @@ def submit_captcha(import_id: str, captcha_code: str, usuario_id: int) -> dict[s
         products = parsed_page["produtos"]
         
         data_compra = data_compra or parsed_page.get("data_compra")
-        if data_compra is None:
+        meio_pagamento = meio_pagamento or parsed_page.get("meio_pagamento")
+        if data_compra is None or meio_pagamento is None:
             debug_path = Path("data/debug/last_nfce_page.html")
             debug_path.parent.mkdir(parents=True, exist_ok=True)
             debug_path.write_text(runtime.driver.page_source, encoding="utf-8")
@@ -345,6 +371,9 @@ def submit_captcha(import_id: str, captcha_code: str, usuario_id: int) -> dict[s
             usuario_id,
             data_compra=data_compra,
             estabelecimento_id=estabelecimento_id,
+            meio_pagamento=meio_pagamento,
+            valor_desconto_nota=parsed_page.get("valor_desconto_nota"),
+            valor_pago_nota=parsed_page.get("valor_pago_nota"),
         )
 
         finished_at = _utcnow()
@@ -489,6 +518,8 @@ def list_notas(page: int, page_size: int, from_date: datetime | None, to_date: d
                     "data_compra": nota.data_compra,
                     "itens_count": itens_count,
                     "valor_total_nota": nota.valor_total_nota,
+                    "valor_desconto_nota": nota.valor_desconto_nota,
+                    "meio_pagamento": nota.meio_pagamento,
                 }
             )
 
@@ -506,7 +537,13 @@ def list_notas(page: int, page_size: int, from_date: datetime | None, to_date: d
 def list_estabelecimentos_mapa(usuario_id: int) -> list[dict[str, object]]:
     """Estabelecimentos (com CEP) onde o usuario possui notas, agregados por
     local e ja trazendo a lista de notas de cada estabelecimento. Usado pela
-    pagina de Mapa."""
+    pagina de Mapa.
+
+    Coordenadas faltantes sao geocodificadas em batch (1 request por CEP unico)
+    e persistidas em estabelecimento.latitude/longitude para cargas seguintes.
+    """
+    from src.api.services.geocode_service import ensure_coords_batch, format_address
+
     session = SessionLocal()
     try:
         purchase_date = func.coalesce(NotaFiscal.data_compra, NotaFiscal.created_at)
@@ -519,8 +556,20 @@ def list_estabelecimentos_mapa(usuario_id: int) -> list[dict[str, object]]:
             .order_by(purchase_date.desc())
         ).all()
 
+        # Batch geocode de lojas ainda sem lat/lng (persistido no banco).
+        unique_est: dict[int, Estabelecimento] = {}
+        for est, _nota in rows:
+            unique_est.setdefault(est.id, est)
+        ensure_coords_batch(session, list(unique_est.values()))
+        # Recarrega coordenadas apos o commit do batch.
+        for est_id in list(unique_est.keys()):
+            refreshed = session.get(Estabelecimento, est_id)
+            if refreshed is not None:
+                unique_est[est_id] = refreshed
+
         grouped: dict[int, dict[str, object]] = {}
         for est, nota in rows:
+            est = unique_est.get(est.id, est)
             entry = grouped.get(est.id)
             if entry is None:
                 entry = {
@@ -531,6 +580,9 @@ def list_estabelecimentos_mapa(usuario_id: int) -> list[dict[str, object]]:
                     "cidade": est.cidade,
                     "estado": est.estado,
                     "cep": est.cep,
+                    "latitude": est.latitude,
+                    "longitude": est.longitude,
+                    "endereco": format_address(est.logradouro, est.bairro, est.cidade, est.estado),
                     "notas": [],
                 }
                 grouped[est.id] = entry
@@ -562,7 +614,15 @@ def get_nota(nota_id: int, usuario_id: int) -> dict[str, object]:
         nota = session.get(NotaFiscal, nota_id)
         if nota is None or nota.usuario_id != usuario_id:
             raise NotFoundError("NOTA_NOT_FOUND", "Nota fiscal nao encontrada.", {"nota_id": str(nota_id)})
-        return {"id": nota.id, "codigo_acesso": nota.codigo_acesso, "created_at": nota.created_at, "data_compra": nota.data_compra, "valor_total_nota": nota.valor_total_nota}
+        return {
+            "id": nota.id,
+            "codigo_acesso": nota.codigo_acesso,
+            "created_at": nota.created_at,
+            "data_compra": nota.data_compra,
+            "valor_total_nota": nota.valor_total_nota,
+            "valor_desconto_nota": nota.valor_desconto_nota,
+            "meio_pagamento": nota.meio_pagamento,
+        }
     finally:
         session.close()
 
@@ -598,6 +658,7 @@ def list_items(nota_id: int, page: int, page_size: int, usuario_id: int) -> dict
                 "quantidade": item.quantidade,
                 "valor_unitario": item.valor_unitario,
                 "valor_total": round(item.quantidade * item.valor_unitario, 2),
+                "valor_desconto": item.valor_desconto,
                 "unidade_comercial": produto.unidade_comercial,
                 "codigo_ean_comercial": produto.codigo_ean_comercial,
                 "codigo_NCM_comercial": produto.codigo_NCM_comercial,

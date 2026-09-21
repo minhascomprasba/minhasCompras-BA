@@ -1,5 +1,8 @@
+export type ImportSource = 'QR_CODE' | 'PHOTO' | 'MANUAL';
+
 export interface StartImportRequest {
   access_key: string;
+  source?: ImportSource;
 }
 
 export interface StartImportResponse {

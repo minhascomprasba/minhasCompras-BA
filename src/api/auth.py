@@ -33,7 +33,7 @@ from src.api.services.email_service import (
     send_password_reset_email,
 )
 from src.database.connection import SessionLocal
-from src.database.models import EmailVerificationCode, PasswordResetToken, Usuario
+from src.database.models import EmailVerificationCode, PasswordResetToken, Usuario, UserRole
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 PASSWORD_MIN_LENGTH = 8
@@ -207,7 +207,16 @@ def verify_email(payload: VerifyEmailRequest, db: Session = Depends(get_db)):
             status_code=400,
         )
 
-    new_user = Usuario(email=verification.email, password_hash=verification.password_hash)
+    initial_role = (
+        UserRole.SUPER_ADMIN.value
+        if verification.email.lower() in settings.SUPER_ADMIN_EMAILS
+        else UserRole.USER.value
+    )
+    new_user = Usuario(
+        email=verification.email,
+        password_hash=verification.password_hash,
+        role=initial_role,
+    )
     db.add(new_user)
     verification.used_at = now
     db.query(EmailVerificationCode).filter(
@@ -221,7 +230,7 @@ def verify_email(payload: VerifyEmailRequest, db: Session = Depends(get_db)):
     token = create_access_token(new_user.id)
     return TokenResponse(
         access_token=token,
-        user=UserResponse(id=new_user.id, email=new_user.email),
+        user=UserResponse(id=new_user.id, email=new_user.email, role=new_user.role),
     )
 
 
@@ -277,7 +286,7 @@ def login(payload: UserLoginRequest, db: Session = Depends(get_db)):
     token = create_access_token(user.id)
     return TokenResponse(
         access_token=token,
-        user=UserResponse(id=user.id, email=user.email),
+        user=UserResponse(id=user.id, email=user.email, role=user.role),
     )
 
 
@@ -286,7 +295,7 @@ def get_me(user_id: int = Depends(get_current_user_id), db: Session = Depends(ge
     user = db.query(Usuario).filter(Usuario.id == user_id).first()
     if not user:
         raise ApiError("USER_NOT_FOUND", "Usuário não encontrado.", status_code=404)
-    return UserResponse(id=user.id, email=user.email)
+    return UserResponse(id=user.id, email=user.email, role=user.role)
 
 
 @auth_router.post("/forgot-password", response_model=MessageResponse)

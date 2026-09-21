@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { mapaService, type MapaNota, type MapaPonto } from '../features/mapa/mapaService';
@@ -24,167 +24,36 @@ interface ResolvedLocation {
 // Centro aproximado do estado da Bahia (enquadramento inicial).
 const BAHIA_CENTER: [number, number] = [-12.5, -41.7];
 
-// ---------------------------------------------------------------------------
-// Geocodificação: CEP -> coordenadas
-//   1) BrasilAPI (CEP v2) — costuma trazer as coordenadas exatas do CEP.
-//   2) Nominatim/OpenStreetMap — usando o endereço do banco (busca estruturada).
-// ---------------------------------------------------------------------------
-interface CepAddress {
-  cep: string;
-  logradouro: string;
-  bairro: string;
-  localidade: string;
-  uf: string;
-}
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const cleanCep = (cep: string) => cep.replace(/\D/g, '');
-const enc = (v: string) => encodeURIComponent(v);
 const formatCep = (cep: string) => {
   const c = cleanCep(cep);
   return c.length === 8 ? `${c.slice(0, 5)}-${c.slice(5)}` : cep;
 };
 
-// Versão do cache: aumente para invalidar coordenadas antigas salvas no navegador.
-const CACHE_VERSION = 'v2';
-
-function readCache(cep: string): { lat: number; lng: number; address: string } | null {
-  try {
-    const raw = localStorage.getItem(`geocep:${CACHE_VERSION}:${cleanCep(cep)}`);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-function writeCache(cep: string, value: { lat: number; lng: number; address: string }) {
-  try {
-    localStorage.setItem(`geocep:${CACHE_VERSION}:${cleanCep(cep)}`, JSON.stringify(value));
-  } catch {
-    /* localStorage indisponível — ignora */
-  }
-}
-
-function formatAddress(a: CepAddress): string {
-  const line1 = [a.logradouro, a.bairro].filter(Boolean).join(', ');
-  const line2 = [a.localidade, a.uf].filter(Boolean).join(' - ');
+function formatAddressFromPonto(ponto: MapaPonto): string {
+  if (ponto.endereco) return ponto.endereco;
+  const line1 = [ponto.logradouro, ponto.bairro].filter(Boolean).join(', ');
+  const line2 = [ponto.cidade, ponto.estado].filter(Boolean).join(' - ');
   return [line1, line2].filter(Boolean).join(', ');
 }
 
-async function fetchBrasilApi(
-  cep: string
-): Promise<{ address: CepAddress; coords: { lat: number; lng: number } | null } | null> {
-  try {
-    const res = await fetch(`https://brasilapi.com.br/api/v2/cep/${cleanCep(cep)}`);
-    if (!res.ok) return null;
-    const d = await res.json();
-    const address: CepAddress = {
-      cep,
-      logradouro: d.street ?? '',
-      bairro: d.neighborhood ?? '',
-      localidade: d.city ?? '',
-      uf: d.state ?? '',
-    };
-    const c = d.location?.coordinates;
-    const lat = c && c.latitude != null ? parseFloat(c.latitude) : NaN;
-    const lng = c && c.longitude != null ? parseFloat(c.longitude) : NaN;
-    const coords = !Number.isNaN(lat) && !Number.isNaN(lng) ? { lat, lng } : null;
-    return { address, coords };
-  } catch {
+function pontoToLocation(ponto: MapaPonto): ResolvedLocation | null {
+  const lat = ponto.latitude;
+  const lng = ponto.longitude;
+  if (lat == null || lng == null || Number.isNaN(lat) || Number.isNaN(lng)) {
     return null;
   }
-}
-
-async function fetchViaCep(cep: string): Promise<CepAddress | null> {
-  try {
-    const res = await fetch(`https://viacep.com.br/ws/${cleanCep(cep)}/json/`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!data || data.erro) return null;
-    return {
-      cep,
-      logradouro: data.logradouro ?? '',
-      bairro: data.bairro ?? '',
-      localidade: data.localidade ?? '',
-      uf: data.uf ?? '',
-    };
-  } catch {
-    return null;
-  }
-}
-
-async function geocodeAddress(a: CepAddress): Promise<{ lat: number; lng: number } | null> {
-  const base =
-    'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=br';
-  const urls: string[] = [];
-
-  if (a.logradouro && a.localidade) {
-    urls.push(
-      `${base}&street=${enc(a.logradouro)}&city=${enc(a.localidade)}&state=${enc(a.uf)}&postalcode=${enc(cleanCep(a.cep))}`
-    );
-  }
-  urls.push(`${base}&postalcode=${enc(cleanCep(a.cep))}&state=${enc(a.uf)}`);
-  if (a.bairro && a.localidade) {
-    urls.push(`${base}&q=${enc([a.bairro, a.localidade, a.uf, 'Brasil'].join(', '))}`);
-  }
-  if (a.localidade) {
-    urls.push(`${base}&city=${enc(a.localidade)}&state=${enc(a.uf)}`);
-  }
-
-  for (let i = 0; i < urls.length; i++) {
-    try {
-      const res = await fetch(urls[i], { headers: { Accept: 'application/json' } });
-      if (res.ok) {
-        const arr = await res.json();
-        if (Array.isArray(arr) && arr.length > 0) {
-          return { lat: parseFloat(arr[0].lat), lng: parseFloat(arr[0].lon) };
-        }
-      }
-    } catch {
-      /* tenta a próxima consulta */
-    }
-    if (i < urls.length - 1) await sleep(1100);
-  }
-  return null;
-}
-
-async function geocodePonto(ponto: MapaPonto): Promise<ResolvedLocation | null> {
   const cep = (ponto.cep ?? '').trim();
-  if (!cep) return null;
-
-  const id = `est-${ponto.estabelecimento_id}`;
-  const label = ponto.razao_social || 'Estabelecimento';
-
-  const cached = readCache(cep);
-  if (cached) {
-    return { id, cep, label, notasCount: ponto.notas_count, notas: ponto.notas ?? [], ...cached };
-  }
-
-  // Endereço preferindo os dados do próprio banco.
-  const dbAddress: CepAddress = {
+  return {
+    id: `est-${ponto.estabelecimento_id}`,
     cep,
-    logradouro: ponto.logradouro ?? '',
-    bairro: ponto.bairro ?? '',
-    localidade: ponto.cidade ?? '',
-    uf: ponto.estado ?? '',
+    label: ponto.razao_social || 'Estabelecimento',
+    address: formatAddressFromPonto(ponto),
+    notasCount: ponto.notas_count,
+    notas: ponto.notas ?? [],
+    lat,
+    lng,
   };
-
-  // Coordenadas: BrasilAPI primeiro (mais preciso para o CEP).
-  const brasil = await fetchBrasilApi(cep);
-  let coords = brasil?.coords ?? null;
-
-  // Endereço para exibição/geocodificação: banco > BrasilAPI > ViaCEP.
-  const address: CepAddress =
-    dbAddress.localidade ? dbAddress : brasil?.address ?? (await fetchViaCep(cep)) ?? dbAddress;
-
-  if (!coords) {
-    coords = await geocodeAddress(address);
-  }
-  if (!coords) return null;
-
-  const resolved = { address: formatAddress(address), lat: coords.lat, lng: coords.lng };
-  writeCache(cep, resolved);
-  return { id, cep, label, notasCount: ponto.notas_count, notas: ponto.notas ?? [], ...resolved };
 }
 
 function formatDate(iso?: string | null): string {
@@ -198,9 +67,6 @@ function formatBRL(value: number): string {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 }
 
-// ---------------------------------------------------------------------------
-// Componente
-// ---------------------------------------------------------------------------
 type Status = 'loading' | 'ready' | 'empty' | 'error';
 
 export function MapPage() {
@@ -216,58 +82,51 @@ export function MapPage() {
     queryKey: ['mapa-pontos'],
     queryFn: () => mapaService.getPontos(),
     refetchOnWindowFocus: false,
+    // Coordenadas já vêm persistidas do backend; evita refetch desnecessário.
+    staleTime: 5 * 60 * 1000,
   });
 
-  const [locations, setLocations] = useState<ResolvedLocation[]>([]);
-  const [failedCeps, setFailedCeps] = useState<string[]>([]);
-  const [status, setStatus] = useState<Status>('loading');
+  const { locations, failedCeps, status } = useMemo(() => {
+    if (pontosError) {
+      return { locations: [] as ResolvedLocation[], failedCeps: [] as string[], status: 'error' as Status };
+    }
+    if (!pontos) {
+      return { locations: [] as ResolvedLocation[], failedCeps: [] as string[], status: 'loading' as Status };
+    }
+    if (pontos.length === 0) {
+      return { locations: [] as ResolvedLocation[], failedCeps: [] as string[], status: 'empty' as Status };
+    }
+
+    const resolved: ResolvedLocation[] = [];
+    const failed: string[] = [];
+    for (const ponto of pontos) {
+      const loc = pontoToLocation(ponto);
+      if (loc) resolved.push(loc);
+      else if (ponto.cep) failed.push(formatCep(ponto.cep));
+    }
+
+    return {
+      locations: resolved,
+      failedCeps: failed,
+      status: (resolved.length > 0 ? 'ready' : 'empty') as Status,
+    };
+  }, [pontos, pontosError]);
+
   const [selectedId, setSelectedId] = useState<string>('');
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState(false);
 
-  // 1) Geocodifica os CEPs vindos da API (sequencial, respeitando o Nominatim).
   useEffect(() => {
-    if (pontosError) {
-      setStatus('error');
-      return;
+    if (locations.length > 0 && !selectedId) {
+      setSelectedId(locations[0].id);
+    } else if (locations.length > 0 && !locations.some((l) => l.id === selectedId)) {
+      setSelectedId(locations[0].id);
+    } else if (locations.length === 0) {
+      setSelectedId('');
     }
-    if (!pontos) {
-      setStatus('loading');
-      return;
-    }
-    if (pontos.length === 0) {
-      setLocations([]);
-      setStatus('empty');
-      return;
-    }
+  }, [locations, selectedId]);
 
-    let cancelled = false;
-    setStatus('loading');
-
-    (async () => {
-      const resolved: ResolvedLocation[] = [];
-      const failed: string[] = [];
-
-      for (const ponto of pontos) {
-        const loc = await geocodePonto(ponto);
-        if (cancelled) return;
-        if (loc) resolved.push(loc);
-        else if (ponto.cep) failed.push(formatCep(ponto.cep));
-      }
-
-      if (cancelled) return;
-      setLocations(resolved);
-      setFailedCeps(failed);
-      setSelectedId(resolved[0]?.id ?? '');
-      setStatus(resolved.length > 0 ? 'ready' : 'empty');
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [pontos, pontosError]);
-
-  // 2) Inicializa o mapa Leaflet uma única vez (aguardando o script do CDN).
+  // Inicializa o mapa Leaflet uma única vez (aguardando o script do CDN).
   useEffect(() => {
     let cancelled = false;
     let attempts = 0;
@@ -314,7 +173,7 @@ export function MapPage() {
     };
   }, []);
 
-  // 3) (Re)desenha os marcadores quando o mapa está pronto e os locais mudam.
+  // (Re)desenha os marcadores quando o mapa está pronto e os locais mudam.
   useEffect(() => {
     const L = window.L;
     const map = mapRef.current;
@@ -379,7 +238,7 @@ export function MapPage() {
       <div className="mb-6">
         <h1 className="page-title">Mapa das Compras</h1>
         <p className="page-subtitle">
-          Localização dos estabelecimentos onde suas notas foram emitidas, a partir do CEP.
+          Localização dos estabelecimentos onde suas notas foram emitidas.
           Clique em um marcador ou em um local da lista para ver os detalhes.
         </p>
       </div>
@@ -387,15 +246,15 @@ export function MapPage() {
       <div className="map-layout">
         <aside className="map-sidebar">
           <span className="map-sidebar-title">
-            {isBusy ? 'Localizando CEPs…' : `Locais (${locations.length})`}
+            {isBusy ? 'Carregando locais…' : `Locais (${locations.length})`}
           </span>
 
           {isBusy && (
             <div className="map-location-card map-location-card--placeholder">
               <span className="spinner" style={{ width: 18, height: 18 }} />
               <span className="map-location-info">
-                <strong>Resolvendo endereços…</strong>
-                <span>Convertendo CEP em coordenadas</span>
+                <strong>Carregando mapa…</strong>
+                <span>Buscando estabelecimentos com coordenadas</span>
               </span>
             </div>
           )}
