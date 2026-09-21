@@ -16,6 +16,9 @@ export interface MapaPonto {
   cidade?: string | null;
   estado?: string | null;
   cep?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  endereco?: string | null;
   notas_count: number;
   notas: MapaNota[];
 }
