@@ -41,6 +41,29 @@ def _ensure_schema_updates() -> None:
                 connection.execute(text(f"ALTER TABLE notas_fiscais ADD COLUMN data_compra {column_type}"))
             if "meio_pagamento" not in columns:
                 connection.execute(text("ALTER TABLE notas_fiscais ADD COLUMN meio_pagamento VARCHAR"))
+            if "valor_desconto_nota" not in columns:
+                connection.execute(
+                    text("ALTER TABLE notas_fiscais ADD COLUMN valor_desconto_nota FLOAT NOT NULL DEFAULT 0")
+                )
+            if "valor_pago_nota" not in columns:
+                connection.execute(
+                    text("ALTER TABLE notas_fiscais ADD COLUMN valor_pago_nota FLOAT NOT NULL DEFAULT 0")
+                )
+                # Notas antigas nao tinham desconto rastreado: o valor pago
+                # ate aqui e o proprio total "cheio" ja persistido.
+                connection.execute(text("UPDATE notas_fiscais SET valor_pago_nota = valor_total_nota"))
+
+        if inspector.has_table("itens_nota_fiscal"):
+            item_columns = {column["name"] for column in inspector.get_columns("itens_nota_fiscal")}
+            if "valor_desconto" not in item_columns:
+                connection.execute(
+                    text("ALTER TABLE itens_nota_fiscal ADD COLUMN valor_desconto FLOAT NOT NULL DEFAULT 0")
+                )
+            if "valor_pago" not in item_columns:
+                connection.execute(
+                    text("ALTER TABLE itens_nota_fiscal ADD COLUMN valor_pago FLOAT NOT NULL DEFAULT 0")
+                )
+                connection.execute(text("UPDATE itens_nota_fiscal SET valor_pago = quantidade * valor_unitario"))
 
         if inspector.has_table("produto"):
             produto_columns = {column["name"] for column in inspector.get_columns("produto")}

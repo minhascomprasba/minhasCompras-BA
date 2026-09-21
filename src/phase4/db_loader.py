@@ -29,6 +29,16 @@ def _coerce_required_float(value: Any, field_name: str) -> float:
         raise ValueError(f"Campo invalido para float em {field_name}: {value}") from exc
 
 
+def _coerce_optional_float(value: Any, default: float = 0.0) -> float:
+    if value is None:
+        return default
+
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
 
 def _coerce_required_str(value: Any, field_name: str) -> str:
     if value is None:
@@ -120,6 +130,8 @@ def bulk_insert_produtos_with_nota_id(
     estabelecimento_id: int,
     data_compra: datetime | None = None,
     meio_pagamento: str | None = None,
+    valor_desconto_nota: float | None = None,
+    valor_pago_nota: float | None = None,
 ) -> tuple[int, int]:
 
     logger = setup_logger(log_file="logs/phase4.log", logger_name="phase4")
@@ -168,12 +180,18 @@ def bulk_insert_produtos_with_nota_id(
         agregados: dict[int, dict[str, float]] = {}
 
         total_nota = 0.0
+        total_desconto_nota = 0.0
+        total_pago_nota = 0.0
 
         for index, produto_scraped in enumerate(produtos, start=1):
             try:
                 vt = _coerce_required_float(produto_scraped.get("valor_total"), "valor_total")
                 qtd = _coerce_required_float(produto_scraped.get("quantidade"), "quantidade")
+                valor_desconto = _coerce_optional_float(produto_scraped.get("valor_desconto"))
+                valor_pago = _coerce_optional_float(produto_scraped.get("valor_pago"), default=max(vt - valor_desconto, 0.0))
                 total_nota += vt
+                total_desconto_nota += valor_desconto
+                total_pago_nota += valor_pago
 
                 ean = _coerce_optional_str(produto_scraped.get("codigo_ean_comercial"))
                 ncm = _coerce_optional_str(produto_scraped.get("codigo_ncm_comercial"))
@@ -191,16 +209,29 @@ def bulk_insert_produtos_with_nota_id(
                 if produto_banco.id in agregados:
                     agregados[produto_banco.id]["quantidade"] += qtd
                     agregados[produto_banco.id]["valor_total"] += vt
+                    agregados[produto_banco.id]["valor_desconto"] += valor_desconto
+                    agregados[produto_banco.id]["valor_pago"] += valor_pago
                 else:
                     agregados[produto_banco.id] = {
                         "quantidade": qtd,
                         "valor_total": vt,
+                        "valor_desconto": valor_desconto,
+                        "valor_pago": valor_pago,
                     }
 
             except ValueError as exc:
                 raise ValueError(f"Produto invalido na posicao {index}: {exc}") from exc
 
         nota_fiscal.valor_total_nota = total_nota
+        # O bloco de totais da nota (quando disponivel) e mais confiavel que a
+        # soma dos itens: muitas notas so informam o desconto ali, sem
+        # detalhar por item.
+        nota_fiscal.valor_desconto_nota = (
+            valor_desconto_nota if valor_desconto_nota is not None else total_desconto_nota
+        )
+        nota_fiscal.valor_pago_nota = (
+            valor_pago_nota if valor_pago_nota is not None else total_pago_nota
+        )
 
         records_itens = [
             ItemNotaFiscal(
@@ -212,6 +243,8 @@ def bulk_insert_produtos_with_nota_id(
                     if dados["quantidade"] > 0
                     else 0.0
                 ),
+                valor_desconto=dados["valor_desconto"],
+                valor_pago=dados["valor_pago"],
             )
             for produto_id, dados in agregados.items()
         ]

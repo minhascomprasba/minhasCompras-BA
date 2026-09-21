@@ -75,6 +75,8 @@ class NotaListItem(BaseModel):
     data_compra: datetime | None = None
     itens_count: int
     valor_total_nota: float
+    valor_desconto_nota: float
+    valor_pago_nota: float
     meio_pagamento: str | None = None
 
 
@@ -86,6 +88,8 @@ class NotaDetailResponse(BaseModel):
     created_at: datetime
     data_compra: datetime | None = None
     valor_total_nota: float
+    valor_desconto_nota: float
+    valor_pago_nota: float
     meio_pagamento: str | None = None
 
 
@@ -99,6 +103,8 @@ class ItemListItem(BaseModel):
     quantidade: float
     valor_unitario: float
     valor_total: float
+    valor_desconto: float
+    valor_pago: float
     unidade_comercial: str | None
     codigo_ean_comercial: str | None
     codigo_NCM_comercial: str | None

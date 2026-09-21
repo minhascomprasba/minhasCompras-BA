@@ -560,16 +560,34 @@ class ProductParser:
                 )
                 
             codigo_ncm = ""
-            
+
             if isinstance(toggable_table, Tag):
                 codigo_ncm = cls._extract_value_by_labels(
                     toggable_table,
                     ["Codigo NCM", "Codigo ncm", "Código NCM", "Código ncm"],
                 )
+
+            valor_desconto_raw = cls._extract_span_text_by_class(product_table, "fixo-prod-serv-vdesc")
+            if not valor_desconto_raw and isinstance(toggable_table, Tag):
+                valor_desconto_raw = cls._extract_value_by_labels(
+                    toggable_table,
+                    ["Valor do Desconto", "Valor Desconto", "Vl. Desconto", "Desconto"],
+                )
+            valor_desconto = cls._to_float(valor_desconto_raw) or 0.0
+
+            valor_total = cls._to_float(valor_total_raw)
+            valor_pago = (
+                round(max(valor_total - valor_desconto, 0.0), 2)
+                if valor_total is not None
+                else None
+            )
+
             product = {
                 "descricao": descricao,
                 "quantidade": cls._to_float(quantidade_raw),
-                "valor_total": cls._to_float(valor_total_raw),
+                "valor_total": valor_total,
+                "valor_desconto": valor_desconto,
+                "valor_pago": valor_pago,
                 "unidade_comercial": cls._normalize_text(unidade_comercial),
                 "codigo_ean_comercial": cls._normalize_text(codigo_ean_comercial),
                 "codigo_ncm_comercial": cls._normalize_text(codigo_ncm),
@@ -584,6 +602,85 @@ class ProductParser:
 
         logger.info("Fase 3: extracao concluida com %s produtos.", len(products))
         return products
+
+    _DESCONTO_NOTA_LABELS = [
+        "Valor Desconto R$",
+        "Valor do Desconto",
+        "Descontos R$",
+        "Desconto R$",
+        "Descontos",
+        "Valor Desconto",
+    ]
+    _VALOR_A_PAGAR_LABELS = [
+        "Valor a Pagar R$",
+        "Valor a pagar R$",
+        "Valor a Pagar",
+    ]
+
+    @classmethod
+    def _parse_totais_nota(cls, soup: Tag) -> tuple[float | None, float | None]:
+        """Le o bloco de totais da nota (Valor Desconto R$ / Valor a Pagar R$).
+        Muitas notas so informam o desconto aqui, sem detalhar por item."""
+        desconto_raw = cls._extract_value_by_labels(
+            soup, cls._DESCONTO_NOTA_LABELS
+        ) or cls._extract_value_by_labels_from_rows(soup, cls._DESCONTO_NOTA_LABELS)
+
+        a_pagar_raw = cls._extract_value_by_labels(
+            soup, cls._VALOR_A_PAGAR_LABELS
+        ) or cls._extract_value_by_labels_from_rows(soup, cls._VALOR_A_PAGAR_LABELS)
+
+        return cls._to_float(desconto_raw), cls._to_float(a_pagar_raw)
+
+    @classmethod
+    def _reconciliar_descontos(
+        cls,
+        produtos: list[dict[str, Any]],
+        valor_desconto_nota: float | None,
+        valor_pago_nota: float | None,
+        logger: Any,
+    ) -> tuple[float | None, float | None]:
+        """Concilia o desconto global da nota com os descontos ja atribuidos a
+        cada item. Quando a nota informa mais desconto do que o total ja
+        detalhado por item, o restante e rateado proporcionalmente entre os
+        itens sem desconto proprio (caso mais comum: desconto so no total)."""
+        if not produtos:
+            return valor_desconto_nota, valor_pago_nota
+
+        soma_desconto_itens = sum(produto.get("valor_desconto") or 0.0 for produto in produtos)
+
+        if valor_desconto_nota is not None and valor_desconto_nota > soma_desconto_itens + 0.01:
+            desconto_restante = round(valor_desconto_nota - soma_desconto_itens, 2)
+            candidatos = [
+                produto
+                for produto in produtos
+                if not produto.get("valor_desconto") and produto.get("valor_total")
+            ]
+            peso_total = sum(produto["valor_total"] for produto in candidatos)
+
+            if candidatos and peso_total > 0:
+                logger.info(
+                    "Fase 3: desconto de R$ %.2f nao detalhado por item; rateado entre %s item(ns).",
+                    desconto_restante,
+                    len(candidatos),
+                )
+                for produto in candidatos:
+                    alocado = round(desconto_restante * (produto["valor_total"] / peso_total), 2)
+                    produto["valor_desconto"] = round((produto.get("valor_desconto") or 0.0) + alocado, 2)
+                    produto["valor_pago"] = round(max(produto["valor_total"] - produto["valor_desconto"], 0.0), 2)
+
+        if valor_desconto_nota is None:
+            valor_desconto_nota = round(sum(produto.get("valor_desconto") or 0.0 for produto in produtos), 2)
+
+        if valor_pago_nota is None:
+            valor_pago_nota = round(
+                sum(
+                    produto["valor_pago"] if produto.get("valor_pago") is not None else (produto.get("valor_total") or 0.0)
+                    for produto in produtos
+                ),
+                2,
+            )
+
+        return valor_desconto_nota, valor_pago_nota
 
     @classmethod
     def parse_page(cls, html_content: str) -> dict[str, Any]:
@@ -603,10 +700,18 @@ class ProductParser:
             else:
                 logger.warning("Fase 3: meio de pagamento nao encontrado no HTML.")
 
+            produtos = cls._parse_products(soup, logger)
+            valor_desconto_nota, valor_pago_nota = cls._parse_totais_nota(soup)
+            valor_desconto_nota, valor_pago_nota = cls._reconciliar_descontos(
+                produtos, valor_desconto_nota, valor_pago_nota, logger
+            )
+
             return {
-                "produtos": cls._parse_products(soup, logger),
+                "produtos": produtos,
                 "data_compra": data_compra,
                 "meio_pagamento": meio_pagamento,
+                "valor_desconto_nota": valor_desconto_nota,
+                "valor_pago_nota": valor_pago_nota,
             }
         finally:
             soup.decompose()
@@ -628,6 +733,8 @@ class ProductParser:
             "descricao",
             "quantidade",
             "valor_total",
+            "valor_desconto",
+            "valor_pago",
             "unidade_comercial",
             "codigo_ean_comercial",
         ]
