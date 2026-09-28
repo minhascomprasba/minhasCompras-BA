@@ -42,11 +42,23 @@ export interface TopProduto {
   ocorrencias: number;
 }
 
+export interface AlcancePonto {
+  estabelecimentoId: number;
+  nome: string;
+  cidade: string;
+  estado: string;
+  endereco: string;
+  latitude: number;
+  longitude: number;
+  notasCount: number;
+}
+
 export interface AlcanceGeografico {
   totalCidades: number;
   redesMonitoradas: number;
   redesLideres: string[];
   nota: string;
+  pontos: AlcancePonto[];
 }
 
 export interface TelemetriaSlice {

@@ -12,43 +12,61 @@ interface AdminTopProductsProps {
 const formatBRL = (value: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
+const IconUp = (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <line x1="12" y1="19" x2="12" y2="5" />
+    <polyline points="5 12 12 5 19 12" />
+  </svg>
+);
+
+const IconDown = (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <line x1="12" y1="5" x2="12" y2="19" />
+    <polyline points="19 12 12 19 5 12" />
+  </svg>
+);
+
+const IconNeutral = (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <line x1="5" y1="12" x2="19" y2="12" />
+  </svg>
+);
+
 const variationVisual = (variacao: number): { className: string; icon: ReactElement } => {
   if (variacao > 0) {
-    return {
-      className: 'admin-variation--up',
-      icon: (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="12" y1="19" x2="12" y2="5" />
-          <polyline points="5 12 12 5 19 12" />
-        </svg>
-      ),
-    };
+    return { className: 'admin-variation--up', icon: IconUp };
   }
   if (variacao < 0) {
-    return {
-      className: 'admin-variation--down',
-      icon: (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="12" y1="5" x2="12" y2="19" />
-          <polyline points="19 12 12 19 5 12" />
-        </svg>
-      ),
-    };
+    return { className: 'admin-variation--down', icon: IconDown };
   }
-  return {
-    className: 'admin-variation--neutral',
-    icon: (
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="5" y1="12" x2="19" y2="12" />
-      </svg>
-    ),
-  };
+  return { className: 'admin-variation--neutral', icon: IconNeutral };
 };
 
 export function AdminTopProducts({ produtos }: AdminTopProductsProps) {
   return (
     <div className="card admin-chart-card">
       <MetricHead title="Top Produtos na Bahia" tooltip={TOOLTIP} />
+
+      <div className="admin-top-products-legend">
+        <p className="admin-top-products-legend-note">
+          Variação do preço médio em relação ao período anterior
+        </p>
+        <div className="admin-chart-legend">
+          <span className="admin-chart-legend-item">
+            <span className="admin-variation admin-variation--up">{IconUp}</span>
+            Subiu
+          </span>
+          <span className="admin-chart-legend-item">
+            <span className="admin-variation admin-variation--down">{IconDown}</span>
+            Caiu
+          </span>
+          <span className="admin-chart-legend-item">
+            <span className="admin-variation admin-variation--neutral">{IconNeutral}</span>
+            Estável / sem base
+          </span>
+        </div>
+      </div>
+
       <div className="table-container">
         <table className="table">
           <thead>

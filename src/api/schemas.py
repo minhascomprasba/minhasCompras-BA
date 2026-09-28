@@ -259,11 +259,23 @@ class TopProdutoResponse(BaseModel):
     ocorrencias: int = 0
 
 
+class AlcancePontoResponse(BaseModel):
+    estabelecimentoId: int
+    nome: str
+    cidade: str
+    estado: str
+    endereco: str = ""
+    latitude: float
+    longitude: float
+    notasCount: int = 0
+
+
 class AlcanceGeograficoResponse(BaseModel):
     totalCidades: int
     redesMonitoradas: int
     redesLideres: list[str] = Field(default_factory=list)
     nota: str
+    pontos: list[AlcancePontoResponse] = Field(default_factory=list)
 
 
 class TelemetriaSliceResponse(BaseModel):

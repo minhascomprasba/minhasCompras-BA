@@ -636,6 +636,8 @@ def _build_top_produtos(session: Session, window: PeriodWindow) -> list[dict[str
 
 
 def _build_alcance(session: Session, window: PeriodWindow) -> dict[str, object]:
+    from src.api.services.geocode_service import ensure_coords_batch, format_address
+
     notas_count = func.count(NotaFiscal.id).label("notas_count")
     stmt = (
         select(Estabelecimento.cidade, Estabelecimento.nome_fantasia, notas_count)
@@ -663,11 +665,50 @@ def _build_alcance(session: Session, window: PeriodWindow) -> dict[str, object]:
     else:
         nota = "Nenhuma nota cadastrada no período selecionado"
 
+    # Pontos no mapa: estabelecimentos com notas no período (coords persistidas/geocodificadas).
+    pontos_stmt = (
+        select(Estabelecimento, notas_count)
+        .join(NotaFiscal, NotaFiscal.estabelecimento_id == Estabelecimento.id)
+        .group_by(Estabelecimento.id)
+        .order_by(notas_count.desc())
+    )
+    pontos_rows = session.execute(
+        _apply_window(pontos_stmt, NotaFiscal.created_at, window.start, window.end)
+    ).all()
+
+    estabelecimentos = [est for est, _count in pontos_rows]
+    refreshed: dict[int, Estabelecimento] = {}
+    if estabelecimentos:
+        ensure_coords_batch(session, estabelecimentos)
+        for est in estabelecimentos:
+            loaded = session.get(Estabelecimento, est.id)
+            if loaded is not None:
+                refreshed[est.id] = loaded
+
+    pontos: list[dict[str, object]] = []
+    for est, quantidade in pontos_rows:
+        est = refreshed.get(est.id, est)
+        if est.latitude is None or est.longitude is None:
+            continue
+        pontos.append(
+            {
+                "estabelecimentoId": est.id,
+                "nome": est.nome_fantasia or est.razao_social,
+                "cidade": est.cidade,
+                "estado": est.estado,
+                "endereco": format_address(est.logradouro, est.bairro, est.cidade, est.estado),
+                "latitude": float(est.latitude),
+                "longitude": float(est.longitude),
+                "notasCount": int(quantidade or 0),
+            }
+        )
+
     return {
         "totalCidades": len(cidades),
         "redesMonitoradas": len(redes),
         "redesLideres": redes_lideres,
         "nota": nota,
+        "pontos": pontos,
     }
 
 
