@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAdminUsuarios, useUpdateUsuarioRole } from '../features/admin/hooks/useAdminData';
+import { useAdminUsuarios, useDeleteUsuario, useUpdateUsuarioRole } from '../features/admin/hooks/useAdminData';
 import { AdminUsersTable } from '../features/admin/components/AdminUsersTable';
 import { InfoTooltip } from '../features/admin/components/InfoTooltip';
 import type { AdminUsuario } from '../features/admin/types';
@@ -27,6 +27,9 @@ export function AdminUsersPage() {
   const [roleFilter, setRoleFilter] = useState<'' | UserRole>('');
   const [page, setPage] = useState(1);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const deleteUsuario = useDeleteUsuario();
+  const [usuarioParaExcluir, setUsuarioParaExcluir] = useState<AdminUsuario | null>(null);
+
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -58,6 +61,32 @@ export function AdminUsersPage() {
         },
         onError: (mutationError) => {
           setFeedback({ type: 'error', message: mutationError.message });
+        },
+      }
+    );
+  };
+
+  const handleDeleteRequest = (usuario: AdminUsuario) => {
+    setFeedback(null);
+    setUsuarioParaExcluir(usuario);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!usuarioParaExcluir) return;
+    const alvo = usuarioParaExcluir;
+    const eraUltimoDaPagina = (data?.data.length ?? 0) === 1 && page > 1;
+
+    deleteUsuario.mutate(
+      { usuarioId: alvo.id },
+      {
+        onSuccess: () => {
+          setFeedback({ type: 'success', message: `${alvo.email} foi excluído.` });
+          setUsuarioParaExcluir(null);
+          if (eraUltimoDaPagina) setPage((current) => current - 1);
+        },
+        onError: (mutationError) => {
+          setFeedback({ type: 'error', message: mutationError.message });
+          setUsuarioParaExcluir(null);
         },
       }
     );
@@ -133,6 +162,7 @@ export function AdminUsersPage() {
               currentUserId={user?.id}
               pendingUsuarioId={updateRole.isPending ? updateRole.variables?.usuarioId ?? null : null}
               onRoleChange={handleRoleChange}
+              onDelete={handleDeleteRequest}
             />
 
             {totalPages > 1 && (
@@ -161,6 +191,36 @@ export function AdminUsersPage() {
           </>
         )}
       </div>
+
+      {usuarioParaExcluir && (
+        <div className="modal-overlay" onClick={() => !deleteUsuario.isPending && setUsuarioParaExcluir(null)}>
+          <div className="card modal-card" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <h2 className="admin-title" style={{ fontSize: '1.25rem' }}>Excluir usuário</h2>
+            <p>
+              Tem certeza que deseja excluir <strong>{usuarioParaExcluir.email}</strong>
+              {' '}({ROLE_LABELS[usuarioParaExcluir.role]})? Essa ação não pode ser desfeita.
+            </p>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                disabled={deleteUsuario.isPending}
+                onClick={() => setUsuarioParaExcluir(null)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger btn-sm"
+                disabled={deleteUsuario.isPending}
+                onClick={handleDeleteConfirm}
+              >
+                {deleteUsuario.isPending ? 'Excluindo...' : 'Excluir'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

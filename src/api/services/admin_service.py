@@ -982,3 +982,58 @@ def get_role_summary() -> dict[str, int]:
         return resumo
     finally:
         session.close()
+        
+
+def delete_usuario_admin(target_id: int, actor_id: int) -> dict[str, object]:
+    if target_id == actor_id:
+        raise ConflictError(
+            code="CANNOT_DELETE_SELF",
+            message="Você não pode excluir a sua própria conta.",
+            details={"usuario_id": str(target_id)},
+        )
+
+    session = SessionLocal()
+    try:
+        ator = session.get(Usuario, actor_id)
+        if ator is None or ator.role != UserRole.SUPER_ADMIN.value:
+            raise ForbiddenError(
+                code="FORBIDDEN",
+                message="Apenas super admins podem excluir usuários.",
+                details={"usuario_id": str(actor_id)},
+            )
+
+        alvo = session.get(Usuario, target_id)
+        if alvo is None:
+            raise NotFoundError(
+                code="USER_NOT_FOUND",
+                message="Usuário não encontrado.",
+                details={"usuario_id": str(target_id)},
+            )
+
+        if alvo.role == UserRole.SUPER_ADMIN.value:
+            total = int(
+                session.execute(
+                    select(func.count())
+                    .select_from(Usuario)
+                    .where(Usuario.role == UserRole.SUPER_ADMIN.value)
+                ).scalar()
+                or 0
+            )
+            if total <= 1:
+                raise ConflictError(
+                    code="LAST_SUPER_ADMIN",
+                    message="O sistema precisa manter pelo menos um super admin.",
+                    details={"usuario_id": str(target_id)},
+                )
+
+        removido = {"id": alvo.id, "email": alvo.email, "role": alvo.role}
+
+        session.delete(alvo)
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+    return {**removido, "deleted": True, "resumo_perfis": get_role_summary()}

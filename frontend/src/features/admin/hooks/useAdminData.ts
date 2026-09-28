@@ -2,7 +2,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminService } from '../services/adminService';
 import type { ListUsuariosParams } from '../services/adminService';
 import type { UserRole } from '../../auth/authService';
-import type { AdminDashboardData, AdminPeriod, AdminUsuario, PaginatedAdminUsuarios } from '../types';
+import type {
+  AdminDashboardData,
+  AdminPeriod,
+  AdminUsuario,
+  DeleteUsuarioResponse,
+  PaginatedAdminUsuarios,
+} from '../types';
 import type { AppError } from '../../../shared/api/errors';
 
 export function useAdminData(period: AdminPeriod, selectedMonth?: string, selectedYear?: string) {
@@ -26,6 +32,17 @@ export function useUpdateUsuarioRole() {
 
   return useMutation<AdminUsuario, AppError, { usuarioId: number; role: UserRole }>({
     mutationFn: ({ usuarioId, role }) => adminService.updateUsuarioRole(usuarioId, role),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'usuarios'] });
+    },
+  });
+}
+
+export function useDeleteUsuario() {
+  const queryClient = useQueryClient();
+
+  return useMutation<DeleteUsuarioResponse, AppError, { usuarioId: number }>({
+    mutationFn: ({ usuarioId }) => adminService.deleteUsuario(usuarioId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'usuarios'] });
     },
