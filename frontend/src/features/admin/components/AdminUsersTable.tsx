@@ -9,6 +9,7 @@ interface AdminUsersTableProps {
   currentUserId?: number;
   pendingUsuarioId: number | null;
   onRoleChange: (usuario: AdminUsuario, role: UserRole) => void;
+  onDelete: (usuario: AdminUsuario) => void;
 }
 
 const formatDate = (value: string | null) => {
@@ -25,6 +26,7 @@ export function AdminUsersTable({
   currentUserId,
   pendingUsuarioId,
   onRoleChange,
+  onDelete,
 }: AdminUsersTableProps) {
   return (
     <div className="table-container">
@@ -37,18 +39,21 @@ export function AdminUsersTable({
             <th style={{ textAlign: 'right' }}>Itens</th>
             <th>Cadastro</th>
             <th>Última nota</th>
+            <th style={{ textAlign: 'right' }}>Ações</th>
           </tr>
         </thead>
         <tbody>
           {usuarios.length === 0 ? (
             <tr>
-              <td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
+              <td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
                 Nenhum usuário encontrado com os filtros atuais.
               </td>
             </tr>
           ) : (
             usuarios.map((usuario) => {
               const isSelf = usuario.id === currentUserId;
+              const isRowPending = pendingUsuarioId === usuario.id;
+
               return (
                 <tr key={usuario.id}>
                   <td>
@@ -59,7 +64,7 @@ export function AdminUsersTable({
                     <select
                       className="form-input admin-role-select"
                       value={usuario.role}
-                      disabled={isSelf || pendingUsuarioId === usuario.id}
+                      disabled={isSelf || isRowPending}
                       title={
                         isSelf
                           ? 'Você não pode alterar o seu próprio perfil de acesso.'
@@ -78,6 +83,21 @@ export function AdminUsersTable({
                   <td style={{ textAlign: 'right' }}>{usuario.itens_count}</td>
                   <td>{formatDate(usuario.created_at)}</td>
                   <td>{formatDate(usuario.ultima_atividade)}</td>
+                  <td style={{ textAlign: 'right' }}>
+                    <button
+                      type="button"
+                      className="btn btn-danger btn-sm"
+                      disabled={isSelf || isRowPending}
+                      title={
+                        isSelf
+                          ? 'Você não pode apagar o seu próprio usuário.'
+                          : 'Apagar usuário'
+                      }
+                      onClick={() => onDelete(usuario)}
+                    >
+                      Apagar
+                    </button>
+                  </td>
                 </tr>
               );
             })

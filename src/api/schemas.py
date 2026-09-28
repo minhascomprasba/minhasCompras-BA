@@ -341,3 +341,9 @@ class PaginatedAdminUsuariosResponse(BaseModel):
 class UpdateUsuarioRoleRequest(BaseModel):
     role: str = Field(..., max_length=20)
 
+class DeleteUsuarioResponse(BaseModel):
+    id: int
+    email: str
+    role: str
+    deleted: bool = True
+    resumo_perfis: dict[str, int] = Field(default_factory=dict)

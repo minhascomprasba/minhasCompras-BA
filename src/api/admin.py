@@ -5,11 +5,13 @@ from fastapi import APIRouter, Depends, Query
 from src.api.schemas import (
     AdminDashboardResponse,
     AdminUsuarioResponse,
+    DeleteUsuarioResponse,
     PaginatedAdminUsuariosResponse,
     UpdateUsuarioRoleRequest,
 )
 from src.api.security import require_admin, require_super_admin
 from src.api.services.admin_service import (
+    delete_usuario_admin,
     get_admin_dashboard,
     get_role_summary,
     list_usuarios,
@@ -50,3 +52,16 @@ def admin_update_usuario_role(
 ) -> AdminUsuarioResponse:
     data = update_usuario_role(target_id=usuario_id, new_role=payload.role, actor_id=actor.id)
     return AdminUsuarioResponse(**data)
+
+
+
+@admin_router.delete(
+    "/usuarios/{usuario_id}",
+    response_model=DeleteUsuarioResponse,
+)
+def admin_delete_usuario(
+    usuario_id: int,
+    actor: Usuario = Depends(require_super_admin),
+) -> DeleteUsuarioResponse:
+    resultado = delete_usuario_admin(target_id=usuario_id, actor_id=actor.id)
+    return DeleteUsuarioResponse(**resultado)
