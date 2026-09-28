@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState, type ChangeEvent } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { pickDefaultCameraId } from '../utils/pickBackCamera';
+import { pickDefaultCameraId, rankBackCameras } from '../utils/pickBackCamera';
 import { QR_SCANNER_CONFIG } from '../utils/qrScannerConfig';
 import { scanQrCodeFromFile } from '../utils/scanQrFromFile';
 import { ImageUploadIcon } from '../../../components/ImportActionIcons';
@@ -23,6 +23,7 @@ type QrCodeScannerProps = {
 };
 
 const noopFrameError = () => undefined;
+const CAMERA_HINT_DELAY_MS = 5000;
 
 export function QrCodeScanner({
   isOpen,
@@ -38,11 +39,17 @@ export function QrCodeScanner({
   const onScanRef = useRef(onScan);
   const onFileRef = useRef(onFile);
   const onCloseRef = useRef(onClose);
+  const cameraIdsRef = useRef<string[]>([]);
+  const activeCameraIdRef = useRef<string | null>(null);
+  const isSwitchingRef = useRef(false);
 
   const [error, setError] = useState('');
   const [isStarting, setIsStarting] = useState(false);
   const [isFileScanning, setIsFileScanning] = useState(false);
   const [showGalleryHint, setShowGalleryHint] = useState(false);
+  const [showCameraHint, setShowCameraHint] = useState(false);
+  const [hasOtherCamera, setHasOtherCamera] = useState(false);
+  const [isSwitching, setIsSwitching] = useState(false);
 
   useEffect(() => {
     onScanRef.current = onScan;
@@ -86,6 +93,7 @@ export function QrCodeScanner({
     if (!scanner) {
       return;
     }
+    scannerRef.current = null;
     try {
       if (scanner.isScanning) {
         await scanner.stop();
@@ -93,8 +101,6 @@ export function QrCodeScanner({
       scanner.clear();
     } catch {
       // ignorar falha ao parar
-    } finally {
-      scannerRef.current = null;
     }
   }, []);
 
@@ -125,12 +131,59 @@ export function QrCodeScanner({
     }
   }, [finishSuccess]);
 
+  const switchCamera = useCallback(async () => {
+    const scanner = scannerRef.current;
+    const cameraIds = cameraIdsRef.current;
+    if (!scanner?.isScanning || cameraIds.length < 2 || isSwitchingRef.current) {
+      return;
+    }
+
+    const previousId = activeCameraIdRef.current;
+    const currentIndex = cameraIds.indexOf(previousId ?? cameraIds[0]);
+    const nextId = cameraIds[(currentIndex + 1) % cameraIds.length];
+    isSwitchingRef.current = true;
+    setIsSwitching(true);
+    setError('');
+
+    try {
+      await scanner.stop();
+      if (scannerRef.current !== scanner) {
+        return;
+      }
+      await scanner.start(nextId, QR_SCANNER_CONFIG, onScanSuccess, noopFrameError);
+      activeCameraIdRef.current = nextId;
+    } catch {
+      if (scannerRef.current === scanner) {
+        try {
+          await scanner.start(
+            previousId ?? { facingMode: 'environment' },
+            QR_SCANNER_CONFIG,
+            onScanSuccess,
+            noopFrameError,
+          );
+          activeCameraIdRef.current = previousId;
+        } catch {
+          setShowGalleryHint(true);
+          setHasOtherCamera(false);
+        }
+        setError('Não foi possível trocar a câmera. Tente enviar uma imagem da nota.');
+      }
+    } finally {
+      isSwitchingRef.current = false;
+      setIsSwitching(false);
+    }
+  }, [onScanSuccess]);
+
   useEffect(() => {
     if (!isOpen) {
       hasScannedRef.current = false;
       setError('');
       setShowGalleryHint(false);
+      setShowCameraHint(false);
+      setHasOtherCamera(false);
       setIsFileScanning(false);
+      cameraIdsRef.current = [];
+      activeCameraIdRef.current = null;
       void stopScanner();
       return;
     }
@@ -139,7 +192,15 @@ export function QrCodeScanner({
     hasScannedRef.current = false;
     setError('');
     setShowGalleryHint(false);
+    setShowCameraHint(false);
+    setHasOtherCamera(false);
     setIsStarting(true);
+
+    const cameraHintTimer = window.setTimeout(() => {
+      if (!cancelled && !hasScannedRef.current) {
+        setShowCameraHint(true);
+      }
+    }, Math.min(CAMERA_HINT_DELAY_MS, galleryHintDelayMs / 2));
 
     const hintTimer = window.setTimeout(() => {
       if (!cancelled && !hasScannedRef.current) {
@@ -158,10 +219,18 @@ export function QrCodeScanner({
         }
 
         const cameraId = pickDefaultCameraId(devices);
+        const rankedCameras = rankBackCameras(devices);
+        const rankedIds = new Set(rankedCameras.map((camera) => camera.id));
+        cameraIdsRef.current = [
+          ...rankedCameras.map((camera) => camera.id),
+          ...devices.filter((camera) => !rankedIds.has(camera.id)).map((camera) => camera.id),
+        ];
+        setHasOtherCamera(cameraIdsRef.current.length > 1);
 
         if (cameraId) {
           try {
             await html5QrCode.start(cameraId, QR_SCANNER_CONFIG, onScanSuccess, noopFrameError);
+            activeCameraIdRef.current = cameraId;
           } catch {
             await html5QrCode.start(
               { facingMode: 'environment' },
@@ -169,6 +238,7 @@ export function QrCodeScanner({
               onScanSuccess,
               noopFrameError,
             );
+            activeCameraIdRef.current = null;
           }
         } else {
           await html5QrCode.start(
@@ -182,8 +252,19 @@ export function QrCodeScanner({
         if (!cancelled) {
           setError('Não foi possível acessar a câmera. Verifique as permissões ou envie uma imagem da nota.');
           setShowGalleryHint(true);
+          setHasOtherCamera(false);
         }
       } finally {
+        if (cancelled) {
+          try {
+            if (html5QrCode.isScanning) {
+              await html5QrCode.stop();
+            }
+            html5QrCode.clear();
+          } catch {
+            // ignorar falha ao parar uma câmera aberta após fechar o scanner
+          }
+        }
         if (!cancelled) {
           setIsStarting(false);
         }
@@ -194,6 +275,7 @@ export function QrCodeScanner({
 
     return () => {
       cancelled = true;
+      window.clearTimeout(cameraHintTimer);
       window.clearTimeout(hintTimer);
       void stopScanner();
     };
@@ -215,9 +297,9 @@ export function QrCodeScanner({
 
         <div id={readerId} className="qr-scanner-viewport" />
 
-        {isStarting && (
+        {(isStarting || isSwitching) && (
           <p style={{ textAlign: 'center', marginTop: '0.75rem', color: 'var(--text-muted)' }}>
-            Iniciando câmera...
+            {isSwitching ? 'Trocando câmera...' : 'Iniciando câmera...'}
           </p>
         )}
 
@@ -226,6 +308,24 @@ export function QrCodeScanner({
             <span style={{ fontSize: '1.2rem' }}>⚠️</span>
             <span>{error}</span>
           </div>
+        )}
+
+        {showCameraHint && !isStarting && !error && (
+          hasOtherCamera ? (
+            <button
+              type="button"
+              className="qr-scanner-gallery-hint"
+              disabled={isSwitching || isFileScanning}
+              onClick={() => void switchCamera()}
+            >
+              O QR Code não está focando? Trocar câmera
+            </button>
+          ) : (
+            <p className="qr-scanner-gallery-hint qr-scanner-camera-info" role="status">
+              O QR Code não está focando? Tente trocar de câmera nas configurações do navegador.
+              Apenas uma câmera foi detectada agora.
+            </p>
+          )
         )}
 
         {(showGalleryHint || error) && (

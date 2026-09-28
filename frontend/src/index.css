@@ -412,6 +412,10 @@ a:hover { color: var(--primary-hover); }
   cursor: wait;
 }
 
+.qr-scanner-camera-info {
+  cursor: default;
+}
+
 .qr-scanner-gallery-hint-icon {
   display: inline-flex;
   align-items: center;
