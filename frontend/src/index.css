@@ -412,6 +412,10 @@ a:hover { color: var(--primary-hover); }
   cursor: wait;
 }
 
+.qr-scanner-camera-info {
+  cursor: default;
+}
+
 .qr-scanner-gallery-hint-icon {
   display: inline-flex;
   align-items: center;
@@ -3798,20 +3802,58 @@ body.menu-open {
 
 .admin-map-placeholder {
   flex: 1;
-  min-height: 200px;
+  min-height: 0;
+}
+
+.admin-map-canvas {
+  position: relative;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  background: var(--bg-main);
+  min-height: 260px;
+}
+
+.admin-map-view {
+  width: 100%;
+  height: 280px;
+  background: var(--bg-main);
+}
+
+.admin-map-overlay,
+.admin-map-empty {
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
+  padding: 1.25rem;
+  text-align: center;
+  background: rgba(8, 18, 36, 0.72);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  z-index: 400;
+  pointer-events: none;
+}
+
+.admin-map-empty {
+  position: relative;
+  min-height: 260px;
   background: var(--bg-main);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  text-align: center;
-  padding: 1.5rem;
+  pointer-events: auto;
 }
 
-.admin-map-placeholder p {
+.admin-map-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.admin-map-summary > p {
   font-size: 0.9rem;
   color: var(--text-muted);
   margin: 0;
@@ -3827,8 +3869,7 @@ body.menu-open {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
-  justify-content: center;
-  margin-top: 0.35rem;
+  margin-top: 0.15rem;
 }
 
 .admin-map-redes-chip {
@@ -4135,6 +4176,10 @@ body.menu-open {
   .admin-charts-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
+  }
+
+  .admin-map-view {
+    height: 220px;
   }
 
   .admin-telemetry-grid {
