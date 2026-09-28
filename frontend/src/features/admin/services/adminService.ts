@@ -5,6 +5,7 @@ import type {
   AdminPeriod,
   AdminUsuario,
   PaginatedAdminUsuarios,
+  DeleteUsuarioResponse,
 } from '../types';
 
 export interface ListUsuariosParams {
@@ -40,6 +41,11 @@ export const adminService = {
     const response = await apiClient.patch<AdminUsuario>(`/admin/usuarios/${usuarioId}/role`, {
       role,
     });
+    return response.data;
+  },
+
+  async deleteUsuario(usuarioId: number): Promise<DeleteUsuarioResponse> {
+    const response = await apiClient.delete<DeleteUsuarioResponse>(`/admin/usuarios/${usuarioId}`);
     return response.data;
   },
 };

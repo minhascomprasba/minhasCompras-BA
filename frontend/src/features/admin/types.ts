@@ -122,3 +122,10 @@ export interface PaginatedAdminUsuarios {
   total: number;
   resumo_perfis: Record<string, number>;
 }
+export interface DeleteUsuarioResponse {
+  id: number;
+  email: string;
+  role: UserRole;
+  deleted: boolean;
+  resumo_perfis: Record<string, number>;
+}
