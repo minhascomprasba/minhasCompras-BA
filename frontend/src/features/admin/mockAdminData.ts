@@ -1,8 +1,51 @@
-import type { AdminDashboardData, AdminPeriod } from './types';
+import type { AdminDashboardData, AdminPeriod, AlcancePonto } from './types';
 
 const MONTH_NAMES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+];
+
+const MOCK_MAPA_PONTOS: AlcancePonto[] = [
+  {
+    estabelecimentoId: 1,
+    nome: 'Atacadão Feira',
+    cidade: 'Feira de Santana',
+    estado: 'BA',
+    endereco: 'Av. Getúlio Vargas, Feira de Santana - BA',
+    latitude: -12.2669,
+    longitude: -38.9663,
+    notasCount: 145,
+  },
+  {
+    estabelecimentoId: 2,
+    nome: 'Assaí Salvador',
+    cidade: 'Salvador',
+    estado: 'BA',
+    endereco: 'Av. Paralela, Salvador - BA',
+    latitude: -12.9714,
+    longitude: -38.5014,
+    notasCount: 98,
+  },
+  {
+    estabelecimentoId: 3,
+    nome: 'GBarbosa Centro',
+    cidade: 'Feira de Santana',
+    estado: 'BA',
+    endereco: 'Rua Conselheiro Franco, Feira de Santana - BA',
+    latitude: -12.2545,
+    longitude: -38.9583,
+    notasCount: 72,
+  },
+  {
+    estabelecimentoId: 4,
+    nome: 'RedeMix Juazeiro',
+    cidade: 'Juazeiro',
+    estado: 'BA',
+    endereco: 'Av. Adolfo Viana, Juazeiro - BA',
+    latitude: -9.4162,
+    longitude: -40.5033,
+    notasCount: 41,
+  },
 ];
 
 export function getMockAdminData(
@@ -96,6 +139,7 @@ export function getMockAdminData(
         redesMonitoradas: 24,
         redesLideres: ['Atacadão', 'Assaí', 'GBarbosa'],
         nota: 'Feira de Santana lidera a semana com 145 notas cadastradas',
+        pontos: MOCK_MAPA_PONTOS,
       },
       telemetria: {
         canaisImportacao: [
@@ -215,6 +259,7 @@ export function getMockAdminData(
         redesMonitoradas: 46,
         redesLideres: ['Atacadão', 'Assaí', 'GBarbosa', 'RedeMix'],
         nota: `Feira de Santana lidera em ${monthName}/${year} com 3.980 notas cadastradas`,
+        pontos: MOCK_MAPA_PONTOS,
       },
       telemetria: {
         canaisImportacao: [
@@ -341,6 +386,7 @@ export function getMockAdminData(
         redesMonitoradas: 78,
         redesLideres: ['Atacadão', 'Assaí', 'GBarbosa', 'RedeMix', 'Cencosud'],
         nota: `Salvador e Feira de Santana concentram 65% de todas as compras de ${year}`,
+        pontos: MOCK_MAPA_PONTOS,
       },
       telemetria: {
         canaisImportacao: [
@@ -448,6 +494,7 @@ export function getMockAdminData(
         redesMonitoradas: 92,
         redesLideres: ['Atacadão', 'Assaí', 'GBarbosa', 'RedeMix', 'Cencosud'],
         nota: 'Projeto presente em 34 municípios do estado da Bahia',
+        pontos: MOCK_MAPA_PONTOS,
       },
       telemetria: {
         canaisImportacao: [
@@ -554,6 +601,7 @@ export function getMockAdminData(
       redesMonitoradas: 48,
       redesLideres: ['Atacadão', 'Assaí', 'GBarbosa', 'RedeMix'],
       nota: 'Feira de Santana lidera no período com 4.120 notas cadastradas',
+      pontos: MOCK_MAPA_PONTOS,
     },
     telemetria: {
       canaisImportacao: [
