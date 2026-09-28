@@ -3782,10 +3782,25 @@ body.menu-open {
   color: var(--text-muted);
 }
 
-.admin-map-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
+.admin-top-products-legend {
+  margin-bottom: 0.85rem;
+}
+
+.admin-top-products-legend-note {
+  margin: 0 0 0.45rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.admin-top-products-legend .admin-chart-legend {
+  margin-bottom: 0;
+}
+
+.admin-top-products-legend .admin-variation {
+  justify-content: flex-start;
+}
+
+.admin-map-placeholder {
   flex: 1;
   min-height: 0;
 }
