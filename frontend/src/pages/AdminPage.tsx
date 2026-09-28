@@ -5,7 +5,7 @@ import { AdminKpiGrid } from '../features/admin/components/AdminKpiGrid';
 import { AdminGrowthChart } from '../features/admin/components/AdminGrowthChart';
 import { AdminScraperChart } from '../features/admin/components/AdminScraperChart';
 import { AdminTopProducts } from '../features/admin/components/AdminTopProducts';
-import { AdminMapPlaceholder } from '../features/admin/components/AdminMapPlaceholder';
+import { AdminMap } from '../features/admin/components/AdminMap';
 import { AdminTelemetryGrid } from '../features/admin/components/AdminTelemetryGrid';
 import { AdminLogsTable } from '../features/admin/components/AdminLogsTable';
 import type { AdminPeriod } from '../features/admin/types';
@@ -88,7 +88,7 @@ export function AdminPage() {
 
       <div className="admin-charts-grid">
         <AdminTopProducts produtos={data.topProdutos} />
-        <AdminMapPlaceholder alcance={data.alcanceGeografico} />
+        <AdminMap alcance={data.alcanceGeografico} />
       </div>
 
       <AdminTelemetryGrid telemetria={data.telemetria} />

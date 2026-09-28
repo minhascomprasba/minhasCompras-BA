@@ -4,15 +4,15 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from sqlalchemy import func, inspect, text
+from sqlalchemy import inspect, text
 
 from src.api.errors import ApiError
 from src.api.routers import router
 from src.api.admin import admin_router
 from src.api.auth import auth_router
 from src.api.schemas import ErrorResponse
-from src.database.connection import SessionLocal, engine
-from src.database.models import Base, Usuario, UserRole
+from src.database.connection import engine
+from src.database.models import Base, UserRole
 from src.api import settings
 
 app = FastAPI(title="minhasCompras-BA API", version="1.0.0")
@@ -47,7 +47,35 @@ def _ensure_schema_updates() -> None:
                 )
                 # Notas antigas nao tinham desconto rastreado: valor_total_nota
                 # ja era o valor pago (sem desconto conhecido), permanece igual.
-
+            # Bancos antigos (ex.: Neon) podem ter notas_fiscais sem o FK de estabelecimento.
+            # Nullable de proposito: notas ja existentes ficam NULL ate serem preenchidas;
+            # create_all em banco novo ja cria a coluna NOT NULL via model.
+            if "estabelecimento_id" not in columns:
+                connection.execute(text("ALTER TABLE notas_fiscais ADD COLUMN estabelecimento_id INTEGER"))
+                if engine.dialect.name == "postgresql":
+                    connection.execute(
+                        text(
+                            "CREATE INDEX IF NOT EXISTS ix_notas_fiscais_estabelecimento_id "
+                            "ON notas_fiscais (estabelecimento_id)"
+                        )
+                    )
+                    if inspector.has_table("estabelecimento"):
+                        connection.execute(
+                            text(
+                                "DO $$ BEGIN "
+                                "ALTER TABLE notas_fiscais ADD CONSTRAINT fk_notas_fiscais_estabelecimento_id "
+                                "FOREIGN KEY (estabelecimento_id) REFERENCES estabelecimento(id); "
+                                "EXCEPTION WHEN duplicate_object THEN NULL; "
+                                "END $$"
+                            )
+                        )
+                else:
+                    connection.execute(
+                        text(
+                            "CREATE INDEX IF NOT EXISTS ix_notas_fiscais_estabelecimento_id "
+                            "ON notas_fiscais (estabelecimento_id)"
+                        )
+                    )
         if inspector.has_table("itens_nota_fiscal"):
             item_columns = {column["name"] for column in inspector.get_columns("itens_nota_fiscal")}
             if "valor_desconto" not in item_columns:
@@ -85,35 +113,10 @@ def _ensure_schema_updates() -> None:
                 connection.execute(text("ALTER TABLE estabelecimento ADD COLUMN longitude FLOAT"))
 
 
-def _bootstrap_super_admins() -> None:
-    """Promove a super admin os e-mails listados em SUPER_ADMIN_EMAILS.
-
-    E o unico caminho para criar o primeiro super admin: a partir dele a
-    promocao de outros usuarios acontece pelo painel administrativo.
-    """
-    if not settings.SUPER_ADMIN_EMAILS:
-        return
-
-    session = SessionLocal()
-    try:
-        usuarios = (
-            session.query(Usuario)
-            .filter(func.lower(Usuario.email).in_(settings.SUPER_ADMIN_EMAILS))
-            .all()
-        )
-        for usuario in usuarios:
-            if usuario.role != UserRole.SUPER_ADMIN.value:
-                usuario.role = UserRole.SUPER_ADMIN.value
-        session.commit()
-    finally:
-        session.close()
-
-
 @app.on_event("startup")
 def on_startup() -> None:
     Base.metadata.create_all(bind=engine)
     _ensure_schema_updates()
-    _bootstrap_super_admins()
 
 
 @app.exception_handler(ApiError)
