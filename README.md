@@ -230,6 +230,9 @@ source .venv/bin/activate # Linux/Mac
 # Instale as dependências
 pip install -r requirements.txt
 
+# O chromedriver compativel com seu Chrome e baixado automaticamente para
+# drivers/ na primeira importacao (e de novo quando o Chrome atualizar).
+
 # Inicie o servidor
 uvicorn src.api.app:app --host 0.0.0.0 --port 10000 --reload
 ```

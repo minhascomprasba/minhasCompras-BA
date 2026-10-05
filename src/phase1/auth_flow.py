@@ -38,51 +38,112 @@ def _validate_access_key(access_key: str) -> None:
         raise ValueError("NFE_ACCESS_KEY invalida: informe exatamente 44 digitos numericos.")
 
 
+def _wait_captcha_loaded(driver: WebDriver, timeout_seconds: int) -> None:
+    # A <img> tem width/height fixos, entao fica "visivel" antes do PNG chegar.
+    WebDriverWait(driver, timeout_seconds).until(
+        lambda d: d.execute_script(
+            "const img = document.getElementById(arguments[0]);"
+            "return !!img && img.complete && img.naturalWidth > 0;",
+            CAPTCHA_IMAGE_ID,
+        )
+    )
+
+
 def _capture_captcha(driver: WebDriver, timeout_seconds: int, output_path: Path) -> None:
     captcha = _wait_visible(driver, CAPTCHA_IMAGE_ID, timeout_seconds)
+    _wait_captcha_loaded(driver, timeout_seconds)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     if not captcha.screenshot(str(output_path)):
         raise RuntimeError("Falha ao salvar screenshot do captcha.")
 
 
-def _did_auth_succeed(driver: WebDriver, timeout_seconds: int, initial_url: str) -> bool:
+def _did_auth_succeed(driver: WebDriver, timeout_seconds: int, initial_url: str, submit_button) -> bool:
+    # O formulario faz postback completo: espera a pagina antiga ser descartada.
+    # Se nada acontecer (ex.: validacao client-side bloqueou), conta como falha.
     try:
-        WebDriverWait(driver, timeout_seconds).until(lambda d: d.current_url != initial_url)
-        return True
+        WebDriverWait(driver, timeout_seconds).until(EC.staleness_of(submit_button))
     except TimeoutException:
-        pass
+        return False
+
+    def _outcome(d: WebDriver) -> str | bool:
+        if d.current_url != initial_url:
+            return "ok"
+        if d.execute_script("return document.readyState") == "loading":
+            return False
+        # Voltou para a mesma pagina com o campo da chave: captcha recusado.
+        return "fail" if d.find_elements(By.ID, ACCESS_KEY_INPUT_ID) else "ok"
 
     try:
-        WebDriverWait(driver, timeout_seconds).until_not(
-            EC.presence_of_element_located((By.ID, ACCESS_KEY_INPUT_ID))
-        )
-        return True
+        return WebDriverWait(driver, timeout_seconds).until(_outcome) == "ok"
     except TimeoutException:
         return False
 
 
-def start_auth_session(access_key: str, timeout_seconds: int, headless: bool, captcha_output_path: Path) -> WebDriver:
-    _validate_access_key(access_key)
+def _safe_quit(driver: WebDriver) -> None:
+    try:
+        driver.quit()
+    except Exception:
+        pass
 
-    logger = setup_logger()
+
+def open_consulta_page(timeout_seconds: int, headless: bool) -> WebDriver:
+    """Abre o Chrome ja na pagina de consulta da SEFAZ, pronto para receber a chave."""
     sefaz_url = os.getenv(
         "SEFAZ_URL", "https://nfe.sefaz.ba.gov.br/servicos/nfce/Modulos/Geral/NFCEC_consulta_chave_acesso.aspx"
     ).strip()
 
     driver = build_chrome_driver(headless=headless)
     try:
-        logger.info("Abrindo portal da SEFAZ BA.")
         driver.get(sefaz_url)
-
-        access_key_input = _wait_visible(driver, ACCESS_KEY_INPUT_ID, timeout_seconds)
-        access_key_input.clear()
-        access_key_input.send_keys(access_key)
-        logger.info("Chave de acesso preenchida automaticamente.")
-
-        _capture_captcha(driver, timeout_seconds, captcha_output_path)
+        _wait_visible(driver, ACCESS_KEY_INPUT_ID, timeout_seconds)
         return driver
     except Exception:
-        driver.quit()
+        _safe_quit(driver)
+        raise
+
+
+def _prepare_captcha(driver: WebDriver, access_key: str, timeout_seconds: int, captcha_output_path: Path) -> None:
+    access_key_input = _wait_visible(driver, ACCESS_KEY_INPUT_ID, timeout_seconds)
+    access_key_input.clear()
+    access_key_input.send_keys(access_key)
+    _capture_captcha(driver, timeout_seconds, captcha_output_path)
+
+
+def start_auth_session(
+    access_key: str,
+    timeout_seconds: int,
+    headless: bool,
+    captcha_output_path: Path,
+    driver: WebDriver | None = None,
+) -> WebDriver:
+    """Preenche a chave e captura o captcha.
+
+    Aceita um driver pre-aquecido (pagina ja aberta); se ele falhar, abre um novo.
+    """
+    try:
+        _validate_access_key(access_key)
+    except ValueError:
+        if driver is not None:
+            _safe_quit(driver)
+        raise
+    logger = setup_logger()
+
+    if driver is not None:
+        try:
+            _prepare_captcha(driver, access_key, timeout_seconds, captcha_output_path)
+            logger.info("Captcha capturado com driver pre-aquecido.")
+            return driver
+        except Exception:
+            logger.warning("Driver pre-aquecido falhou; abrindo um novo.", exc_info=True)
+            _safe_quit(driver)
+
+    logger.info("Abrindo portal da SEFAZ BA.")
+    driver = open_consulta_page(timeout_seconds, headless)
+    try:
+        _prepare_captcha(driver, access_key, timeout_seconds, captcha_output_path)
+        return driver
+    except Exception:
+        _safe_quit(driver)
         raise
 
 
@@ -96,7 +157,7 @@ def submit_captcha_attempt(driver: WebDriver, captcha_code: str, timeout_seconds
     )
     initial_url = driver.current_url
     submit_button.click()
-    return _did_auth_succeed(driver, timeout_seconds=5, initial_url=initial_url)
+    return _did_auth_succeed(driver, timeout_seconds, initial_url, submit_button)
 
 
 def refresh_captcha_image(driver: WebDriver, timeout_seconds: int, captcha_output_path: Path) -> None:
