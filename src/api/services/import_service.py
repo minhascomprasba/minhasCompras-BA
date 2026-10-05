@@ -23,7 +23,8 @@ from src.database.models import (
     NotaFiscal,
     Produto,
 )
-from src.phase1.auth_flow import refresh_captcha_image, start_auth_session, submit_captcha_attempt
+from src.phase1.auth_flow import open_consulta_page, refresh_captcha_image, start_auth_session, submit_captcha_attempt
+from src.phase1.driver_pool import WarmDriverPool
 from src.phase2.navigation import Maps_to_Emitente_tab, Maps_to_products_tab, wait_for_products_content
 from src.phase3.parser import EmpresaParser, ProductParser
 from src.phase4.db_loader import bulk_insert_produtos_with_nota_id, get_or_create_estabelecimento
@@ -64,6 +65,12 @@ class ImportRuntimeStore:
 
 
 runtime_store = ImportRuntimeStore()
+
+driver_pool = WarmDriverPool(
+    size=settings.DRIVER_POOL_SIZE,
+    max_age_seconds=settings.DRIVER_POOL_MAX_AGE_SECONDS,
+    factory=lambda: open_consulta_page(settings.PAGE_TIMEOUT_SECONDS, settings.HEADLESS),
+)
 
 
 def _validate_access_key(access_key: str) -> str:
@@ -147,6 +154,7 @@ def start_import(access_key: str, usuario_id: int, source: str | None = None) ->
         timeout_seconds=settings.PAGE_TIMEOUT_SECONDS,
         headless=settings.HEADLESS,
         captcha_output_path=captcha_path,
+        driver=driver_pool.acquire(),
     )
 
     runtime_store.set(import_id, RuntimeSession(driver=driver, captcha_path=captcha_path, expires_at=expires_at))

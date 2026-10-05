@@ -36,6 +36,9 @@ PAGE_TIMEOUT_SECONDS = _get_env_int("PAGE_TIMEOUT_SECONDS", 20)
 MAX_CAPTCHA_ATTEMPTS = _get_env_int("MAX_CAPTCHA_ATTEMPTS", 5)
 CAPTCHA_TTL_SECONDS = _get_env_int("CAPTCHA_TTL_SECONDS", 300)
 HEADLESS = os.getenv("HEADLESS", "true").strip().lower() == "true"
+# Chromes mantidos abertos na pagina da SEFAZ (cada um ~150-300 MB). 0 desliga.
+DRIVER_POOL_SIZE = _get_env_int("DRIVER_POOL_SIZE", 1)
+DRIVER_POOL_MAX_AGE_SECONDS = _get_env_int("DRIVER_POOL_MAX_AGE_SECONDS", 300)
 IMPORT_RATE_LIMIT_PER_MIN = _get_env_int("IMPORT_RATE_LIMIT_PER_MIN", 10)
 CORS_ALLOWED_ORIGINS = _get_env_list("CORS_ALLOWED_ORIGINS", ["http://localhost:5173"])
 
