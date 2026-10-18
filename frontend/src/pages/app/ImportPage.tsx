@@ -11,7 +11,12 @@ import { scanQrCodeFromFile } from '../../features/imports/utils/scanQrFromFile'
 import { consumeQuickScan } from '../../features/imports/utils/quickScanStorage';
 import { ImageUploadIcon, QrCodeIcon } from '../../components/ImportActionIcons';
 import type { ImportSource } from '../../features/imports/types';
-import './ImportPage.css';
+import { LoaderCircle } from 'lucide-react';
+import { Alert } from '../../components/ui/alert';
+import { Button } from '../../components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader } from '../../components/ui/card';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
 
 const accessKeySchema = z.object({
   access_key: z
@@ -241,8 +246,8 @@ export function ImportPage() {
   const isBusy = startImportMutation.isPending || isFileScanning;
 
   return (
-    <div data-scope="import" className="container container-small">
-      <h1 className="text-center mb-8">Nova Importação</h1>
+    <div className="mx-auto w-full max-w-xl space-y-6 px-4 py-6 text-foreground sm:px-6 sm:py-8">
+      <h1 className="mb-0 text-2xl font-semibold text-foreground">Nova Importação</h1>
 
       <QrCodeScanner
         isOpen={isScannerOpen}
@@ -252,147 +257,117 @@ export function ImportPage() {
       />
 
       {!importId ? (
-        <div className="card card-animated">
-          <h2 style={{ fontSize: '1.25rem' }}>1. Informe a chave de acesso</h2>
-          <p>Use o QR Code da nota, envie uma foto ou digite a chave de 44 dígitos.</p>
-
-          <div className="import-actions">
-            <div className="import-actions-row">
-              <button
+        <Card>
+          <CardHeader>
+            <h2 className="m-0 text-lg font-semibold text-foreground">Informe a chave de acesso</h2>
+            <CardDescription>Use o QR Code da nota, envie uma foto ou digite a chave de 44 dígitos.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="flex flex-col gap-3">
+              <Button
                 type="button"
-                className="btn btn-secondary btn-icon-only"
+                variant="outline"
+                className="min-h-11"
                 disabled={isBusy}
-                aria-label="Ler QR Code"
-                title="Ler QR Code"
-                onClick={() => {
-                  setQrFeedback(null);
-                  setIsScannerOpen(true);
-                }}
+                onClick={() => { setQrFeedback(null); setIsScannerOpen(true); }}
               >
-                <QrCodeIcon />
-              </button>
-              <button
+                <QrCodeIcon /> Ler QR Code
+              </Button>
+              <Button
                 type="button"
-                className="btn btn-secondary btn-icon-only"
+                variant="outline"
+                className="min-h-11"
                 disabled={isBusy}
-                aria-label={isFileScanning ? 'Lendo imagem...' : 'Enviar imagem da nota'}
-                title={isFileScanning ? 'Lendo imagem...' : 'Enviar imagem da nota'}
                 onClick={() => fileInputRef.current?.click()}
               >
-                {isFileScanning ? (
-                  <span
-                    className="spinner btn-icon-only-spinner"
-                    aria-hidden="true"
-                  />
-                ) : (
-                  <ImageUploadIcon />
+                {isFileScanning ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : <ImageUploadIcon />}
+                {isFileScanning ? 'Lendo imagem...' : 'Enviar imagem'}
+              </Button>
+            </div>
+            <input ref={fileInputRef} type="file" accept="image/*" className="sr-only" aria-hidden="true" tabIndex={-1} onChange={handleFileSelected} />
+
+            {qrFeedback && (
+              <Alert
+                variant={qrFeedback.type === 'error' ? 'destructive' : 'default'}
+                className={qrFeedback.type === 'success' ? 'border-primary/30 bg-primary/10 text-primary' : undefined}
+              >
+                {qrFeedback.message}
+              </Alert>
+            )}
+
+            <form onSubmit={keyForm.handleSubmit(onKeySubmit)} className="space-y-5">
+              <div className="grid gap-2">
+                <Label htmlFor="access_key">Chave de acesso (44 dígitos)</Label>
+                <Input
+                  id="access_key"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="Digite a chave de 44 dígitos"
+                  className="font-mono text-foreground"
+                  maxLength={44}
+                  aria-invalid={!!keyForm.formState.errors.access_key}
+                  aria-describedby={keyForm.formState.errors.access_key ? 'access-key-error' : undefined}
+                  {...keyForm.register('access_key', {
+                    onChange: () => { setQrFeedback(null); setSource('MANUAL'); },
+                  })}
+                />
+                {keyForm.formState.errors.access_key && (
+                  <span id="access-key-error" role="alert" className="text-sm text-destructive">{keyForm.formState.errors.access_key.message}</span>
                 )}
-              </button>
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              aria-hidden="true"
-              tabIndex={-1}
-              onChange={handleFileSelected}
-            />
-          </div>
-
-          {qrFeedback && (
-            <div className={`alert ${qrFeedback.type === 'error' ? 'alert-error' : 'alert-success-custom'}`}>
-              <span style={{ fontSize: '1.2rem' }}>{qrFeedback.type === 'error' ? '⚠️' : '✓'}</span>
-              <span>{qrFeedback.message}</span>
-            </div>
-          )}
-
-          <form onSubmit={keyForm.handleSubmit(onKeySubmit)}>
-            <div className="form-group">
-              <label className="form-label" htmlFor="access_key">
-                Chave de acesso (44 dígitos)
-              </label>
-              <input
-                id="access_key"
-                type="text"
-                inputMode="numeric"
-                placeholder="Digite a chave de 44 dígitos"
-                className={`form-input ${keyForm.formState.errors.access_key ? 'error' : ''}`}
-                maxLength={44}
-                {...keyForm.register('access_key', {
-                  onChange: () => {
-                    setQrFeedback(null);
-                    setSource('MANUAL');
-                  },
-                })}
-              />
-              {keyForm.formState.errors.access_key && (
-                <span className="form-error-text">{keyForm.formState.errors.access_key.message}</span>
-              )}
-            </div>
-
-            {startImportMutation.isError && (
-              <div className="alert alert-error">
-                <span style={{ fontSize: '1.2rem' }}>⚠️</span>
-                <span>{startImportMutation.error.message}</span>
               </div>
-            )}
-
-            <button type="submit" className="btn btn-primary btn-full" disabled={isBusy}>
-              {startImportMutation.isPending ? 'Validando chave...' : 'Avançar'}
-            </button>
-          </form>
-        </div>
+              {startImportMutation.isError && <Alert variant="destructive">{startImportMutation.error.message}</Alert>}
+              <Button type="submit" className="min-h-11 w-full text-white" disabled={isBusy}>
+                {startImportMutation.isPending && <LoaderCircle className="animate-spin" aria-hidden="true" />}
+                {startImportMutation.isPending ? 'Validando chave...' : 'Avançar'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       ) : (
-        <div className="card card-animated">
-          <h2 style={{ fontSize: '1.25rem' }}>2. Validação de Segurança</h2>
-          <p>Resolva o captcha para autorizar a consulta da nota na SEFAZ.</p>
-
-          <div className="captcha-image-wrapper">
-            {isCaptchaLoading ? (
-              <span>Carregando captcha...</span>
-            ) : captchaImageSrc ? (
-              <img
-                src={captchaImageSrc}
-                alt="Captcha"
-                className="captcha-image"
-              />
-            ) : (
-              <span>{captchaImageError || 'Captcha indisponível.'}</span>
-            )}
-          </div>
-
-          <form onSubmit={captchaForm.handleSubmit(onCaptchaSubmit)}>
-            <div className="form-group">
-              <input
-                type="text"
-                placeholder="Digite os caracteres da imagem"
-                className={`form-input ${captchaForm.formState.errors.captcha_code ? 'error' : ''}`}
-                autoComplete="off"
-                {...captchaForm.register('captcha_code')}
-              />
-              {captchaForm.formState.errors.captcha_code && (
-                <span className="form-error-text">{captchaForm.formState.errors.captcha_code.message}</span>
+        <Card>
+          <CardHeader>
+            <h2 className="m-0 text-lg font-semibold text-foreground">Validação de Segurança</h2>
+            <CardDescription>Resolva o captcha para autorizar a consulta da nota na SEFAZ.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="flex min-h-28 items-center justify-center rounded-lg border border-border bg-background p-4">
+              {isCaptchaLoading ? (
+                <div role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <LoaderCircle className="size-5 animate-spin" aria-hidden="true" /> Carregando captcha...
+                </div>
+              ) : captchaImageSrc ? (
+                <img src={captchaImageSrc} alt="Captcha" className="max-h-20 object-contain" />
+              ) : (
+                <Alert variant="destructive">{captchaImageError || 'Captcha indisponível.'}</Alert>
               )}
             </div>
-
-            {submitCaptchaMutation.isError && (
-              <div className="alert alert-error">
-                <span style={{ fontSize: '1.2rem' }}>⚠️</span>
-                <span>{submitCaptchaMutation.error.message}</span>
+            <form onSubmit={captchaForm.handleSubmit(onCaptchaSubmit)} className="space-y-5">
+              <div className="grid gap-2">
+                <Label htmlFor="captcha_code">Caracteres da imagem</Label>
+                <Input
+                  id="captcha_code"
+                  type="text"
+                  placeholder="Digite os caracteres da imagem"
+                  autoComplete="off"
+                  aria-invalid={!!captchaForm.formState.errors.captcha_code}
+                  aria-describedby={captchaForm.formState.errors.captcha_code ? 'captcha-code-error' : undefined}
+                  {...captchaForm.register('captcha_code')}
+                />
+                {captchaForm.formState.errors.captcha_code && (
+                  <span id="captcha-code-error" role="alert" className="text-sm text-destructive">{captchaForm.formState.errors.captcha_code.message}</span>
+                )}
               </div>
-            )}
-
-            <div className="captcha-actions-wrapper">
-              <button type="button" className="btn btn-secondary flex-1" onClick={() => { setCaptchaImageSrc((prevSrc) => { if (prevSrc) { URL.revokeObjectURL(prevSrc); } return null; }); setCaptchaImageError(''); setImportId(null); setCaptchaRefreshKey(0); keyForm.reset(); startImportMutation.reset(); captchaForm.reset(); }} disabled={submitCaptchaMutation.isPending}>
-                Voltar
-              </button>
-              <button type="submit" className="btn btn-primary flex-2" disabled={submitCaptchaMutation.isPending}>
-                {submitCaptchaMutation.isPending ? 'Enviando...' : 'Confirmar Captcha'}
-              </button>
-            </div>
-          </form>
-        </div>
+              {submitCaptchaMutation.isError && <Alert variant="destructive">{submitCaptchaMutation.error.message}</Alert>}
+              <div className="flex flex-col-reverse gap-3 sm:flex-row">
+                <Button type="button" variant="outline" className="min-h-11 sm:flex-1" onClick={resetImport} disabled={submitCaptchaMutation.isPending}>Voltar</Button>
+                <Button type="submit" className="min-h-11 text-white sm:flex-2" disabled={submitCaptchaMutation.isPending}>
+                  {submitCaptchaMutation.isPending && <LoaderCircle className="animate-spin" aria-hidden="true" />}
+                  {submitCaptchaMutation.isPending ? 'Enviando...' : 'Confirmar Captcha'}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
