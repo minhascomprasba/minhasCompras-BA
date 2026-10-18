@@ -33,9 +33,8 @@ export function AuthenticatedLayout() {
     <div className="app-layout-wrapper">
       <header className="app-navbar">
         <div className="navbar-container">
-          <NavLink to="/dashboard" className="navbar-logo" onClick={closeMenu}>
+          <NavLink to="/dashboard" className="navbar-logo" onClick={closeMenu} aria-label="Minhas Compras BA — Dashboard" title="Minhas Compras BA">
             <img src="/icon.png" alt="" className="brand-icon" />
-            <span className="logo-text">MinhasCompras.app</span>
           </NavLink>
 
           <button
