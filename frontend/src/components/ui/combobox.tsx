@@ -1,5 +1,5 @@
 import { Combobox as Primitive } from '@base-ui/react/combobox';
-import { Check } from '@phosphor-icons/react';
+import { CheckIcon as Check } from '@phosphor-icons/react';
 import { cn } from 'cn';
 
 export function Combobox<Value>(props: Primitive.Root.Props<Value, false>) {

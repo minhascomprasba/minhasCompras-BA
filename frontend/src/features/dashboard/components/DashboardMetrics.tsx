@@ -1,4 +1,4 @@
-import { FileText, Tag, Wallet } from '@phosphor-icons/react';
+import { FileTextIcon as FileText, TagIcon as Tag, WalletIcon as Wallet } from '@phosphor-icons/react';
 import { Card, CardContent, CardDescription } from '@/components/ui/card';
 import type { DashboardData } from '../types';
 import { formatCurrency } from '../format';

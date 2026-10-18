@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server';
-import { MapPin as MapMarker } from '@phosphor-icons/react';
+import { MapPinIcon as MapMarker } from '@phosphor-icons/react';
 import './AdminMap.css';
 import { Badge } from '../../../components/ui/badge';
 import { Card } from '../../../components/ui/card';

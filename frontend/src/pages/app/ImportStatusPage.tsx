@@ -1,4 +1,4 @@
-import { Check, X, Timer, Shield } from '@phosphor-icons/react';
+import { CheckIcon as Check, XIcon as X, TimerIcon as Timer, ShieldIcon as Shield } from '@phosphor-icons/react';
 import './ImportStatusPage.css';
 import { useParams, Link } from 'react-router-dom';
 import { useImportStatusPolling } from '../../features/imports/hooks/useImportQueries';

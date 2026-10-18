@@ -1,4 +1,4 @@
-import { DownloadSimple, ChartBar, ChartLine, QrCode, ShieldCheck, CurrencyCircleDollar, Check } from '@phosphor-icons/react';
+import { DownloadSimpleIcon as DownloadSimple, ChartBarIcon as ChartBar, ChartLineIcon as ChartLine, QrCodeIcon as QrCode, ShieldCheckIcon as ShieldCheck, CurrencyCircleDollarIcon as CurrencyCircleDollar, CheckIcon as Check } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../shared/api/client';

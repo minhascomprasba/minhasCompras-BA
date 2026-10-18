@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
 import { ProfileMenu } from './ProfileMenu';
 import { QuickScan } from './QuickScan';
-import { List as Menu, X } from '@phosphor-icons/react';
+import { ListIcon as Menu, XIcon as X } from '@phosphor-icons/react';
 import { Button } from './ui/button';
 import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList } from './ui/navigation-menu';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet';

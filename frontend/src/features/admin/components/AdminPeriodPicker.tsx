@@ -1,6 +1,6 @@
-import { ArrowLeft, ArrowRight } from '@phosphor-icons/react';
+import { ArrowLeftIcon as ArrowLeft, ArrowRightIcon as ArrowRight } from '@phosphor-icons/react';
 import { useState } from 'react';
-import { CalendarDots as CalendarDays } from '@phosphor-icons/react';
+import { CalendarDotsIcon as CalendarDays } from '@phosphor-icons/react';
 import { Button } from '../../../components/ui/button';
 import { Label } from '../../../components/ui/label';
 import { NativeSelect } from '../../../components/ui/native-select';

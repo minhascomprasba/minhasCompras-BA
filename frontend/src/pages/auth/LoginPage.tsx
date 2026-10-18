@@ -1,4 +1,4 @@
-import { Envelope, Lock, EyeSlash, Eye } from '@phosphor-icons/react';
+import { EnvelopeIcon as Envelope, LockIcon as Lock, EyeSlashIcon as EyeSlash, EyeIcon as Eye } from '@phosphor-icons/react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';

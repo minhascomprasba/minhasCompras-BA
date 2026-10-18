@@ -1,4 +1,4 @@
-import { ArrowUp, ArrowDown, Minus } from '@phosphor-icons/react';
+import { ArrowUpIcon as ArrowUp, ArrowDownIcon as ArrowDown, MinusIcon as Minus } from '@phosphor-icons/react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/table';
 import { Card } from '../../../components/ui/card';
 import type { ReactElement } from 'react';

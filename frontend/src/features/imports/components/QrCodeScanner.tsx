@@ -1,4 +1,4 @@
-import { CircleNotch as LoaderCircle, CameraRotate as SwitchCamera } from '@phosphor-icons/react';
+import { CircleNotchIcon as LoaderCircle, CameraRotateIcon as SwitchCamera } from '@phosphor-icons/react';
 import { Alert } from '../../../components/ui/alert';
 import { Button } from '../../../components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../components/ui/dialog';

@@ -1,4 +1,4 @@
-import { Users, FileText, Table, CurrencyDollar, MagnifyingGlassMinus, TrendUp, TrendDown } from '@phosphor-icons/react';
+import { UsersIcon as Users, FileTextIcon as FileText, TableIcon as Table, CurrencyDollarIcon as CurrencyDollar, MagnifyingGlassMinusIcon as MagnifyingGlassMinus, TrendUpIcon as TrendUp, TrendDownIcon as TrendDown } from '@phosphor-icons/react';
 import { Card } from '../../../components/ui/card';
 import type { ReactElement } from 'react';
 import type { AdminKpi, KpiIconKey } from '../types';

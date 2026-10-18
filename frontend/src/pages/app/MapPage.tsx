@@ -1,8 +1,8 @@
 import { renderToStaticMarkup } from 'react-dom/server';
-import { MapPin as MapMarker } from '@phosphor-icons/react';
+import { MapPinIcon as MapMarker } from '@phosphor-icons/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CaretRight as ChevronRight, CircleNotch as LoaderCircle, MapPin, Receipt } from '@phosphor-icons/react';
+import { CaretRightIcon as ChevronRight, CircleNotchIcon as LoaderCircle, MapPinIcon as MapPin, ReceiptIcon as Receipt } from '@phosphor-icons/react';
 import { Alert } from '../../components/ui/alert';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';

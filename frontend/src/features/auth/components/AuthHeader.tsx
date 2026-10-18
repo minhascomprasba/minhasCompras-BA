@@ -1,4 +1,4 @@
-import { ArrowLeft } from '@phosphor-icons/react';
+import { ArrowLeftIcon as ArrowLeft } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
 import './AuthHeader.css';
 

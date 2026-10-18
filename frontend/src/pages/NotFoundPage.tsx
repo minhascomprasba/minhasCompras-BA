@@ -1,4 +1,4 @@
-import { ShoppingBag } from '@phosphor-icons/react';
+import { ShoppingBagIcon as ShoppingBag } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Link } from 'react-router-dom';

@@ -1,4 +1,4 @@
-import { Check, Circle } from '@phosphor-icons/react';
+import { CheckIcon as Check, CircleIcon as Circle } from '@phosphor-icons/react';
 import './PasswordChecklist.css';
 
 const passwordRules = [

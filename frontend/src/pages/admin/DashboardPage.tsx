@@ -12,7 +12,7 @@ import type { AdminPeriod } from '../../features/admin/types';
 import { useAuth } from '../../features/auth/AuthContext';
 
 import { Alert } from '../../components/ui/alert';
-import { CircleNotch as LoaderCircle } from '@phosphor-icons/react';
+import { CircleNotchIcon as LoaderCircle } from '@phosphor-icons/react';
 function currentMonthKey(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;

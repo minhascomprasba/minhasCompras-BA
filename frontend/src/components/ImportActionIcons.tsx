@@ -1,4 +1,4 @@
-import { Image, QrCode } from '@phosphor-icons/react';
+import { ImageIcon as Image, QrCodeIcon as QrCode } from '@phosphor-icons/react';
 
 type IconProps = {
   className?: string;
