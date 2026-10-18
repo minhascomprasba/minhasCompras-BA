@@ -1,3 +1,14 @@
+/* Match shadcn's semantic tokens to the existing homepage palette. */
+[data-scope="home"] {
+  --card: var(--bg-card);
+  --card-foreground: var(--text-primary);
+  --foreground: var(--text-primary);
+  --background: var(--bg-main);
+  --muted: var(--bg-card-hover);
+  --muted-foreground: var(--text-secondary);
+  --border: var(--border-color);
+}
+
 @scope ([data-scope="home"]) {
   /* ==========================================================================
      Landing Page (HomePage) Estilos Modernos
@@ -21,6 +32,7 @@
   .hero-copy { text-align: left; }
 
   .hero-eyebrow {
+    height: auto;
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
@@ -109,6 +121,7 @@
     filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.45));
   }
   .hero-chip {
+    flex-direction: row;
     position: absolute;
     display: flex;
     align-items: center;
@@ -139,10 +152,6 @@
     gap: 1.5rem;
   }
   .feature-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-xl);
-    padding: 1.75rem;
     transition: var(--transition);
   }
   .feature-card:hover {
@@ -157,7 +166,7 @@
     margin-bottom: 1.1rem;
   }
   .feature-card h3 { font-size: 1.05rem; margin-bottom: 0.4rem; }
-  .feature-card p { font-size: 0.9rem; margin: 0; }
+  .feature-card [data-slot="card-description"] { font-size: 0.9rem; margin: 0; }
 
   @media (max-width: 860px) {
     .hero-grid { grid-template-columns: 1fr; gap: 2rem; margin-top: 2rem; }
@@ -170,78 +179,6 @@
     .features-grid { grid-template-columns: 1fr; }
   }
 
-  /* Grid de Estatísticas */
-  .home-stats-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 2rem;
-    margin-top: 1rem;
-  }
-
-  .home-stats-card {
-    position: relative;
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-xl);
-    padding: 2.5rem 1.5rem;
-    text-align: center;
-    box-shadow: var(--shadow-md);
-    overflow: hidden;
-    transition: var(--transition);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .home-stats-card:hover {
-    transform: translateY(-5px);
-    border-color: var(--border-light);
-    box-shadow: var(--shadow-lg);
-  }
-
-  .home-stats-glow {
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    border-radius: 50%;
-    filter: blur(40px);
-    opacity: 0.15;
-    pointer-events: none;
-    z-index: 1;
-  }
-
-  .home-stats-icon-wrapper {
-    position: relative;
-    z-index: 2;
-    width: 54px;
-    height: 54px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 1.25rem;
-  }
-
-  .home-stats-number {
-    position: relative;
-    z-index: 2;
-    font-size: 2.2rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    line-height: 1.2;
-    margin-bottom: 0.25rem;
-  }
-
-  .home-stats-label {
-    position: relative;
-    z-index: 2;
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    font-weight: 500;
-  }
-
   /* Seção de Passos (Como Funciona) */
   .steps-grid {
     display: grid;
@@ -250,10 +187,6 @@
   }
 
   .step-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-lg);
-    padding: 2.5rem 1.5rem 2rem 1.5rem;
     position: relative;
     transition: var(--transition);
   }
@@ -307,27 +240,6 @@
     color: var(--primary);
   }
 
-  .faq-icon {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-    transition: transform 0.3s ease;
-  }
-
-  .faq-answer {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-    color: var(--text-secondary);
-    font-size: 0.95rem;
-    line-height: 1.6;
-    border-top: 1px solid transparent;
-  }
-
-  .faq-answer--open {
-    max-height: 200px;
-    border-top: 1px solid var(--border-color);
-  }
-
   /* Banner CTA Inferior */
   .home-cta-banner {
     background: linear-gradient(135deg, #033876 0%, #0b7a3f 55%, #17c85f 100%);
@@ -375,12 +287,18 @@
   }
 
   .btn-hero-action {
+    height: auto;
+    color: var(--primary-foreground);
     padding: 0.85rem 2.2rem;
     font-size: 1.05rem;
     border-radius: var(--radius-md);
     display: inline-flex;
     align-items: center;
     justify-content: center;
+  }
+
+  .btn-hero-action.home-login-action {
+    color: var(--text-primary);
   }
 
   .chip-icon-green {
@@ -425,9 +343,10 @@
   }
 
   .benefits-glass-panel {
-    maxWidth: 750px;
+    width: 100%;
+    max-width: 750px;
     margin: 0 auto;
-    padding: 2rem 2.5rem;
+    padding: 2rem 0;
   }
 
   .benefits-list {
@@ -471,6 +390,7 @@
   }
 
   .faq-answer-text {
+    color: var(--muted-foreground);
     margin: 0;
     padding: 1rem 1.25rem;
   }
@@ -491,6 +411,7 @@
   }
 
   .btn-cta-signup {
+    height: auto;
     padding: 0.9rem 2.5rem;
     font-size: 1.1rem;
     background: #FFF !important;
@@ -510,6 +431,7 @@
       font-size: 2.2rem !important;
     }
     .benefits-glass-panel {
+    width: 100%;
       padding: 1.5rem 1.25rem;
     }
   }
@@ -527,6 +449,7 @@
       min-height: 44px;
     }
     .benefits-glass-panel {
+    width: 100%;
       padding: 1.25rem 1rem;
     }
     .benefit-title {

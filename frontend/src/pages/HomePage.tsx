@@ -1,7 +1,11 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../shared/api/client';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
+import { Separator } from '@/components/ui/separator';
 import './HomePage.css';
 
 interface SystemStats {
@@ -14,8 +18,6 @@ const GREEN = '#17c85f';
 const BLUE = '#3a8fe0';
 
 export function HomePage() {
-  const [activeFaq, setActiveFaq] = useState<number | null>(null);
-
   // Busca estatísticas gerais do sistema em tempo real
   const { data: stats } = useQuery<SystemStats>({
     queryKey: ['system-stats'],
@@ -26,10 +28,6 @@ export function HomePage() {
     refetchOnWindowFocus: false,
     retry: 1,
   });
-
-  const toggleFaq = (index: number) => {
-    setActiveFaq(activeFaq === index ? null : index);
-  };
 
   const faqData = [
     {
@@ -133,9 +131,9 @@ export function HomePage() {
       {/* Hero Section */}
       <section className="hero-grid">
         <div className="hero-copy">
-          <span className="hero-eyebrow">
+          <Badge variant="outline" className="hero-eyebrow">
             <span className="dot" /> Notas da Sefaz-BA
-          </span>
+          </Badge>
           <h1 className="hero-title">
             Controle total das suas <span className="accent">compras</span> na Bahia.
           </h1>
@@ -145,12 +143,12 @@ export function HomePage() {
           </p>
 
           <div className="hero-actions flex-wrap-gap">
-            <Link to="/register" className="btn btn-primary btn-neon btn-hero-action">
+            <Button render={<Link to="/register" />} nativeButton={false} size="lg" className="btn-hero-action">
               Criar Conta
-            </Link>
-            <Link to="/login" className="btn btn-secondary btn-hero-action">
+            </Button>
+            <Button render={<Link to="/login" />} nativeButton={false} variant="outline" size="lg" className="btn-hero-action home-login-action">
               Entrar
-            </Link>
+            </Button>
           </div>
 
           <div className="hero-proof">
@@ -158,12 +156,12 @@ export function HomePage() {
               <span className="hero-proof-num">{totalUsers.toLocaleString('pt-BR')}</span>
               <span className="hero-proof-label">Usuários ativos</span>
             </div>
-            <div className="hero-proof-divider" />
+            <Separator orientation="vertical" className="hero-proof-divider" />
             <div className="hero-proof-item">
               <span className="hero-proof-num">{totalNotas.toLocaleString('pt-BR')}</span>
               <span className="hero-proof-label">Notas este mês</span>
             </div>
-            <div className="hero-proof-divider" />
+            <Separator orientation="vertical" className="hero-proof-divider" />
             <div className="hero-proof-item">
               <span className="hero-proof-num">{totalProducts.toLocaleString('pt-BR')}</span>
               <span className="hero-proof-label">Produtos</span>
@@ -173,20 +171,20 @@ export function HomePage() {
 
         <div className="hero-visual">
           <div className="hero-visual-glow" />
-          <div className="hero-visual-card">
+          <Card className="hero-visual-card">
             <img src="/icon.png" alt="Minhas Compras BA" />
-          </div>
+          </Card>
 
-          <div className="hero-chip hero-chip--tl">
+          <Card className="hero-chip hero-chip--tl">
             <span className="hero-chip-icon chip-icon-green">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
             <span>Nota importada<small>em tempo real</small></span>
-          </div>
+          </Card>
 
-          <div className="hero-chip hero-chip--br">
+          <Card className="hero-chip hero-chip--br">
             <span className="hero-chip-icon chip-icon-blue">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 3v18h18" />
@@ -194,7 +192,7 @@ export function HomePage() {
               </svg>
             </span>
             <span>Gastos organizados<small>por categoria</small></span>
-          </div>
+          </Card>
         </div>
       </section>
 
@@ -206,15 +204,17 @@ export function HomePage() {
         </p>
         <div className="features-grid">
           {features.map((f, i) => (
-            <div key={i} className="feature-card">
-              <div className="feature-icon" style={{ background: f.bg, color: f.color }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  {f.icon}
-                </svg>
-              </div>
-              <h3>{f.title}</h3>
-              <p>{f.text}</p>
-            </div>
+            <Card key={i} className="feature-card">
+              <CardHeader>
+                <div className="feature-icon" style={{ background: f.bg, color: f.color }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    {f.icon}
+                  </svg>
+                </div>
+                <CardTitle><h3>{f.title}</h3></CardTitle>
+                <CardDescription>{f.text}</CardDescription>
+              </CardHeader>
+            </Card>
           ))}
         </div>
       </section>
@@ -223,36 +223,43 @@ export function HomePage() {
       <section className="steps-section section-spaced">
         <h2 className="section-title mb-10">Como Funciona</h2>
         <div className="steps-grid">
-          <div className="step-card">
-            <span className="step-number">01</span>
-            <h3 className="step-card-title">Insira a Chave</h3>
-            <p className="step-card-text">
-              Digite ou cole a chave de acesso da sua NFC-e emitida em qualquer estabelecimento do estado da Bahia.
-            </p>
-          </div>
+          <Card className="step-card">
+            <CardHeader>
+              <span className="step-number">01</span>
+              <CardTitle><h3 className="step-card-title">Insira a Chave</h3></CardTitle>
+              <CardDescription className="step-card-text">
+                Digite ou cole a chave de acesso da sua NFC-e emitida em qualquer estabelecimento do estado da Bahia.
+              </CardDescription>
+            </CardHeader>
+          </Card>
 
-          <div className="step-card">
-            <span className="step-number">02</span>
-            <h3 className="step-card-title">Confirme o Captcha</h3>
-            <p className="step-card-text">
-              Se solicitado, digite o código de verificação para que o robô possa consultar e estruturar as notas oficiais de forma autônoma.
-            </p>
-          </div>
+          <Card className="step-card">
+            <CardHeader>
+              <span className="step-number">02</span>
+              <CardTitle><h3 className="step-card-title">Confirme o Captcha</h3></CardTitle>
+              <CardDescription className="step-card-text">
+                Se solicitado, digite o código de verificação para que o robô possa consultar e estruturar as notas oficiais de forma autônoma.
+              </CardDescription>
+            </CardHeader>
+          </Card>
 
-          <div className="step-card">
-            <span className="step-number">03</span>
-            <h3 className="step-card-title">Monitore os Gastos</h3>
-            <p className="step-card-text">
-              Veja sua dashboard preenchida com gráficos de categorias e acompanhe a oscilação histórica de preços de cada produto comprado.
-            </p>
-          </div>
+          <Card className="step-card">
+            <CardHeader>
+              <span className="step-number">03</span>
+              <CardTitle><h3 className="step-card-title">Monitore os Gastos</h3></CardTitle>
+              <CardDescription className="step-card-text">
+                Veja sua dashboard preenchida com gráficos de categorias e acompanhe a oscilação histórica de preços de cada produto comprado.
+              </CardDescription>
+            </CardHeader>
+          </Card>
         </div>
       </section>
 
       {/* Benefícios */}
       <section className="benefits-section section-spaced">
         <h2 className="section-title mb-10">Vantagens da Plataforma</h2>
-        <div className="glass-panel benefits-glass-panel">
+        <Card className="benefits-glass-panel">
+          <CardContent>
           <ul className="benefits-list">
             <li className="benefits-item">
               <span className="benefits-check">✓</span>
@@ -276,42 +283,36 @@ export function HomePage() {
               </div>
             </li>
           </ul>
-        </div>
+          </CardContent>
+        </Card>
       </section>
 
       {/* FAQ */}
       <section className="faq-section section-spaced">
         <h2 className="section-title mb-10">Perguntas Frequentes</h2>
-        <div className="faq-list-container">
+        <Accordion className="faq-list-container" multiple={false}>
           {faqData.map((item, idx) => (
-            <div key={idx} className="faq-item">
-              <button
-                className="faq-question"
-                onClick={() => toggleFaq(idx)}
-                aria-expanded={activeFaq === idx}
-              >
-                <span>{item.question}</span>
-                <span className="faq-icon" style={{ transform: activeFaq === idx ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-                  ▼
-                </span>
-              </button>
-              <div className={`faq-answer ${activeFaq === idx ? 'faq-answer--open' : ''}`}>
-                <p className="faq-answer-text">{item.answer}</p>
-              </div>
-            </div>
+            <AccordionItem key={item.question} value={idx} className="faq-item">
+              <AccordionTrigger className="faq-question">{item.question}</AccordionTrigger>
+              <AccordionContent className="faq-answer-text">{item.answer}</AccordionContent>
+            </AccordionItem>
           ))}
-        </div>
+        </Accordion>
       </section>
 
       {/* CTA Banner Rodapé */}
-      <section className="home-cta-banner">
-        <h2 className="cta-banner-title">Comece a Controlar seus Gastos Agora Mesmo</h2>
+      <section aria-labelledby="home-cta-title">
+        <Card className="home-cta-banner">
+        <CardContent>
+        <h2 id="home-cta-title" className="cta-banner-title">Comece a Controlar seus Gastos Agora Mesmo</h2>
         <p className="cta-banner-subtitle">
           Junte-se a nós e tenha acesso instantâneo ao painel completo de controle de consumo e monitoramento de produtos de forma simplificada.
         </p>
-        <Link to="/register" className="btn btn-secondary btn-neon btn-cta-signup">
+        <Button render={<Link to="/register" />} nativeButton={false} variant="secondary" size="lg" className="btn-cta-signup">
           Cadastrar-se Gratuitamente
-        </Link>
+        </Button>
+        </CardContent>
+        </Card>
       </section>
     </div>
   );
