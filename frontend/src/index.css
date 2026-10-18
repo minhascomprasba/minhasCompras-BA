@@ -3817,6 +3817,12 @@ body.menu-open {
   min-height: 0;
 }
 
+.admin-map-body {
+  /* Keep Leaflet panes and controls below the card's info tooltip. */
+  position: relative;
+  z-index: 0;
+}
+
 .admin-map-canvas {
   position: relative;
   border-radius: var(--radius-md);
