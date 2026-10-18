@@ -24,13 +24,12 @@ function buildGradient(slices: TelemetriaSlice[]): string {
 
 interface DonutRingProps {
   slices: TelemetriaSlice[];
-  small?: boolean;
 }
 
-function DonutRing({ slices, small = false }: DonutRingProps) {
+function DonutRing({ slices }: DonutRingProps) {
   return (
     <div
-      className={`admin-donut-ring${small ? ' admin-donut-ring--small' : ''}`}
+      className="admin-donut-ring"
       style={{ background: buildGradient(slices) }}
     >
       <div className="admin-donut-hole" />
@@ -40,9 +39,10 @@ function DonutRing({ slices, small = false }: DonutRingProps) {
 
 interface DonutLegendProps {
   slices: TelemetriaSlice[];
+  total?: number;
 }
 
-function DonutLegend({ slices }: DonutLegendProps) {
+function DonutLegend({ slices, total }: DonutLegendProps) {
   return (
     <ul className="admin-donut-legend">
       {slices.map((slice) => (
@@ -54,6 +54,12 @@ function DonutLegend({ slices }: DonutLegendProps) {
           <span className="admin-donut-legend-value">{slice.percentual}%</span>
         </li>
       ))}
+      {total !== undefined && (
+        <li className="admin-donut-legend-item">
+          <span className="admin-donut-legend-label">Total no período</span>
+          <span className="admin-donut-legend-value">{total}</span>
+        </li>
+      )}
     </ul>
   );
 }
@@ -65,29 +71,12 @@ function CatalogQuality({ qualidade }: { qualidade: QualidadeCatalogo }) {
   ];
 
   return (
-    <div className="admin-catalog-layout">
+    <>
       <div className="admin-donut-wrapper">
-        <DonutRing slices={slices} small />
+        <DonutRing slices={slices} />
       </div>
-      <div className="admin-catalog-stats">
-        <div>
-          <p className="admin-catalog-stat-value admin-catalog-stat-value--success">
-            {qualidade.comGtin}%
-          </p>
-          <p className="admin-catalog-stat-label">Com código de barras</p>
-        </div>
-        <div>
-          <p className="admin-catalog-stat-value admin-catalog-stat-value--warning">
-            {qualidade.semGtin}%
-          </p>
-          <p className="admin-catalog-stat-label">Sem código de barras</p>
-        </div>
-        <div>
-          <p className="admin-catalog-stat-value">{qualidade.produtosCatalogados}</p>
-          <p className="admin-catalog-stat-label">Total no período</p>
-        </div>
-      </div>
-    </div>
+      <DonutLegend slices={slices} total={qualidade.produtosCatalogados} />
+    </>
   );
 }
 
