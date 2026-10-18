@@ -11,13 +11,13 @@ import { useAuth } from '../features/auth/AuthContext';
 const PAGE_SIZE = 20;
 
 const ROLES_TOOLTIP =
-  'Usuário acessa apenas os próprios dados. Admin enxerga o painel de indicadores do projeto. Super Admin também administra os perfis de acesso da equipe.';
+  'Usuário acessa apenas os próprios dados. Gestor acessa o painel de gestão do projeto. Gestor principal também gerencia os perfis de acesso da equipe.';
 
 const ROLE_FILTERS: { value: '' | UserRole; label: string }[] = [
   { value: '', label: 'Todos os perfis' },
   { value: 'USER', label: 'Usuários' },
-  { value: 'ADMIN', label: 'Admins' },
-  { value: 'SUPER_ADMIN', label: 'Super Admins' },
+  { value: 'ADMIN', label: 'Gestores' },
+  { value: 'SUPER_ADMIN', label: 'Gestores principais' },
 ];
 
 export function AdminUsersPage() {
@@ -107,12 +107,12 @@ export function AdminUsersPage() {
           <p className="admin-subtitle">
             Governança de permissões da equipe do projeto de extensão
             {resumo
-              ? ` — ${resumo.SUPER_ADMIN ?? 0} super admins, ${resumo.ADMIN ?? 0} admins e ${resumo.USER ?? 0} usuários`
+              ? ` — ${resumo.SUPER_ADMIN ?? 0} gestores principais, ${resumo.ADMIN ?? 0} gestores e ${resumo.USER ?? 0} usuários`
               : ''}
           </p>
         </div>
         <Link to="/admin" className="btn btn-secondary btn-sm">
-          Voltar ao painel
+          Voltar à gestão
         </Link>
       </div>
 

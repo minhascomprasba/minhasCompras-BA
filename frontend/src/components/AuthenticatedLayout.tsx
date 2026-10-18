@@ -66,7 +66,7 @@ export function AuthenticatedLayout() {
               </NavLink>
               {isAdmin && (
                 <NavLink to="/admin" className={navLinkClass} onClick={closeMenu} end>
-                  Admin
+                  Gestão
                 </NavLink>
               )}
               <NavLink to="/notas" className={navLinkClass} onClick={closeMenu}>

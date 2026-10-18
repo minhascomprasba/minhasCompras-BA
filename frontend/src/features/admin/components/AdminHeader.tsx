@@ -32,7 +32,7 @@ export function AdminHeader({
   return (
     <div className="admin-header">
       <div>
-        <h1 className="admin-title">Painel de Administração</h1>
+        <h1 className="admin-title">Painel de Gestão</h1>
         <p className="admin-subtitle">
           Acompanhamento de uso, compras e adesão ao projeto
           {janelaLabel ? ` — ${janelaLabel}` : ''}

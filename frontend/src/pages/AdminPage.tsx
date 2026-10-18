@@ -59,7 +59,7 @@ export function AdminPage() {
             <line x1="12" y1="16" x2="12.01" y2="16"></line>
           </svg>
           <h2>Erro ao carregar indicadores</h2>
-          <p>{error?.message || 'Ocorreu um erro ao carregar os dados administrativos. Tente novamente mais tarde.'}</p>
+          <p>{error?.message || 'Ocorreu um erro ao carregar os dados de gestão. Tente novamente mais tarde.'}</p>
         </div>
       </div>
     );
