@@ -3,10 +3,10 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
 import { ProfileMenu } from './ProfileMenu';
 import { QuickScan } from './QuickScan';
-import { ListIcon as Menu, XIcon as X, ChartPieIcon as ChartPie, ReceiptIcon as Receipt, MapPinIcon as MapPin, UploadSimpleIcon as UploadSimple, ShieldCheckIcon as ShieldCheck } from '@phosphor-icons/react';
+import { ListIcon as Menu, XIcon as X, ChartPieIcon as ChartPie, ReceiptIcon as Receipt, MapPinIcon as MapPin, UploadSimpleIcon as UploadSimple, ShieldCheckIcon as ShieldCheck, SignOutIcon as LogOut } from '@phosphor-icons/react';
 import { Button } from './ui/button';
 import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList } from './ui/navigation-menu';
-import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet';
+import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet';
 import './AppShell.css';
 
 export function AuthenticatedLayout() {
@@ -80,6 +80,9 @@ export function AuthenticatedLayout() {
                 <ShieldCheck aria-hidden="true" /> Gestão
               </Button>
             )}
+            <div className="shell-desktop-profile">
+              <ProfileMenu onLogout={handleLogout} />
+            </div>
             <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
               <SheetTrigger render={<Button variant="secondary" size="icon" className="shell-mobile-toggle shell-menu-button size-11" />} aria-label="Abrir menu">
                 <Menu aria-hidden="true" />
@@ -92,6 +95,9 @@ export function AuthenticatedLayout() {
                 <SheetClose render={<Button variant="secondary" size="icon" className="shell-menu-button absolute right-3 top-[calc(var(--safe-top)+0.75rem)] size-11" />} aria-label="Fechar menu">
                   <X aria-hidden="true" />
                 </SheetClose>
+                <div className="border-b border-border mx-4 pb-4">
+                  <ProfileMenu inline onLogout={handleLogout} />
+                </div>
                 <nav aria-label="Navegação principal" className="flex flex-col gap-1 px-4">
                   {links.map(({ to, label, icon: Icon }) => (
                     <Button key={to} variant="ghost" nativeButton={false} render={<NavLink to={to} />} onClick={closeMenu} className="h-11 justify-start text-muted-foreground aria-[current=page]:bg-accent aria-[current=page]:text-foreground">
@@ -100,9 +106,13 @@ export function AuthenticatedLayout() {
                     </Button>
                   ))}
                 </nav>
+                <SheetFooter>
+                  <Button variant="destructive" onClick={handleLogout} className="min-h-11 justify-start px-3">
+                    <LogOut aria-hidden="true" /> Sair
+                  </Button>
+                </SheetFooter>
               </SheetContent>
             </Sheet>
-            <ProfileMenu onLogout={handleLogout} />
           </div>
         </div>
       </header>

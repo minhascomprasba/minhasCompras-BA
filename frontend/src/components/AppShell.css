@@ -73,7 +73,7 @@
   }
 
   @media (max-width: 1200px) {
-    .shell-desktop-nav, .shell-admin-link { display: none; }
+    .shell-desktop-nav, .shell-admin-link, .shell-desktop-profile { display: none; }
     .shell-mobile-toggle { display: inline-flex; }
   }
 

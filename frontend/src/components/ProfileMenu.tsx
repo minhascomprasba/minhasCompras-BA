@@ -16,8 +16,22 @@ const avatarColors = [
   '#F4F8FC',
 ];
 
-export function ProfileMenu({ onLogout }: { onLogout: () => void }) {
+export function ProfileMenu({ onLogout, inline = false }: { onLogout: () => void; inline?: boolean }) {
   const { user, role } = useAuth();
+
+  if (inline) {
+    return (
+      <section aria-label="Meu perfil" className="flex min-w-0 flex-col gap-4">
+        <div className="flex items-center gap-3">
+          <Avatar className="size-11 shrink-0" aria-hidden="true">
+            <BoringAvatar className="block size-full" size={44} name={user ? String(user.id) : 'guest'} variant="beam" colors={avatarColors} />
+          </Avatar>
+          {role && <RoleBadge role={role} />}
+        </div>
+        <p className="text-sm text-muted-foreground break-words">{user?.email}</p>
+      </section>
+    );
+  }
 
   return (
     <DropdownMenu>
