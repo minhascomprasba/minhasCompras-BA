@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../shared/api/client';
+import './HomePage.css';
 
 interface SystemStats {
   total_users: number;
@@ -128,7 +129,7 @@ export function HomePage() {
   ];
 
   return (
-    <div className="container pb-20">
+    <div data-scope="home" className="container pb-20">
       {/* Hero Section */}
       <section className="hero-grid">
         <div className="hero-copy">
