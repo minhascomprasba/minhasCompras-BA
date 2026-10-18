@@ -34,7 +34,7 @@ export function NotasPage() {
   const isFiltered = !!(dateFrom || dateTo);
 
   return (
-    <div className="container mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto w-full max-w-2xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <h1 className="mb-0 text-2xl font-semibold text-foreground">Minhas Notas Fiscais</h1>
         <div className="flex flex-wrap gap-2">
