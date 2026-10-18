@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import type { AdminLog, LogStatus } from '../types';
 import { InfoTooltip } from './InfoTooltip';
 
@@ -29,13 +28,6 @@ export function AdminLogsTable({ logs }: AdminLogsTableProps) {
           </div>
           <p className="admin-logs-subtitle">Últimas tentativas de importação que não puderam ser concluídas</p>
         </div>
-        <Link to="/notas" className="admin-logs-link">
-          Ver todas as notas
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="5" y1="12" x2="19" y2="12" />
-            <polyline points="12 5 19 12 12 19" />
-          </svg>
-        </Link>
       </div>
       <div className="table-container">
         <table className="table">

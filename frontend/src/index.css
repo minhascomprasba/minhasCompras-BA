@@ -4040,19 +4040,6 @@ body.menu-open {
   margin: 0;
 }
 
-.admin-logs-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--brand-green);
-}
-
-.admin-logs-link:hover {
-  color: var(--primary-hover);
-}
-
 .admin-logs-card .table-container {
   border: none;
   border-radius: 0;
