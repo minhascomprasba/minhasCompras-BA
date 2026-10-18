@@ -64,11 +64,6 @@ export function AuthenticatedLayout() {
               <NavLink to="/dashboard" className={navLinkClass} onClick={closeMenu}>
                 Dashboard
               </NavLink>
-              {isAdmin && (
-                <NavLink to="/admin" className={navLinkClass} onClick={closeMenu} end>
-                  Gestão
-                </NavLink>
-              )}
               <NavLink to="/notas" className={navLinkClass} onClick={closeMenu}>
                 Notas
               </NavLink>
@@ -79,6 +74,11 @@ export function AuthenticatedLayout() {
                 Importar
               </NavLink>
             </nav>
+            {isAdmin && (
+              <NavLink to="/admin" className={navLinkClass} onClick={closeMenu} end>
+                Gestão
+              </NavLink>
+            )}
           </div>
           <ProfileMenu onLogout={handleLogout} />
         </div>
