@@ -11,6 +11,7 @@ import { scanQrCodeFromFile } from '../features/imports/utils/scanQrFromFile';
 import { consumeQuickScan } from '../features/imports/utils/quickScanStorage';
 import { ImageUploadIcon, QrCodeIcon } from '../components/ImportActionIcons';
 import type { ImportSource } from '../features/imports/types';
+import './ImportPage.css';
 
 const accessKeySchema = z.object({
   access_key: z
@@ -240,7 +241,7 @@ export function ImportPage() {
   const isBusy = startImportMutation.isPending || isFileScanning;
 
   return (
-    <div className="container container-small">
+    <div data-scope="import" className="container container-small">
       <h1 className="text-center mb-8">Nova Importação</h1>
 
       <QrCodeScanner

@@ -1,0 +1,34 @@
+@scope ([data-scope="import"]) {
+  .import-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .import-actions-row {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .import-actions-row .btn {
+    flex: 1;
+  }
+
+  .btn-icon-only {
+    min-height: 3rem;
+    padding: 0.85rem 1rem;
+  }
+
+  .btn-icon-only svg {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .btn-icon-only-spinner {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-width: 2px;
+  }
+
+}
