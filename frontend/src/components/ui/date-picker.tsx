@@ -10,32 +10,48 @@ const parseDate = (value: string) => {
   return new Date(year, month - 1, day);
 };
 
-export function DatePicker({ id, label, value, onChange }: {
+type DateRange = { from: string; to: string };
+
+export function DateRangePicker({ id, label, value, onChange }: {
   id: string;
   label: string;
-  value: string;
-  onChange: (value: string) => void;
+  value: DateRange;
+  onChange: (value: DateRange) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState(() => new Date());
+  const [draft, setDraft] = useState<DateRange>(value);
   const firstDay = new Date(month.getFullYear(), month.getMonth(), 1).getDay();
   const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
   const today = dateKey(new Date());
   const selectDate = (date: string) => {
-    onChange(date);
+    if (!draft.from || draft.to) {
+      setDraft({ from: date, to: '' });
+      return;
+    }
+    const range = date < draft.from ? { from: date, to: draft.from } : { from: draft.from, to: date };
+    setDraft(range);
+    onChange(range);
     setOpen(false);
   };
+  const displayValue = value.from && value.to
+    ? `${parseDate(value.from).toLocaleDateString('pt-BR')} – ${parseDate(value.to).toLocaleDateString('pt-BR')}`
+    : 'Selecionar período';
 
   return (
     <Popover open={open} onOpenChange={(nextOpen) => {
-      if (nextOpen) setMonth(value ? parseDate(value) : new Date());
+      if (nextOpen) {
+        setMonth(value.from ? parseDate(value.from) : new Date());
+        setDraft(value);
+      }
       setOpen(nextOpen);
     }}>
-      <PopoverTrigger render={<Button type="button" variant="outline" className="h-10 w-full justify-between bg-background aria-expanded:bg-background" />} id={id} aria-label={`${label}: ${value ? parseDate(value).toLocaleDateString('pt-BR') : 'Selecionar data'}`}>
-        <span>{value ? parseDate(value).toLocaleDateString('pt-BR') : 'Selecionar data'}</span>
+      <PopoverTrigger render={<Button type="button" variant="outline" className="h-10 w-full justify-between bg-background aria-expanded:bg-background" />} id={id} aria-label={`${label}: ${displayValue}`}>
+        <span>{displayValue}</span>
         <CalendarBlankIcon aria-hidden="true" />
       </PopoverTrigger>
       <PopoverContent aria-label={`Calendário: ${label}`}>
+        <p className="mt-0 mb-3 text-sm" aria-live="polite">{draft.from && !draft.to ? `Início: ${parseDate(draft.from).toLocaleDateString('pt-BR')}. Selecione a data final.` : 'Selecione a data inicial e a data final.'}</p>
         <div className="mb-3 flex items-center justify-between gap-2">
           <Button type="button" variant="ghost" size="icon" className="bg-transparent" aria-label="Mês anterior" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}>
             <CaretLeftIcon aria-hidden="true" />
@@ -51,16 +67,18 @@ export function DatePicker({ id, label, value, onChange }: {
           {Array.from({ length: daysInMonth }, (_, index) => {
             const date = new Date(month.getFullYear(), month.getMonth(), index + 1);
             const key = dateKey(date);
+            const isEndpoint = key === draft.from || key === draft.to;
+            const isInRange = !!(draft.from && draft.to && key > draft.from && key < draft.to);
             return (
-              <Button key={key} type="button" variant={key === value ? 'default' : 'ghost'} className={`h-9 w-full p-0 ${key === value ? '' : 'bg-transparent'}`} aria-label={date.toLocaleDateString('pt-BR', { dateStyle: 'full' })} aria-pressed={key === value} aria-current={key === today ? 'date' : undefined} onClick={() => selectDate(key)}>
+              <Button key={key} type="button" variant={isEndpoint ? 'default' : 'ghost'} className={`h-9 w-full p-0 ${isEndpoint ? '' : isInRange ? 'bg-primary/15' : 'bg-transparent'}`} aria-label={date.toLocaleDateString('pt-BR', { dateStyle: 'full' })} aria-pressed={isEndpoint || isInRange} aria-current={key === today ? 'date' : undefined} onClick={() => selectDate(key)}>
                 {index + 1}
               </Button>
             );
           })}
         </div>
         <div className="mt-3 flex justify-between border-t border-border pt-3">
-          <Button type="button" variant="ghost" className="bg-transparent" onClick={() => selectDate('')}>Limpar</Button>
-          <Button type="button" variant="outline" className="bg-transparent" onClick={() => selectDate(today)}>Hoje</Button>
+          <Button type="button" variant="ghost" className="bg-transparent" onClick={() => { onChange({ from: '', to: '' }); setDraft({ from: '', to: '' }); setOpen(false); }}>Limpar</Button>
+          <Button type="button" variant="outline" className="bg-transparent" onClick={() => { onChange({ from: today, to: today }); setOpen(false); }}>Hoje</Button>
         </div>
       </PopoverContent>
     </Popover>

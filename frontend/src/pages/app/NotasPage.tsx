@@ -5,7 +5,7 @@ import { Alert } from '../../components/ui/alert';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
-import { DatePicker } from '../../components/ui/date-picker';
+import { DateRangePicker } from '../../components/ui/date-picker';
 import { Label } from '../../components/ui/label';
 import { useNotas } from '../../features/notas/hooks/useNotasQueries';
 import { useAuth } from '../../features/auth/AuthContext';
@@ -49,12 +49,8 @@ export function NotasPage() {
         <CardContent>
           <form onSubmit={(event) => { event.preventDefault(); setPage(1); }} className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
             <div className="grid min-w-0 gap-2 sm:flex-1">
-              <Label htmlFor="notas-date-from">De (Data da compra):</Label>
-              <DatePicker id="notas-date-from" label="De (Data da compra)" value={dateFrom} onChange={(value) => { setDateFrom(value); setPage(1); }} />
-            </div>
-            <div className="grid min-w-0 gap-2 sm:flex-1">
-              <Label htmlFor="notas-date-to">Até:</Label>
-              <DatePicker id="notas-date-to" label="Até" value={dateTo} onChange={(value) => { setDateTo(value); setPage(1); }} />
+              <Label htmlFor="notas-date-range">Período da compra:</Label>
+              <DateRangePicker id="notas-date-range" label="Período da compra" value={{ from: dateFrom, to: dateTo }} onChange={({ from, to }) => { setDateFrom(from); setDateTo(to); setPage(1); }} />
             </div>
             <Button type="submit" className="h-10 text-white"><Funnel aria-hidden="true" /> Filtrar</Button>
             {isFiltered && <Button type="button" variant="outline" className="h-10" onClick={clearFilters}><X aria-hidden="true" /> Limpar</Button>}
