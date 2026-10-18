@@ -1,0 +1,20 @@
+.chart-tooltip {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.75rem;
+  box-shadow: var(--shadow-md);
+}
+
+.chart-tooltip-title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.chart-tooltip-value {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 500;
+}

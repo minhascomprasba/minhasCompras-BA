@@ -1,0 +1,77 @@
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  /* Reserve scrollbar space so navigation stays aligned between pages. */
+  scrollbar-gutter: stable;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  overflow-x: hidden;
+  /* Subtle brand background glow (blue top-left, green top-right) */
+  background-image:
+    radial-gradient(circle at 15% -5%, rgba(3, 56, 118, 0.35) 0%, transparent 45%),
+    radial-gradient(circle at 90% 0%, rgba(23, 200, 95, 0.12) 0%, transparent 45%);
+  background-attachment: fixed;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+img {
+  height: auto;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  color: var(--text-primary);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+h1 { font-size: 2.5rem; margin-bottom: 1rem; }
+
+h2 { font-size: 1.5rem; margin-bottom: 0.75rem; }
+
+h3 { font-size: 1.25rem; }
+
+p { margin: 0 0 1rem 0; color: var(--text-secondary); }
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+a:hover { color: var(--primary-hover); }
+
+@media (max-width: 768px) {
+h1 { font-size: 2rem; }
+}
+
+@media (max-width: 768px) {
+h2 { font-size: 1.35rem; }
+}
+
+@media (max-width: 480px) {
+h1 { font-size: 1.7rem; }
+}

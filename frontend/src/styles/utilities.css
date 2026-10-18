@@ -1,0 +1,137 @@
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.brand-icon {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.font-semibold { font-weight: 500; }
+
+.ncm-font {
+  font-family: var(--mono);
+  font-size: 0.9rem;
+}
+
+.flex-wrap-gap { display: flex; gap: 1rem; flex-wrap: wrap; }
+
+.mb-0 { margin-bottom: 0 !important; }
+
+.text-center { text-align: center; }
+
+.py-4 { padding: 4rem 0; }
+
+.flex-between-wrap {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.mb-6 {
+  margin-bottom: 1.5rem !important;
+}
+
+.page-title {
+  font-size: 2rem !important;
+  margin-bottom: 0.35rem !important;
+}
+
+.page-subtitle {
+  color: var(--text-secondary);
+  margin: 0 !important;
+}
+
+.text-secondary {
+  color: var(--text-secondary) !important;
+}
+
+.mb-8 {
+  margin-bottom: 2rem !important;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.flex-2 {
+  flex: 2;
+}
+
+.mt-16 {
+  margin-top: 4rem !important;
+}
+
+.mt-6 {
+  margin-top: 1.5rem !important;
+}
+
+.py-12 {
+  padding-top: 3rem !important;
+  padding-bottom: 3rem !important;
+}
+
+.px-8 {
+  padding-left: 2rem !important;
+  padding-right: 2rem !important;
+}
+
+.py-3 {
+  padding-top: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
+}
+
+.border-error {
+  border-color: var(--error) !important;
+}
+
+.text-success {
+  color: var(--success) !important;
+}
+
+.text-error {
+  color: var(--error) !important;
+}
+
+.text-warning {
+  color: var(--warning) !important;
+}
+
+.text-left {
+  text-align: left !important;
+}
+
+.mono-font {
+  font-family: var(--mono);
+}
+
+.mb-1 {
+  margin-bottom: 0.25rem !important;
+}
+
+@media (max-width: 480px) {
+  .py-12 {
+    padding-top: 2rem !important;
+    padding-bottom: 2rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .px-8 {
+    padding-left: 1.25rem !important;
+    padding-right: 1.25rem !important;
+  }
+}

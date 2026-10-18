@@ -1,0 +1,29 @@
+.container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.container-large {
+  max-width: 1000px;
+}
+
+.container-small {
+  max-width: 600px;
+  margin-top: 2rem;
+  padding: 0 1rem;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 1.5rem 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 1.25rem 0.85rem;
+  }
+}
