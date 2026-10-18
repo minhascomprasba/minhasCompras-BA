@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CircleNotchIcon as LoaderCircle, PlusIcon as Plus, FunnelIcon as Funnel, XIcon as X, ReceiptIcon as Receipt, UploadSimpleIcon as UploadSimple, ArrowRightIcon as ArrowRight, CaretLeftIcon as CaretLeft, CaretRightIcon as CaretRight } from '@phosphor-icons/react';
 import { Alert } from '../../components/ui/alert';
-import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 import { DateRangePicker } from '../../components/ui/date-picker';
@@ -88,23 +87,46 @@ export function NotasPage() {
             <div className="space-y-4">
               {data.data.map((nota) => {
                 return (
-                  <Card key={nota.id}>
-                    <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="min-w-0 space-y-3">
-                        <h2 className="m-0 text-xl font-bold text-primary">{currency.format(nota.valor_total_nota ?? 0)}</h2>
-                        <div className="min-w-0 text-sm">
-                          <span className="text-muted-foreground">Chave: </span>
-                          <span className="font-mono break-all text-foreground select-text">{nota.codigo_acesso || 'Indisponível'}</span>
+                  <Card key={nota.id} className="transition-shadow hover:ring-primary/30">
+                    <CardContent className="space-y-4">
+                      <div className="flex flex-wrap items-center justify-between gap-4">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                            <Receipt className="size-5" aria-hidden="true" />
+                          </span>
+                          <div className="flex flex-col gap-1">
+                            <span className="font-medium text-foreground">
+                              {nota.data_compra ? new Date(nota.data_compra).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }) : 'Data indisponível'}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {nota.data_compra ? `Compra às ${new Date(nota.data_compra).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : 'Nota fiscal importada'}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex flex-wrap gap-2">
-                          <Badge variant={nota.data_compra ? 'secondary' : 'outline'} className="h-auto whitespace-normal">
-                            {nota.data_compra ? `Compra em: ${new Date(nota.data_compra).toLocaleString('pt-BR')}` : 'Data da compra indisponível'}
-                          </Badge>
-                          <Badge variant="outline">Itens: {nota.itens_count ?? 0}</Badge>
-                          <Badge variant="outline" className="h-auto whitespace-normal">Pagamento: {nota.meio_pagamento || 'não capturado'}</Badge>
+                        <div className="flex flex-col gap-1 sm:text-right">
+                          <span className="text-xs text-muted-foreground">Total da compra</span>
+                          <span className="text-2xl font-semibold tracking-tight text-foreground tabular-nums">{currency.format(nota.valor_total_nota ?? 0)}</span>
                         </div>
                       </div>
-                      <Button variant="outline" render={<Link to={`/notas/${nota.id}`} />} nativeButton={false}>Ver Detalhes <ArrowRight aria-hidden="true" /></Button>
+
+                      <div className="grid grid-cols-[1fr_2fr] gap-4 border-t border-border pt-4">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs text-muted-foreground">Itens</span>
+                          <span className="font-medium text-foreground">{nota.itens_count ?? 0} {nota.itens_count === 1 ? 'item' : 'itens'}</span>
+                        </div>
+                        <div className="flex min-w-0 flex-col gap-1">
+                          <span className="text-xs text-muted-foreground">Pagamento</span>
+                          <span className="break-words font-medium text-foreground">{nota.meio_pagamento || 'Não informado'}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-start justify-between gap-3 border-t border-border pt-3">
+                        <details className="min-w-0 flex-1 self-center text-xs text-muted-foreground">
+                          <summary className="cursor-pointer rounded-sm py-2 focus-visible:outline-2 focus-visible:outline-ring">Chave de acesso</summary>
+                          <span className="mt-2 block font-mono break-all text-foreground select-text">{nota.codigo_acesso || 'Indisponível'}</span>
+                        </details>
+                        <Button variant="ghost" className="shrink-0 bg-transparent text-primary hover:bg-primary/10 hover:text-primary" render={<Link to={`/notas/${nota.id}`} />} nativeButton={false}>Ver detalhes <ArrowRight aria-hidden="true" /></Button>
+                      </div>
                     </CardContent>
                   </Card>
                 );
