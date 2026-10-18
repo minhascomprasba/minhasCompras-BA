@@ -1,5 +1,5 @@
 import { Select as SelectPrimitive } from '@base-ui/react/select';
-import { Check, ChevronDown } from 'lucide-react';
+import { Check, CaretDown as ChevronDown } from '@phosphor-icons/react';
 import { cn } from 'cn';
 
 export function Select<Value>(props: SelectPrimitive.Root.Props<Value, false>) {
