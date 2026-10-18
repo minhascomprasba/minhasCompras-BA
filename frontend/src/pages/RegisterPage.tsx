@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { authService } from '../features/auth/authService';
 import { AppError } from '../shared/api/errors';
+import './AuthPages.css';
 
 const passwordRules = [
   { key: 'length', label: 'Mínimo de 8 caracteres', test: (v: string) => v.length >= 8 },
@@ -68,7 +69,7 @@ export function RegisterPage() {
   };
 
   return (
-    <div className="auth-page">
+    <div data-scope="auth" className="auth-page">
       <header className="auth-header">
         <Link to="/" className="auth-logo">
           <img src="/icon.png" alt="" className="brand-icon" />

@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { useAuth } from '../features/auth/AuthContext';
 import { authService } from '../features/auth/authService';
 import { AppError } from '../shared/api/errors';
+import './AuthPages.css';
 
 const confirmEmailSchema = z.object({
   code: z.string()
@@ -74,7 +75,7 @@ export function ConfirmEmailPage() {
   };
 
   return (
-    <div className="auth-page">
+    <div data-scope="auth" className="auth-page">
       <header className="auth-header">
         <Link to="/" className="auth-logo">
           <img src="/icon.png" alt="" className="brand-icon" />
