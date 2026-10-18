@@ -1,3 +1,4 @@
+import './NotaDetailPage.css';
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useNota, useNotaItens } from '../../features/notas/hooks/useNotasQueries';
