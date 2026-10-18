@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { mapaService, type MapaNota, type MapaPonto } from '../features/mapa/mapaService';
+import './MapPage.css';
 
 // Leaflet é carregado via CDN no index.html e exposto em window.L.
 declare global {
@@ -234,7 +235,7 @@ export function MapPage() {
   const selectedLocation = locations.find((l) => l.id === selectedId) ?? null;
 
   return (
-    <div className="container">
+    <div data-scope="map" className="container">
       <div className="mb-6">
         <h1 className="page-title">Mapa das Compras</h1>
         <p className="page-subtitle">
