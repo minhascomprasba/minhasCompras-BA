@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeftIcon as ArrowLeft, CaretLeftIcon as CaretLeft, CaretRightIcon as CaretRight, CircleNotchIcon as LoaderCircle } from '@phosphor-icons/react';
+import { ArrowLeftIcon as ArrowLeft, CaretLeftIcon as CaretLeft, CaretRightIcon as CaretRight, CircleNotchIcon as LoaderCircle, ReceiptIcon as Receipt } from '@phosphor-icons/react';
 import { Alert } from '../../components/ui/alert';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -34,47 +34,59 @@ export function NotaDetailPage() {
   const { data: itensData, isLoading: isItensLoading, isError: isItensError, error: itensError, isPlaceholderData } = useNotaItens(user?.id ?? null, id, { page, page_size: pageSize });
 
   return (
-    <div className="container container-large space-y-6 text-foreground">
-      <Button type="button" variant="outline" onClick={() => navigate('/notas')}>
-        <ArrowLeft aria-hidden="true" /> Voltar para Notas
+    <div className="mx-auto w-full max-w-2xl space-y-6 px-4 py-6 text-foreground sm:px-6 sm:py-8">
+      <Button type="button" variant="ghost" className="bg-transparent" onClick={() => navigate('/notas')}>
+        <ArrowLeft aria-hidden="true" /> Minhas notas fiscais
       </Button>
+      <h1 style={{ margin: 0 }} className="text-2xl font-semibold text-foreground">Detalhes da Nota</h1>
 
       {isNaN(id) ? <Alert variant="destructive">ID da nota inválido.</Alert> : (
         <>
           {isNotaError && <Alert variant="destructive"><strong>Erro ao carregar nota:</strong> {notaError.message}</Alert>}
           {isNotaLoading ? <LoadingState>Carregando nota…</LoadingState> : nota ? (
             <Card>
-              <CardContent className="space-y-6">
-                <h1 className="m-0 text-2xl font-semibold text-foreground">Detalhes da Nota</h1>
-                {nota.valor_total_nota !== undefined && (
-                  <div className="text-3xl font-bold text-primary">{currency.format(nota.valor_total_nota)}</div>
-                )}
-                <dl className="m-0 grid gap-4 sm:grid-cols-2">
-                  <div className="min-w-0 space-y-1 sm:col-span-2">
-                    <dt className="text-sm text-muted-foreground">Chave de Acesso</dt>
-                    <dd className="m-0 font-mono break-all text-foreground select-text">{nota.codigo_acesso || 'Indisponível'}</dd>
+              <CardContent className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <Receipt className="size-5" aria-hidden="true" />
+                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span className="font-medium text-foreground">
+                        {nota.data_compra ? new Date(nota.data_compra).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }) : 'Data indisponível'}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {nota.data_compra ? `Compra às ${new Date(nota.data_compra).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : 'Nota fiscal importada'}
+                      </span>
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <dt className="text-sm text-muted-foreground">Compra em</dt>
-                    <dd className="m-0 text-foreground">{nota.data_compra ? new Date(nota.data_compra).toLocaleString('pt-BR') : 'não capturada nesta importação'}</dd>
+                  <div className="flex flex-col gap-1 sm:text-right">
+                    <span className="text-xs text-muted-foreground">Total da compra</span>
+                    <span className="text-2xl font-semibold tracking-tight text-foreground tabular-nums">{nota.valor_total_nota != null ? currency.format(nota.valor_total_nota) : 'Indisponível'}</span>
                   </div>
-                  <div className="space-y-1">
-                    <dt className="text-sm text-muted-foreground">Meio de pagamento</dt>
-                    <dd className="m-0 text-foreground">{nota.meio_pagamento || 'não capturado nesta importação'}</dd>
+                </div>
+                <div className="grid gap-4 border-t border-border pt-4 sm:grid-cols-2">
+                  <div className="flex min-w-0 flex-col gap-1">
+                    <span className="text-xs text-muted-foreground">Pagamento</span>
+                    <span className="break-words font-medium">{nota.meio_pagamento || 'Não informado'}</span>
                   </div>
-                  <div className="space-y-1">
-                    <dt className="text-sm text-muted-foreground">Importada em</dt>
-                    <dd className="m-0 text-foreground">{new Date(nota.created_at).toLocaleString('pt-BR')}</dd>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs text-muted-foreground">Importada em</span>
+                    <span className="font-medium">{new Date(nota.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</span>
                   </div>
-                </dl>
+                </div>
+                <details className="border-t border-border pt-3 text-xs text-muted-foreground">
+                  <summary className="cursor-pointer rounded-sm py-2 focus-visible:outline-2 focus-visible:outline-ring">Chave de acesso</summary>
+                  <span className="mt-2 block font-mono break-all text-foreground select-text">{nota.codigo_acesso || 'Indisponível'}</span>
+                </details>
               </CardContent>
             </Card>
           ) : null}
 
           <section aria-labelledby="nota-items-title" className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 id="nota-items-title" className="m-0 text-xl font-semibold text-foreground">Itens da Nota</h2>
-              {itensData && <Badge variant="secondary">{itensData.total} produtos encontrados</Badge>}
+              <h2 id="nota-items-title" style={{ margin: 0 }} className="text-xl font-semibold text-foreground">Itens da compra</h2>
+              {itensData && <span className="text-sm text-muted-foreground">{itensData.total} {itensData.total === 1 ? 'item' : 'itens'}</span>}
             </div>
             {isItensError && <Alert variant="destructive"><strong>Erro ao carregar itens:</strong> {itensError.message}</Alert>}
             {isItensLoading && !itensData ? <LoadingState>Carregando itens…</LoadingState> : itensData ? (
@@ -105,9 +117,9 @@ export function NotaDetailPage() {
                                   {item.codigo_ean_comercial && <div className="mt-1 font-mono text-xs break-all text-muted-foreground">EAN: {item.codigo_ean_comercial}</div>}
                                   {item.codigo_NCM_comercial && <div className="mt-1 font-mono text-xs break-all text-muted-foreground">NCM: {item.codigo_NCM_comercial}</div>}
                                 </TableCell>
-                                <TableCell className="text-center text-muted-foreground tabular-nums">{item.quantidade}</TableCell>
+                                <TableCell className="text-center tabular-nums">{item.quantidade}</TableCell>
                                 <TableCell className="text-center text-muted-foreground">{item.unidade_comercial}</TableCell>
-                                <TableCell className="text-right font-semibold whitespace-nowrap text-primary tabular-nums">{decimal.format(item.valor_total)}</TableCell>
+                                <TableCell className="text-right font-semibold whitespace-nowrap text-foreground tabular-nums">{decimal.format(item.valor_total)}</TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
