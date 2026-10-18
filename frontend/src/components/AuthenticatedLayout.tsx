@@ -3,6 +3,10 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
 import { ProfileMenu } from './ProfileMenu';
 import { QuickScan } from './QuickScan';
+import { Menu, X } from 'lucide-react';
+import { Button } from './ui/button';
+import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList } from './ui/navigation-menu';
+import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet';
 import './AppShell.css';
 
 export function AuthenticatedLayout() {
@@ -32,75 +36,72 @@ export function AuthenticatedLayout() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  useEffect(() => {
-    if (menuOpen) {
-      document.body.classList.add('menu-open');
-    } else {
-      document.body.classList.remove('menu-open');
-    }
-    return () => document.body.classList.remove('menu-open');
-  }, [menuOpen]);
-
   const handleLogout = () => {
     closeMenu();
     logout();
     navigate('/');
   };
 
-  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `nav-link ${isActive ? 'nav-link--active' : ''}`;
+  const links = [
+    { to: '/dashboard', label: 'Dashboard' },
+    { to: '/notas', label: 'Notas' },
+    { to: '/mapa', label: 'Mapa' },
+    { to: '/importar', label: 'Importar' },
+    ...(isAdmin ? [{ to: '/admin', label: 'Gestão' }] : []),
+  ];
 
   return (
-    <div data-scope="app-shell" className="app-layout-wrapper">
+    <div data-scope="app-shell" className="app-shell-theme app-layout-wrapper">
       <header className={`app-navbar${headerHidden && !menuOpen ? ' app-navbar--hidden' : ''}`}>
         <div className="navbar-container">
-          <NavLink to="/dashboard" className="navbar-logo" onClick={closeMenu} aria-label="Minhas Compras BA — Dashboard" title="Minhas Compras BA">
+          <NavLink to="/dashboard" className="navbar-logo" aria-label="Minhas Compras BA — Dashboard" title="Minhas Compras BA">
             <img src="/icon.png" alt="" className="brand-icon" />
           </NavLink>
 
-          <button
-            type="button"
-            className="navbar-toggle"
-            aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'}
-            aria-expanded={menuOpen}
-            onClick={() => setMenuOpen((open) => !open)}
-          >
-            {menuOpen ? (
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            ) : (
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="18" x2="21" y2="18" />
-              </svg>
-            )}
-          </button>
+          <NavigationMenu className="shell-desktop-nav" aria-label="Navegação principal">
+            <NavigationMenuList className="m-0 p-0 gap-1">
+              {links.filter(({ to }) => to !== '/admin').map(({ to, label }) => (
+                <NavigationMenuItem key={to}>
+                  <NavigationMenuLink
+                    render={<NavLink to={to} />}
+                    className="h-11 px-3 text-muted-foreground hover:text-foreground aria-[current=page]:bg-accent aria-[current=page]:text-foreground"
+                  >
+                    {label}
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+              ))}
+            </NavigationMenuList>
+          </NavigationMenu>
 
-          <div className={`navbar-menu ${menuOpen ? 'navbar-menu--open' : ''}`}>
-            <nav className="navbar-nav">
-              <NavLink to="/dashboard" className={navLinkClass} onClick={closeMenu}>
-                Dashboard
-              </NavLink>
-              <NavLink to="/notas" className={navLinkClass} onClick={closeMenu}>
-                Notas
-              </NavLink>
-              <NavLink to="/mapa" className={navLinkClass} onClick={closeMenu}>
-                Mapa
-              </NavLink>
-              <NavLink to="/importar" className={navLinkClass} onClick={closeMenu}>
-                Importar
-              </NavLink>
-            </nav>
+          <div className="ml-auto flex items-center gap-2">
             {isAdmin && (
-              <NavLink to="/admin" className={navLinkClass} onClick={closeMenu} end>
+              <Button variant="ghost" nativeButton={false} render={<NavLink to="/admin" />} className="shell-admin-link h-11 text-muted-foreground">
                 Gestão
-              </NavLink>
+              </Button>
             )}
+            <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+              <SheetTrigger render={<Button variant="ghost" size="icon" className="shell-mobile-toggle size-11" />} aria-label="Abrir menu">
+                <Menu aria-hidden="true" />
+              </SheetTrigger>
+              <SheetContent className="app-shell-theme overflow-y-auto pt-[var(--safe-top)] pb-[var(--safe-bottom)]" showCloseButton={false}>
+                <SheetHeader className="pr-16">
+                  <SheetTitle>Minhas Compras BA</SheetTitle>
+                  <SheetDescription>Navegue pelas suas compras.</SheetDescription>
+                </SheetHeader>
+                <SheetClose render={<Button variant="ghost" size="icon" className="absolute right-3 top-[calc(var(--safe-top)+0.75rem)] size-11" />} aria-label="Fechar menu">
+                  <X aria-hidden="true" />
+                </SheetClose>
+                <nav aria-label="Navegação principal" className="flex flex-col gap-1 px-4">
+                  {links.map(({ to, label }) => (
+                    <Button key={to} variant="ghost" nativeButton={false} render={<NavLink to={to} />} onClick={closeMenu} className="h-11 justify-start text-muted-foreground aria-[current=page]:bg-accent aria-[current=page]:text-foreground">
+                      {label}
+                    </Button>
+                  ))}
+                </nav>
+              </SheetContent>
+            </Sheet>
+            <ProfileMenu onLogout={handleLogout} />
           </div>
-          <ProfileMenu onLogout={handleLogout} />
         </div>
       </header>
 

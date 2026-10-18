@@ -1,276 +1,130 @@
+.app-shell-theme {
+  --background: var(--bg-main);
+  --foreground: var(--text-primary);
+  --popover: var(--bg-card);
+  --popover-foreground: var(--text-primary);
+  --muted: var(--bg-card-hover);
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--bg-card-hover);
+  --accent-foreground: var(--text-primary);
+  --border: var(--border-color);
+  --ring: var(--brand-green);
+}
+
 @scope ([data-scope="app-shell"]) {
-  .app-navbar {
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    height: 70px;
-    background: rgba(11, 15, 25, 0.75);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border-color);
-    box-shadow: var(--shadow-sm);
-    padding-top: var(--safe-top); /* safe area support */
-  }
-
-  /* App Shell Layout */
-  .app-navbar {
-    transition: transform 0.2s ease;
-  }
-
-  .app-navbar--hidden {
-    transform: translateY(-100%);
-  }
-
-  .app-navbar:focus-within {
-    transform: translateY(0);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .app-navbar {
-      transition: none;
-    }
-  }
-
   :scope {
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+    min-height: 100dvh;
   }
 
-  .app-main {
-    flex: 1 0 auto;
+  .app-navbar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    height: calc(70px + var(--safe-top));
+    padding-top: var(--safe-top);
+    background: color-mix(in srgb, var(--background) 85%, transparent);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    transition: transform 0.2s ease;
   }
 
-  .app-footer {
-    text-align: center;
-    padding: 1.5rem;
-    color: var(--text-muted);
-    font-size: 0.85rem;
-    border-top: 1px solid var(--border-color);
-    margin-top: auto;
-    padding-bottom: calc(1.5rem + var(--safe-bottom)); /* safe area support */
-  }
-
-  .btn-logout {
-    flex-shrink: 0;
-    padding: 0.4rem 0.8rem;
-    font-size: 0.85rem;
-    min-height: 38px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  @media (max-width: 1200px) {
-    .btn-logout {
-      min-height: 44px; /* Touch target minimum on mobile */
-      width: 100%;
-      margin-top: 0.5rem;
-    }
-  }
+  .app-navbar--hidden { transform: translateY(-100%); }
+  .app-navbar:focus-within { transform: translateY(0); }
 
   .navbar-container {
     position: relative;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 1rem;
     height: 100%;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 1.5rem;
+    padding: 0 max(1rem, var(--safe-right)) 0 max(1rem, var(--safe-left));
   }
 
-  /* Menu (nav + usuario). No desktop fica em linha; no mobile vira dropdown. */
-  .navbar-menu {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    flex: 1;
-    min-width: 0;
-    margin-left: 1rem;
+  .navbar-logo { display: flex; flex-shrink: 0; }
+  .shell-desktop-nav {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
   }
+  .shell-mobile-toggle { display: none; }
+  .app-main { flex: 1 0 auto; }
 
-  /* Botão hamburger — visível apenas no mobile */
-  .navbar-toggle {
-    display: none;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    border: none;
-    color: var(--text-primary);
-    cursor: pointer;
-    padding: 0.4rem;
-    border-radius: var(--radius-md);
-  }
-  .navbar-toggle:hover {
-    background: var(--bg-card-hover);
-  }
-
-  .navbar-logo {
-    display: flex;
-    flex-shrink: 0;
-    align-items: center;
-    gap: 0.5rem;
-    text-decoration: none;
-  }
-
-  .logo-text {
-    font-size: 1.25rem;
-    font-weight: 700;
-    background: linear-gradient(100deg, #17c85f, #3a8fe0);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    letter-spacing: -0.03em;
-    transition: var(--transition);
-  }
-
-  .navbar-logo:hover .logo-text {
-    opacity: 0.9;
-    filter: brightness(1.1);
-  }
-
-  .navbar-nav {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.25rem;
-    flex-shrink: 0;
-  }
-
-  @media (min-width: 1201px) {
-    .navbar-nav {
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-    }
-
-    .navbar-menu {
-      justify-content: flex-end;
-    }
-  }
-
-  .nav-link {
-    color: var(--text-secondary);
-    font-size: 0.95rem;
-    font-weight: 500;
-    padding: 0.5rem 0.75rem;
-    border-radius: var(--radius-md);
-    transition: var(--transition);
-    text-decoration: none;
-  }
-
-  .nav-link:hover {
-    color: var(--text-primary);
-    background: var(--bg-card-hover);
-  }
-
-  .nav-link--active {
-    color: var(--text-primary);
-    background: var(--border-color);
-  }
-
-  /* Navbar mobile: colapsa o menu num dropdown acionado pelo hamburger */
-  @media (max-width: 1200px) {
-    .navbar-toggle {
-      display: flex;
-    }
-
-    .navbar-menu {
-      position: absolute;
-      top: 70px;
-      left: 0;
-      right: 0;
-      margin-left: 0;
-      flex-direction: column;
-      align-items: stretch;
-      justify-content: flex-start;
-      gap: 0;
-      padding: 0.5rem 1rem 1rem;
-      background: rgba(10, 14, 26, 0.98);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border-color);
-      box-shadow: var(--shadow-lg);
-      display: none;
-      max-height: calc(100dvh - 70px - var(--safe-top));
-      overflow-y: auto;
-    }
-    .navbar-menu--open {
-      display: flex;
-    }
-
-    .navbar-nav {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 0.25rem;
-      width: 100%;
-    }
-    .navbar-nav .nav-link {
-      display: block;
-      padding: 0.85rem 0.75rem;
-      font-size: 1rem;
-    }
-
-    .navbar-user {
-      flex-wrap: wrap;
-      width: 100%;
-      justify-content: space-between;
-      padding-top: 0.85rem;
-      margin-top: 0.5rem;
-      border-top: 1px solid var(--border-color);
-    }
-    .navbar-user .user-email {
-      display: block;
-      font-size: 0.9rem;
-    }
-  }
-
-  .navbar-user {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    min-width: 0;
-  }
-
-  .user-email {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .app-footer {
+    text-align: center;
+    padding: 1.5rem 1rem calc(1.5rem + var(--safe-bottom));
+    color: var(--text-muted);
     font-size: 0.85rem;
-    color: var(--text-secondary);
-    font-weight: 400;
-  }
-
-  @media (max-width: 900px) {
-    .navbar-container {
-      padding: 0 1rem;
-    }
-
-    .navbar-logo .logo-text {
-      font-size: 1.1rem;
-    }
-
-    .navbar-nav {
-      gap: 0.75rem;
-    }
-
-    .nav-link {
-      font-size: 0.85rem;
-      padding: 0.4rem 0.6rem;
-    }
-
-    .user-email {
-      display: none;
-    }
+    border-top: 1px solid var(--border);
+    margin-top: auto;
   }
 
   @media (max-width: 1200px) {
-    .navbar-toggle { margin-left: auto; }
+    .shell-desktop-nav, .shell-admin-link { display: none; }
+    .shell-mobile-toggle { display: inline-flex; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .app-navbar { transition: none; }
   }
 }
 
-body.menu-open {
-  overflow: hidden;
+/* Legacy global rules are unlayered, so shell overrides live here as well. */
+.app-shell-theme [data-slot="navigation-menu-link"],
+.app-shell-theme nav a[data-slot="button"],
+.app-shell-theme .shell-admin-link {
+  color: var(--muted-foreground);
+}
+
+.app-shell-theme [data-slot="navigation-menu-link"]:is(:hover, :focus-visible, [aria-current="page"]),
+.app-shell-theme nav a[data-slot="button"]:is(:hover, :focus-visible, [aria-current="page"]),
+.app-shell-theme .shell-admin-link:is(:hover, :focus-visible, [aria-current="page"]) {
+  color: var(--foreground);
+  background: var(--accent);
+}
+
+.app-shell-theme .profile-trigger {
+  padding: 0;
+  background: transparent;
+  color: var(--foreground);
+}
+
+.app-shell-theme .profile-initial {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
+.profile-dropdown {
+  --destructive: #fca5a5;
+  padding: 0.5rem;
+}
+
+.profile-dropdown .profile-heading {
+  padding: 0.75rem;
+  color: var(--foreground);
+}
+
+.profile-dropdown .profile-details {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0.25rem 0.75rem 1rem;
+}
+
+.profile-dropdown .profile-details dd {
+  margin: 0.375rem 0 0;
+}
+
+.profile-dropdown .profile-logout {
+  gap: 0.5rem;
+  color: var(--destructive);
+  background: #ef444414;
+}
+
+.profile-dropdown .profile-logout:is(:hover, :focus, [data-highlighted]) {
+  color: #fecaca;
+  background: #ef444429;
 }

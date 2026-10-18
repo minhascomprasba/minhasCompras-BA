@@ -1,67 +1,40 @@
-import { useEffect, useRef, useState } from 'react';
+import { LogOut } from 'lucide-react';
 import { useAuth } from '../features/auth/AuthContext';
 import { RoleBadge } from './RoleBadge';
-import './ProfileMenu.css';
+import { Avatar, AvatarFallback } from './ui/avatar';
+import { Button } from './ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 
 export function ProfileMenu({ onLogout }: { onLogout: () => void }) {
   const { user, role } = useAuth();
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const logoutRef = useRef<HTMLButtonElement>(null);
   const initials = (user?.email?.[0] ?? 'U').toLocaleUpperCase('pt-BR');
 
-  useEffect(() => {
-    if (!open) return;
-    logoutRef.current?.focus();
-    const handlePointer = (event: PointerEvent) => {
-      if (event.target instanceof Node && !containerRef.current?.contains(event.target)) {
-        setOpen(false);
-      }
-    };
-    const handleKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setOpen(false);
-        buttonRef.current?.focus();
-      }
-    };
-    document.addEventListener('pointerdown', handlePointer);
-    document.addEventListener('keydown', handleKey);
-    return () => {
-      document.removeEventListener('pointerdown', handlePointer);
-      document.removeEventListener('keydown', handleKey);
-    };
-  }, [open]);
-
   return (
-    <div data-scope="profile-menu" className="profile-menu" ref={containerRef} onBlur={(event) => {
-      if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
-    }}>
-      <button
-        ref={buttonRef}
-        type="button"
-        className="profile-avatar"
-        aria-label={open ? 'Fechar perfil' : 'Abrir perfil'}
-        aria-expanded={open}
-        aria-controls="profile-popover"
-        onClick={() => setOpen((value) => !value)}
-      >
-        {initials}
-      </button>
-      {open && (
-        <section id="profile-popover" className="profile-popover" aria-label="Meu perfil">
-          <h2>Meu perfil</h2>
-          <dl className="profile-details">
-            <dt>Perfil de acesso</dt>
-            <dd>{role && <RoleBadge role={role} />}</dd>
-            <dt>E-mail</dt>
-            <dd>{user?.email}</dd>
+    <DropdownMenu>
+      <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="profile-trigger size-11 rounded-full" />} aria-label="Abrir perfil">
+        <Avatar className="size-11">
+          <AvatarFallback className="profile-initial font-bold">{initials}</AvatarFallback>
+        </Avatar>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" sideOffset={12} className="app-shell-theme profile-dropdown w-80 max-w-[calc(100vw-2rem)]" aria-label="Meu perfil">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="profile-heading text-sm">Meu perfil</DropdownMenuLabel>
+          <dl className="profile-details text-sm">
+            <div>
+            <dt className="text-xs text-muted-foreground">Perfil de acesso</dt>
+            <dd className="m-0">{role && <RoleBadge role={role} />}</dd>
+            </div>
+            <div>
+            <dt className="text-xs text-muted-foreground">E-mail</dt>
+            <dd className="m-0 break-words">{user?.email}</dd>
+            </div>
           </dl>
-          <button ref={logoutRef} type="button" onClick={onLogout} className="btn btn-secondary profile-logout">
-            Sair
-          </button>
-        </section>
-      )}
-    </div>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={onLogout} variant="destructive" className="profile-logout min-h-11 px-3">
+          <LogOut aria-hidden="true" /> Sair
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

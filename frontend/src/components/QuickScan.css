@@ -7,7 +7,7 @@
   position: fixed;
   right: calc(1.5rem + var(--safe-right));
   bottom: calc(2rem + var(--safe-bottom));
-  z-index: 500;
+  z-index: 30;
   width: 64px;
   height: 64px;
   border-radius: 50%;
@@ -35,8 +35,4 @@
 .scan-fab svg {
   width: 30px;
   height: 30px;
-}
-
-body.menu-open .scan-fab {
-  display: none;
 }
