@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
+import './NotFoundPage.css';
 
 export function NotFoundPage() {
   const { isAuthenticated } = useAuth();
 
   return (
-    <div className="not-found-container">
+    <div data-scope="not-found" className="not-found-container">
       <div className="not-found-content">
         {/* Ilustração temática: Sacola de compras com uma Lupa */}
         <div className="not-found-illustration-wrapper">
