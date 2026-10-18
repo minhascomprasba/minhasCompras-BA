@@ -1,0 +1,25 @@
+.status-icon {
+  font-size: 5rem;
+  margin-bottom: 1rem;
+  line-height: 1;
+}
+
+.status-footer {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+@media (max-width: 480px) {
+  .status-icon {
+    font-size: 4rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .status-footer {
+    margin-top: 2rem;
+  }
+}
