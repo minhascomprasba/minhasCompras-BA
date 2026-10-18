@@ -954,8 +954,21 @@
   .admin-role-select {
     flex: 0 0 auto;
     min-width: 180px;
+    width: 100%;
+    max-width: 220px;
+    padding-right: 2rem;
     cursor: pointer;
   }
+
+  .admin-users-table { table-layout: fixed; min-width: 900px; }
+  .admin-users-table th:nth-child(1), .admin-users-table td:nth-child(1) { width: 24%; }
+  .admin-users-table th:nth-child(2), .admin-users-table td:nth-child(2) { width: 17%; }
+  .admin-users-table th:nth-child(3), .admin-users-table td:nth-child(3),
+  .admin-users-table th:nth-child(4), .admin-users-table td:nth-child(4) { width: 8%; }
+  .admin-users-table th:nth-child(5), .admin-users-table td:nth-child(5),
+  .admin-users-table th:nth-child(6), .admin-users-table td:nth-child(6) { width: 13%; }
+  .admin-users-table th:nth-child(7), .admin-users-table td:nth-child(7) { width: 17%; }
+  .admin-users-table td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   .admin-role-select:disabled {
     cursor: not-allowed;

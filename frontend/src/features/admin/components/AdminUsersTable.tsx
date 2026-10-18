@@ -30,7 +30,7 @@ export function AdminUsersTable({
 }: AdminUsersTableProps) {
   return (
     <div className="table-container">
-      <table className="table">
+      <table className="table admin-users-table">
         <thead>
           <tr>
             <th>E-mail</th>
