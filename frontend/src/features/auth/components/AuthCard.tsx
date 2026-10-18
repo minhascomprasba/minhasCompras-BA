@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
 import './AuthCard.css';
 
 export function AuthCard({ title, subtitle, children }: {
@@ -7,17 +8,17 @@ export function AuthCard({ title, subtitle, children }: {
   children: ReactNode;
 }) {
   return (
-    <div className="auth-card">
-      <div className="auth-card-icon">
-        <img src="/icon.png" alt="Minhas Compras BA" />
-      </div>
-      <h1 className="auth-title">{title}</h1>
-      <p className="auth-subtitle">{subtitle}</p>
-      {children}
-    </div>
+    <Card className="auth-card w-full max-w-[420px] shadow-lg [--card-spacing:--spacing(6)]">
+      <CardHeader className="gap-2 text-center">
+        <img src="/icon.png" alt="" className="mx-auto mb-2 size-12" />
+        <CardTitle><h1 className="!mb-0 !text-2xl !text-foreground">{title}</h1></CardTitle>
+        <CardDescription>{subtitle}</CardDescription>
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
   );
 }
 
 export function AuthCardFooter({ children }: { children: ReactNode }) {
-  return <div className="auth-footer-link">{children}</div>;
+  return <div className="mt-6 text-center text-sm text-muted-foreground">{children}</div>;
 }

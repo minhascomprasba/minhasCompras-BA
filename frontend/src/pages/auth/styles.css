@@ -6,45 +6,15 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 6rem 1.5rem 3rem;
+    padding: 8rem 1rem 3rem;
   }
 
-  .auth-form-group-spaced {
-    margin-bottom: 1.75rem;
-  }
-  :scope.auth-container-narrow {
-    max-width: 400px;
-    margin-top: 4rem;
+  .auth-forgot-password-wrap {
+    text-align: right;
   }
 
-  .auth-card-inner {
-    padding: 2rem;
-  }
-
-  .auth-title-centered {
-    text-align: center;
-    margin-bottom: 1.5rem;
-    font-size: 2rem;
-  }
-
-  .auth-footer-centered {
-    text-align: center;
-    margin-top: 1.5rem;
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-  }
-
-  @media (max-width: 480px) {
-    :scope.auth-container-narrow {
-      margin-top: 2rem;
-      padding: 0 1rem;
-    }
-    .auth-card-inner {
-      padding: 1.5rem 1.25rem;
-    }
-    .auth-title-centered {
-      font-size: 1.6rem;
-      margin-bottom: 1rem;
-    }
+  .auth-forgot-password-link {
+    font-size: 0.875rem;
+    font-weight: 500;
   }
 }

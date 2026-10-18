@@ -1,3 +1,7 @@
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Alert } from '../../components/ui/alert';
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -9,7 +13,7 @@ import { AuthHeader } from '../../features/auth/components/AuthHeader';
 import { AuthCard, AuthCardFooter } from '../../features/auth/components/AuthCard';
 import { AuthFields } from '../../features/auth/components/AuthFields';
 import { PasswordChecklist } from '../../features/auth/components/PasswordChecklist';
-import './RegisterPage.css';
+import './styles.css';
 
 const registerSchema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -47,7 +51,7 @@ export function RegisterPage() {
     try {
       await authService.register({ email: data.email, password: data.password });
       navigate('/confirmar-email', { state: { email: data.email } });
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (err instanceof AppError) {
         if (err.code === 'INVALID_PASSWORD' && err.details?.rule === 'min_length') {
           setError('A senha deve ter no mínimo 8 caracteres.');
@@ -71,14 +75,14 @@ export function RegisterPage() {
       <AuthCard title="Crie sua conta" subtitle={<> Comece a organizar suas compras gratuitamente </>}>
 
         {error && (
-          <div className="alert alert-error">
+          <Alert variant="destructive" className="mb-4">
             {error}
-          </div>
+          </Alert>
         )}
 
         <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="form-group">
-            <label className="form-label">E-mail</label>
+          <div className="mb-4 grid gap-2">
+            <Label htmlFor="email">E-mail</Label>
             <AuthFields>
               <span className="input-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -86,18 +90,20 @@ export function RegisterPage() {
                   <path d="m22 7-10 5L2 7" />
                 </svg>
               </span>
-              <input
+              <Input
                 type="email"
-                className={`form-input has-icon ${errors.email ? 'error' : ''}`}
+                aria-invalid={!!errors.email} aria-describedby={errors.email ? "email-error" : undefined} className="pl-10"
                 placeholder="seu@email.com"
+                id="email"
+                autoComplete="email"
                 {...register('email')}
               />
             </AuthFields>
-            {errors.email && <span className="form-error-text">{errors.email.message}</span>}
+            {errors.email && <span id="email-error" className="text-sm text-destructive" role="alert">{errors.email.message}</span>}
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Senha</label>
+          <div className="mb-4 grid gap-2">
+            <Label htmlFor="password">Senha</Label>
             <AuthFields>
               <span className="input-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -105,15 +111,17 @@ export function RegisterPage() {
                   <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                 </svg>
               </span>
-              <input
+              <Input
                 type={showPassword ? 'text' : 'password'}
-                className={`form-input has-icon has-toggle ${errors.password ? 'error' : ''}`}
+                aria-invalid={!!errors.password} aria-describedby={errors.password ? "password-error" : undefined} className="pl-10 pr-12"
                 placeholder="Digite uma senha"
+                id="password"
+                autoComplete="new-password"
                 {...register('password')}
               />
-              <button
+              <Button
                 type="button"
-                className="password-toggle"
+                variant="ghost" size="icon" className="auth-password-toggle absolute right-1 top-1"
                 onClick={() => setShowPassword((v) => !v)}
                 aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
               >
@@ -129,13 +137,14 @@ export function RegisterPage() {
                     <circle cx="12" cy="12" r="3" />
                   </svg>
                 )}
-              </button>
+              </Button>
             </AuthFields>
+            {errors.password && <span id="password-error" className="text-sm text-destructive" role="alert">{errors.password.message}</span>}
             <PasswordChecklist password={passwordValue} />
           </div>
 
-          <div className="form-group auth-form-group-spaced">
-            <label className="form-label">Confirmar Senha</label>
+          <div className="mb-6 grid gap-2">
+            <Label htmlFor="password_confirm">Confirmar Senha</Label>
             <AuthFields>
               <span className="input-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -143,15 +152,17 @@ export function RegisterPage() {
                   <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                 </svg>
               </span>
-              <input
+              <Input
                 type={showConfirm ? 'text' : 'password'}
-                className={`form-input has-icon has-toggle ${errors.password_confirm ? 'error' : ''}`}
+                aria-invalid={!!errors.password_confirm} aria-describedby={errors.password_confirm ? "password_confirm-error" : undefined} className="pl-10 pr-12"
                 placeholder="Repita a senha"
+                id="password_confirm"
+                autoComplete="new-password"
                 {...register('password_confirm')}
               />
-              <button
+              <Button
                 type="button"
-                className="password-toggle"
+                variant="ghost" size="icon" className="auth-password-toggle absolute right-1 top-1"
                 onClick={() => setShowConfirm((v) => !v)}
                 aria-label={showConfirm ? 'Ocultar senha' : 'Mostrar senha'}
               >
@@ -167,14 +178,14 @@ export function RegisterPage() {
                     <circle cx="12" cy="12" r="3" />
                   </svg>
                 )}
-              </button>
+              </Button>
             </AuthFields>
-            {errors.password_confirm && <span className="form-error-text">{errors.password_confirm.message}</span>}
+            {errors.password_confirm && <span id="password_confirm-error" className="text-sm text-destructive" role="alert">{errors.password_confirm.message}</span>}
           </div>
 
-          <button type="submit" className="btn btn-primary btn-full" disabled={isLoading}>
+          <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
             {isLoading ? 'Enviando código...' : 'Criar Conta'}
-          </button>
+          </Button>
         </form>
 
         <AuthCardFooter>

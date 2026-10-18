@@ -1,3 +1,7 @@
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Alert } from '../../components/ui/alert';
 import { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -9,7 +13,7 @@ import { AppError } from '../../shared/api/errors';
 import { AuthHeader } from '../../features/auth/components/AuthHeader';
 import { AuthCard, AuthCardFooter } from '../../features/auth/components/AuthCard';
 import { AuthFields } from '../../features/auth/components/AuthFields';
-import './LoginPage.css';
+import './styles.css';
 
 const loginSchema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -40,7 +44,7 @@ export function LoginPage() {
       const response = await authService.login(data);
       login(response.access_token, response.user);
       navigate('/dashboard');
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (err instanceof AppError) {
         if (err.code === 'INVALID_PASSWORD' && err.details?.rule === 'min_length') {
           setError('A senha deve ter no mínimo 8 caracteres.');
@@ -64,20 +68,20 @@ export function LoginPage() {
       <AuthCard title="Bem-vindo de volta" subtitle={<> Entre para acessar seu painel de compras </>}>
 
         {successMessage && (
-          <div className="alert alert-success">
+          <Alert className="mb-4">
             {successMessage}
-          </div>
+          </Alert>
         )}
 
         {error && (
-          <div className="alert alert-error">
+          <Alert variant="destructive" className="mb-4">
             {error}
-          </div>
+          </Alert>
         )}
 
         <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="form-group">
-            <label className="form-label">E-mail</label>
+          <div className="mb-4 grid gap-2">
+            <Label htmlFor="email">E-mail</Label>
             <AuthFields>
               <span className="input-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -85,18 +89,20 @@ export function LoginPage() {
                   <path d="m22 7-10 5L2 7" />
                 </svg>
               </span>
-              <input
+              <Input
                 type="email"
-                className={`form-input has-icon ${errors.email ? 'error' : ''}`}
+                aria-invalid={!!errors.email} aria-describedby={errors.email ? "email-error" : undefined} className="pl-10"
                 placeholder="seu@email.com"
+                id="email"
+                autoComplete="email"
                 {...register('email')}
               />
             </AuthFields>
-            {errors.email && <span className="form-error-text">{errors.email.message}</span>}
+            {errors.email && <span id="email-error" className="text-sm text-destructive" role="alert">{errors.email.message}</span>}
           </div>
 
-          <div className="form-group auth-form-group-spaced">
-            <label className="form-label">Senha</label>
+          <div className="mb-6 grid gap-2">
+            <Label htmlFor="password">Senha</Label>
             <AuthFields>
               <span className="input-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -104,15 +110,17 @@ export function LoginPage() {
                   <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                 </svg>
               </span>
-              <input
+              <Input
                 type={showPassword ? 'text' : 'password'}
-                className={`form-input has-icon has-toggle ${errors.password ? 'error' : ''}`}
+                aria-invalid={!!errors.password} aria-describedby={errors.password ? "password-error" : undefined} className="pl-10 pr-12"
                 placeholder="Digite sua senha"
+                id="password"
+                autoComplete="current-password"
                 {...register('password')}
               />
-              <button
+              <Button
                 type="button"
-                className="password-toggle"
+                variant="ghost" size="icon" className="auth-password-toggle absolute right-1 top-1"
                 onClick={() => setShowPassword((v) => !v)}
                 aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
               >
@@ -128,9 +136,9 @@ export function LoginPage() {
                     <circle cx="12" cy="12" r="3" />
                   </svg>
                 )}
-              </button>
+              </Button>
             </AuthFields>
-            {errors.password && <span className="form-error-text">{errors.password.message}</span>}
+            {errors.password && <span id="password-error" className="text-sm text-destructive" role="alert">{errors.password.message}</span>}
             <div className="auth-forgot-password-wrap">
               <Link to="/esqueci-senha" className="auth-forgot-password-link">
                 Esqueci minha senha
@@ -138,9 +146,9 @@ export function LoginPage() {
             </div>
           </div>
 
-          <button type="submit" className="btn btn-primary btn-full" disabled={isLoading}>
+          <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
             {isLoading ? 'Entrando...' : 'Entrar'}
-          </button>
+          </Button>
         </form>
 
         <AuthCardFooter>

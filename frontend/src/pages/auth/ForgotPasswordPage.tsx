@@ -1,3 +1,9 @@
+import { AuthHeader } from '../../features/auth/components/AuthHeader';
+import { AuthCard, AuthCardFooter } from '../../features/auth/components/AuthCard';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Alert } from '../../components/ui/alert';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -5,7 +11,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { authService } from '../../features/auth/authService';
 import { AppError } from '../../shared/api/errors';
-import './ForgotPasswordPage.css';
+import './styles.css';
 
 const forgotPasswordSchema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -41,48 +47,47 @@ export function ForgotPasswordPage() {
   };
 
   return (
-    <div data-scope="auth" className="container auth-container-narrow">
-      <div className="card auth-card-inner">
-        <h1 className="auth-title-centered">Esqueci minha senha</h1>
-        <p className="auth-subtitle-centered">
-          Informe seu e-mail e enviaremos um link para redefinir sua senha.
-        </p>
+    <div data-scope="auth" className="auth-page">
+      <AuthHeader backTo="/login" backLabel="Voltar ao login" />
+      <AuthCard title="Esqueci minha senha" subtitle="Informe seu e-mail e enviaremos um link para redefinir sua senha.">
 
         {error && (
-          <div className="alert alert-error">
+          <Alert variant="destructive" className="mb-4">
             {error}
-          </div>
+          </Alert>
         )}
 
         {success && (
-          <div className="alert alert-success">
+          <Alert className="mb-4">
             {success}
-          </div>
+          </Alert>
         )}
 
         {!success && (
           <form onSubmit={handleSubmit(onSubmit)}>
-            <div className="form-group auth-form-group-spaced">
-              <label className="form-label">E-mail</label>
-              <input
+            <div className="mb-6 grid gap-2">
+              <Label htmlFor="email">E-mail</Label>
+              <Input
                 type="email"
-                className={`form-input ${errors.email ? 'error' : ''}`}
+                aria-invalid={!!errors.email} aria-describedby={errors.email ? "email-error" : undefined}
                 placeholder="seu@email.com"
+                id="email"
+                autoComplete="email"
                 {...register('email')}
               />
-              {errors.email && <span className="form-error-text">{errors.email.message}</span>}
+              {errors.email && <span id="email-error" className="text-sm text-destructive" role="alert">{errors.email.message}</span>}
             </div>
 
-            <button type="submit" className="btn btn-primary btn-full" disabled={isLoading}>
+            <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
               {isLoading ? 'Enviando...' : 'Enviar link'}
-            </button>
+            </Button>
           </form>
         )}
 
-        <div className="auth-footer-centered">
+        <AuthCardFooter>
           <Link to="/login" className="font-semibold">Voltar ao login</Link>
-        </div>
-      </div>
+        </AuthCardFooter>
+      </AuthCard>
     </div>
   );
 }

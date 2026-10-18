@@ -1,3 +1,7 @@
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Alert } from '../../components/ui/alert';
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -8,7 +12,7 @@ import { authService } from '../../features/auth/authService';
 import { AppError } from '../../shared/api/errors';
 import { AuthHeader } from '../../features/auth/components/AuthHeader';
 import { AuthCard, AuthCardFooter } from '../../features/auth/components/AuthCard';
-import './ConfirmEmailPage.css';
+import './styles.css';
 
 const confirmEmailSchema = z.object({
   code: z.string()
@@ -84,47 +88,49 @@ export function ConfirmEmailPage() {
           <strong>{email || 'seu e-mail'}</strong>. Insira-o abaixo para concluir o cadastro. </>}>
 
         {error && (
-          <div className="alert alert-error">
+          <Alert variant="destructive" className="mb-4">
             {error}
-          </div>
+          </Alert>
         )}
 
         {success && (
-          <div className="alert alert-success">
+          <Alert className="mb-4">
             {success}
-          </div>
+          </Alert>
         )}
 
         <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="form-group auth-form-group-spaced">
-            <label className="form-label">Código de confirmação</label>
-            <input
+          <div className="mb-6 grid gap-2">
+            <Label htmlFor="code">Código de confirmação</Label>
+            <Input
               type="text"
               inputMode="numeric"
               autoComplete="one-time-code"
               maxLength={6}
-              className={`form-input ${errors.code ? 'error' : ''}`}
+              aria-invalid={!!errors.code} aria-describedby={errors.code ? "code-error" : undefined}
               placeholder="000000"
-              {...register('code')}
+              id="code"
+                
+                {...register('code')}
             />
-            {errors.code && <span className="form-error-text">{errors.code.message}</span>}
+            {errors.code && <span id="code-error" className="text-sm text-destructive" role="alert">{errors.code.message}</span>}
           </div>
 
-          <button type="submit" className="btn btn-primary btn-full" disabled={isLoading}>
+          <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
             {isLoading ? 'Confirmando...' : 'Confirmar e criar conta'}
-          </button>
+          </Button>
         </form>
 
         <AuthCardFooter>
           Não recebeu o código?{' '}
-          <button
+          <Button
             type="button"
-            className="link-button font-semibold"
+            variant="link" className="h-auto p-0 font-semibold"
             onClick={handleResend}
             disabled={isResending}
           >
             {isResending ? 'Reenviando...' : 'Reenviar código'}
-          </button>
+          </Button>
         </AuthCardFooter>
       </AuthCard>
     </div>
