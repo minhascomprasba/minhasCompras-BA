@@ -1,3 +1,5 @@
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
 import './NotFoundPage.css';
@@ -7,10 +9,11 @@ export function NotFoundPage() {
 
   return (
     <div data-scope="not-found" className="not-found-container">
-      <div className="not-found-content">
+      <Card className="not-found-content">
         {/* Ilustração temática: Sacola de compras com uma Lupa */}
         <div className="not-found-illustration-wrapper">
           <svg 
+            aria-hidden="true"
             className="not-found-illustration" 
             width="120" 
             height="120" 
@@ -36,17 +39,15 @@ export function NotFoundPage() {
         </p>
 
         <div className="not-found-actions">
-          {isAuthenticated ? (
-            <Link to="/dashboard" className="btn btn-primary btn-neon">
-              Ir para o Dashboard
-            </Link>
-          ) : (
-            <Link to="/" className="btn btn-primary btn-neon">
-              Ir para a Página Inicial
-            </Link>
-          )}
+          <Button
+            render={<Link to={isAuthenticated ? '/dashboard' : '/'} />}
+            nativeButton={false}
+            className="btn btn-primary btn-neon"
+          >
+            {isAuthenticated ? 'Ir para o Dashboard' : 'Ir para a Página Inicial'}
+          </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

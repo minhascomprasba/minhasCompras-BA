@@ -10,6 +10,9 @@
   }
 
   .not-found-content {
+    display: block;
+    color: var(--text-primary);
+    --tw-ring-shadow: 0 0 #0000;
     text-align: center;
     width: 100%;
     max-width: 480px;
@@ -64,6 +67,16 @@
     line-height: 1.6;
   }
 
+  .not-found-actions .btn {
+    height: auto;
+    white-space: normal;
+    color: white;
+  }
+
+  .not-found-actions .btn:hover {
+    color: white;
+  }
+
   .not-found-actions {
     display: flex;
     justify-content: center;
@@ -71,6 +84,9 @@
 
   @media (max-width: 480px) {
     .not-found-content {
+    display: block;
+    color: var(--text-primary);
+    --tw-ring-shadow: 0 0 #0000;
       padding: 2.5rem 1.25rem;
     }
     .not-found-code {
