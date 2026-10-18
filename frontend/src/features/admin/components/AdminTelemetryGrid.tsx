@@ -1,4 +1,4 @@
-import './AdminTelemetryGrid.css';
+import { Card } from '../../../components/ui/card';
 import type { AdminTelemetria, QualidadeCatalogo, TelemetriaSlice } from '../types';
 import { InfoTooltip } from './InfoTooltip';
 
@@ -30,10 +30,11 @@ interface DonutRingProps {
 function DonutRing({ slices }: DonutRingProps) {
   return (
     <div
-      className="admin-donut-ring"
-      style={{ background: buildGradient(slices) }}
+      className="relative size-28 shrink-0 rounded-full"
+      aria-hidden="true"
+      style={{ background: slices.some(slice => slice.percentual > 0) ? buildGradient(slices) : 'var(--muted)' }}
     >
-      <div className="admin-donut-hole" />
+      <div className="absolute inset-0 m-auto size-21 rounded-full bg-card" />
     </div>
   );
 }
@@ -45,20 +46,20 @@ interface DonutLegendProps {
 
 function DonutLegend({ slices, total }: DonutLegendProps) {
   return (
-    <ul className="admin-donut-legend">
+    <ul className="m-0 flex list-none flex-col gap-2 p-0">
       {slices.map((slice) => (
-        <li key={slice.label} className="admin-donut-legend-item">
-          <span className="admin-donut-legend-label">
-            <span className="admin-donut-legend-color" style={{ background: slice.color }} />
+        <li key={slice.label} className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
+          <span className="flex items-center gap-2">
+            <span className="inline-block size-3 shrink-0 rounded-sm" style={{ background: slice.color }} />
             {slice.label}
           </span>
-          <span className="admin-donut-legend-value">{slice.percentual}%</span>
+          <span className="font-medium text-foreground tabular-nums">{slice.percentual}%</span>
         </li>
       ))}
       {total !== undefined && (
-        <li className="admin-donut-legend-item">
-          <span className="admin-donut-legend-label">Total no período</span>
-          <span className="admin-donut-legend-value">{total}</span>
+        <li className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
+          <span className="flex items-center gap-2">Total no período</span>
+          <span className="font-medium text-foreground tabular-nums">{total}</span>
         </li>
       )}
     </ul>
@@ -73,7 +74,7 @@ function CatalogQuality({ qualidade }: { qualidade: QualidadeCatalogo }) {
 
   return (
     <>
-      <div className="admin-donut-wrapper">
+      <div className="flex h-32 items-center justify-center">
         <DonutRing slices={slices} />
       </div>
       <DonutLegend slices={slices} total={qualidade.produtosCatalogados} />
@@ -83,36 +84,36 @@ function CatalogQuality({ qualidade }: { qualidade: QualidadeCatalogo }) {
 
 export function AdminTelemetryGrid({ telemetria }: AdminTelemetryGridProps) {
   return (
-    <div className="admin-telemetry-grid">
-      <div className="card admin-telemetry-card">
-        <div className="admin-telemetry-title-row">
-          <h3 className="admin-telemetry-title">Canais de Entrada</h3>
+    <div className="grid gap-6 lg:grid-cols-3">
+      <Card className="gap-4 px-4">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="m-0 text-base font-medium text-foreground">Canais de Entrada</h3>
           <InfoTooltip content={CHANNELS_TOOLTIP} />
         </div>
-        <div className="admin-donut-wrapper">
+        <div className="flex h-32 items-center justify-center">
           <DonutRing slices={telemetria.canaisImportacao} />
         </div>
         <DonutLegend slices={telemetria.canaisImportacao} />
-      </div>
+      </Card>
 
-      <div className="card admin-telemetry-card">
-        <div className="admin-telemetry-title-row">
-          <h3 className="admin-telemetry-title">Formas de Pagamento</h3>
+      <Card className="gap-4 px-4">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="m-0 text-base font-medium text-foreground">Formas de Pagamento</h3>
           <InfoTooltip content={PAYMENTS_TOOLTIP} />
         </div>
-        <div className="admin-donut-wrapper">
+        <div className="flex h-32 items-center justify-center">
           <DonutRing slices={telemetria.meiosPagamento} />
         </div>
         <DonutLegend slices={telemetria.meiosPagamento} />
-      </div>
+      </Card>
 
-      <div className="card admin-telemetry-card">
-        <div className="admin-telemetry-title-row">
-          <h3 className="admin-telemetry-title">Produtos com código de barras</h3>
+      <Card className="gap-4 px-4">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="m-0 text-base font-medium text-foreground">Produtos com código de barras</h3>
           <InfoTooltip content={CATALOG_TOOLTIP} />
         </div>
         <CatalogQuality qualidade={telemetria.qualidadeCatalogo} />
-      </div>
+      </Card>
     </div>
   );
 }

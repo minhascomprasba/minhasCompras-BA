@@ -1,6 +1,5 @@
-import './UsersPage.css';
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAdminUsuarios, useDeleteUsuario, useUpdateUsuarioRole } from '../../features/admin/hooks/useAdminData';
 import { AdminUsersTable } from '../../features/admin/components/AdminUsersTable';
 import { InfoTooltip } from '../../features/admin/components/InfoTooltip';
@@ -9,7 +8,13 @@ import type { UserRole } from '../../features/auth/authService';
 import { ROLE_LABELS } from '../../features/auth/authService';
 import { useAuth } from '../../features/auth/AuthContext';
 
-import './styles.css';
+import { Alert } from '../../components/ui/alert';
+import { Button } from '../../components/ui/button';
+import { Card, CardContent } from '../../components/ui/card';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { NativeSelect } from '../../components/ui/native-select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 const PAGE_SIZE = 20;
 
 const ROLES_TOOLTIP =
@@ -23,6 +28,7 @@ const ROLE_FILTERS: { value: '' | UserRole; label: string }[] = [
 ];
 
 export function UsersPage() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
@@ -99,130 +105,63 @@ export function UsersPage() {
   const resumo = data?.resumo_perfis;
 
   return (
-    <div data-scope="admin" className="container admin-container">
-      <div className="admin-header">
-        <div>
-          <div className="admin-users-title-row">
-            <h1 className="admin-title">Perfis de Acesso</h1>
+    <div data-scope="admin" className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 text-foreground sm:px-6 sm:py-8">
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0 space-y-2">
+          <div className="flex items-center gap-2">
+            <h1 className="mb-0 text-2xl font-semibold text-foreground">Perfis de Acesso</h1>
             <InfoTooltip content={ROLES_TOOLTIP} />
           </div>
-          <p className="admin-subtitle">
+          <div className="text-sm text-muted-foreground">
             Governança de permissões da equipe do projeto de extensão
-            {resumo
-              ? ` — ${resumo.SUPER_ADMIN ?? 0} gestores principais, ${resumo.ADMIN ?? 0} gestores e ${resumo.USER ?? 0} usuários`
-              : ''}
-          </p>
-        </div>
-        <Link to="/admin" className="btn btn-secondary btn-sm">
-          Voltar à gestão
-        </Link>
-      </div>
-
-      <div className="card admin-users-card">
-        <div className="admin-users-filters">
-          <input
-            type="search"
-            className="form-input"
-            placeholder="Buscar por e-mail"
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-          />
-          <select
-            className="form-input admin-role-select"
-            value={roleFilter}
-            onChange={(event) => {
-              setRoleFilter(event.target.value as '' | UserRole);
-              setPage(1);
-            }}
-          >
-            {ROLE_FILTERS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {feedback && (
-          <div className={`alert ${feedback.type === 'error' ? 'alert-error' : 'alert-success-custom'}`}>
-            <span style={{ fontSize: '1.2rem' }}>{feedback.type === 'error' ? '⚠️' : '✓'}</span>
-            <span>{feedback.message}</span>
+            {resumo ? ` — ${resumo.SUPER_ADMIN ?? 0} gestores principais, ${resumo.ADMIN ?? 0} gestores e ${resumo.USER ?? 0} usuários` : ''}
           </div>
-        )}
-
-        {isLoading ? (
-          <div className="admin-users-placeholder">Carregando usuários...</div>
-        ) : isError ? (
-          <div className="alert alert-error">
-            <span style={{ fontSize: '1.2rem' }}>⚠️</span>
-            <span>{error?.message || 'Não foi possível carregar os usuários.'}</span>
-          </div>
-        ) : (
-          <>
-            <AdminUsersTable
-              usuarios={data?.data ?? []}
-              currentUserId={user?.id}
-              pendingUsuarioId={updateRole.isPending ? updateRole.variables?.usuarioId ?? null : null}
-              onRoleChange={handleRoleChange}
-              onDelete={handleDeleteRequest}
-            />
-
-            {totalPages > 1 && (
-              <div className="admin-users-pagination">
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage((current) => Math.max(1, current - 1))}
-                >
-                  Anterior
-                </button>
-                <span>
-                  Página {page} de {totalPages} • {total} usuários
-                </span>
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-                >
-                  Próxima
-                </button>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      {usuarioParaExcluir && (
-        <div className="modal-overlay" onClick={() => !deleteUsuario.isPending && setUsuarioParaExcluir(null)}>
-          <div className="card modal-card" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-            <h2 className="admin-title" style={{ fontSize: '1.25rem' }}>Excluir usuário</h2>
-            <p>
-              Tem certeza que deseja excluir <strong>{usuarioParaExcluir.email}</strong>
-              {' '}({ROLE_LABELS[usuarioParaExcluir.role]})? Essa ação não pode ser desfeita.
-            </p>
-            <div className="modal-actions">
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                disabled={deleteUsuario.isPending}
-                onClick={() => setUsuarioParaExcluir(null)}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="btn btn-danger btn-sm"
-                disabled={deleteUsuario.isPending}
-                onClick={handleDeleteConfirm}
-              >
-                {deleteUsuario.isPending ? 'Excluindo...' : 'Excluir'}
-              </button>
+        </div>
+        <Button type="button" variant="outline" onClick={() => navigate('/admin')}>Voltar à gestão</Button>
+      </header>
+      <Card>
+        <CardContent className="space-y-5">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-2">
+              <Label htmlFor="admin-user-search">Buscar por e-mail</Label>
+              <Input id="admin-user-search" type="search" placeholder="Buscar por e-mail" value={searchInput} onChange={event => setSearchInput(event.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="admin-user-role">Perfil de acesso</Label>
+              <NativeSelect id="admin-user-role" value={roleFilter} onChange={event => { setRoleFilter(event.target.value as '' | UserRole); setPage(1); }}>
+                {ROLE_FILTERS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </NativeSelect>
             </div>
           </div>
-        </div>
-      )}
+          {feedback && <Alert variant={feedback.type === 'error' ? 'destructive' : 'default'} className={feedback.type === 'success' ? 'border-primary/30 bg-primary/10 text-primary' : undefined}>{feedback.message}</Alert>}
+          {isLoading ? <div role="status" className="py-12 text-center text-muted-foreground">Carregando usuários...</div> : isError ? (
+            <Alert variant="destructive">{error?.message || 'Não foi possível carregar os usuários.'}</Alert>
+          ) : (
+            <>
+              <AdminUsersTable usuarios={data?.data ?? []} currentUserId={user?.id} pendingUsuarioId={updateRole.isPending ? updateRole.variables?.usuarioId ?? null : null} onRoleChange={handleRoleChange} onDelete={handleDeleteRequest} />
+              {totalPages > 1 && <nav aria-label="Paginação de usuários" className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+                <Button type="button" variant="outline" disabled={page <= 1} onClick={() => setPage(current => Math.max(1, current - 1))}>Anterior</Button>
+                <span className="text-sm text-muted-foreground">Página {page} de {totalPages} • {total} usuários</span>
+                <Button type="button" variant="outline" disabled={page >= totalPages} onClick={() => setPage(current => Math.min(totalPages, current + 1))}>Próxima</Button>
+              </nav>}
+            </>
+          )}
+        </CardContent>
+      </Card>
+      <Dialog open={!!usuarioParaExcluir} onOpenChange={open => { if (!open && !deleteUsuario.isPending) setUsuarioParaExcluir(null); }}>
+        <DialogContent className="app-shell-theme space-y-5">
+          <DialogHeader>
+            <DialogTitle>Excluir usuário</DialogTitle>
+            <DialogDescription>
+              {usuarioParaExcluir && <>Tem certeza que deseja excluir <strong>{usuarioParaExcluir.email}</strong> ({ROLE_LABELS[usuarioParaExcluir.role]})? Essa ação não pode ser desfeita.</>}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <Button type="button" variant="outline" disabled={deleteUsuario.isPending} onClick={() => setUsuarioParaExcluir(null)}>Cancelar</Button>
+            <Button type="button" variant="destructive" disabled={deleteUsuario.isPending} onClick={handleDeleteConfirm}>{deleteUsuario.isPending ? 'Excluindo...' : 'Excluir'}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

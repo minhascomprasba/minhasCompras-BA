@@ -1,4 +1,7 @@
-import './AdminUsersTable.css';
+import { Button } from '../../../components/ui/button';
+import { NativeSelect } from '../../../components/ui/native-select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/table';
+import { Badge } from '../../../components/ui/badge';
 import type { UserRole } from '../../auth/authService';
 import { ROLE_LABELS } from '../../auth/authService';
 import type { AdminUsuario } from '../types';
@@ -30,40 +33,41 @@ export function AdminUsersTable({
   onDelete,
 }: AdminUsersTableProps) {
   return (
-    <div className="table-container">
-      <table className="table admin-users-table">
-        <thead>
-          <tr>
-            <th>E-mail</th>
-            <th>Perfil</th>
-            <th style={{ textAlign: 'right' }}>Notas</th>
-            <th style={{ textAlign: 'right' }}>Itens</th>
-            <th>Cadastro</th>
-            <th>Última nota</th>
-            <th style={{ textAlign: 'right' }}>Ações</th>
-          </tr>
-        </thead>
-        <tbody>
+    <div className="min-w-0 overflow-x-auto">
+      <Table aria-label="Perfis de acesso">
+        <TableHeader>
+          <TableRow>
+            <TableHead scope="col">E-mail</TableHead>
+            <TableHead scope="col">Perfil</TableHead>
+            <TableHead scope="col" className="text-right tabular-nums">Notas</TableHead>
+            <TableHead scope="col" className="text-right tabular-nums">Itens</TableHead>
+            <TableHead scope="col">Cadastro</TableHead>
+            <TableHead scope="col">Última nota</TableHead>
+            <TableHead scope="col" className="text-right tabular-nums">Ações</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {usuarios.length === 0 ? (
-            <tr>
-              <td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
+            <TableRow>
+              <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
                 Nenhum usuário encontrado com os filtros atuais.
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ) : (
             usuarios.map((usuario) => {
               const isSelf = usuario.id === currentUserId;
               const isRowPending = pendingUsuarioId === usuario.id;
 
               return (
-                <tr key={usuario.id}>
-                  <td>
+                <TableRow key={usuario.id}>
+                  <TableCell>
                     {usuario.email}
-                    {isSelf && <span className="badge badge-outline admin-self-badge">você</span>}
-                  </td>
-                  <td>
-                    <select
-                      className="form-input admin-role-select"
+                    {isSelf && <Badge variant="outline" className="ml-2">você</Badge>}
+                  </TableCell>
+                  <TableCell>
+                    <NativeSelect
+                      className="min-w-44"
+                      aria-label={`Perfil de ${usuario.email}`}
                       value={usuario.role}
                       disabled={isSelf || isRowPending}
                       title={
@@ -78,16 +82,16 @@ export function AdminUsersTable({
                           {ROLE_LABELS[role]}
                         </option>
                       ))}
-                    </select>
-                  </td>
-                  <td style={{ textAlign: 'right' }}>{usuario.notas_count}</td>
-                  <td style={{ textAlign: 'right' }}>{usuario.itens_count}</td>
-                  <td>{formatDate(usuario.created_at)}</td>
-                  <td>{formatDate(usuario.ultima_atividade)}</td>
-                  <td style={{ textAlign: 'right' }}>
-                    <button
+                    </NativeSelect>
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">{usuario.notas_count}</TableCell>
+                  <TableCell className="text-right tabular-nums">{usuario.itens_count}</TableCell>
+                  <TableCell>{formatDate(usuario.created_at)}</TableCell>
+                  <TableCell>{formatDate(usuario.ultima_atividade)}</TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    <Button
                       type="button"
-                      className="btn btn-danger btn-sm"
+                      variant="destructive"
                       disabled={isSelf || isRowPending}
                       title={
                         isSelf
@@ -97,14 +101,14 @@ export function AdminUsersTable({
                       onClick={() => onDelete(usuario)}
                     >
                       Apagar
-                    </button>
-                  </td>
-                </tr>
+                    </Button>
+                  </TableCell>
+                </TableRow>
               );
             })
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

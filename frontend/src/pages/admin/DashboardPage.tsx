@@ -1,4 +1,3 @@
-import './DashboardPage.css';
 import { useState } from 'react';
 import { useAdminData } from '../../features/admin/hooks/useAdminData';
 import { AdminHeader } from '../../features/admin/components/AdminHeader';
@@ -12,7 +11,8 @@ import { AdminLogsTable } from '../../features/admin/components/AdminLogsTable';
 import type { AdminPeriod } from '../../features/admin/types';
 import { useAuth } from '../../features/auth/AuthContext';
 
-import './styles.css';
+import { Alert } from '../../components/ui/alert';
+import { LoaderCircle } from 'lucide-react';
 function currentMonthKey(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -31,44 +31,14 @@ export function DashboardPage() {
   );
 
   if (isLoading) {
-    return (
-      <div className="container dashboard-loading-container">
-        <div className="dashboard-spinner-wrap">
-          <div className="dashboard-spinner"></div>
-          <span style={{ color: 'var(--text-secondary)' }}>Carregando indicadores...</span>
-        </div>
-      </div>
-    );
+    return <div role="status" className="flex min-h-80 items-center justify-center gap-2 text-muted-foreground"><LoaderCircle className="size-6 animate-spin" aria-hidden="true" />Carregando indicadores...</div>;
   }
-
   if (isError || !data) {
-    return (
-      <div className="container dashboard-error-container">
-        <div className="dashboard-error-card">
-          <svg
-            width="48"
-            height="48"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#ef4444"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{ marginBottom: '12px' }}
-          >
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-          </svg>
-          <h2>Erro ao carregar indicadores</h2>
-          <p>{error?.message || 'Ocorreu um erro ao carregar os dados de gestão. Tente novamente mais tarde.'}</p>
-        </div>
-      </div>
-    );
+    return <div className="mx-auto w-full max-w-6xl px-4 py-8"><Alert variant="destructive"><strong>Erro ao carregar indicadores: </strong>{error?.message || 'Ocorreu um erro ao carregar os dados de gestão. Tente novamente mais tarde.'}</Alert></div>;
   }
 
   return (
-    <div data-scope="admin" className="container admin-container">
+    <div data-scope="admin" className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 text-foreground sm:px-6 sm:py-8">
       <AdminHeader
         period={period}
         onPeriodChange={setPeriod}
@@ -83,12 +53,12 @@ export function DashboardPage() {
 
       <AdminKpiGrid kpis={data.kpis} />
 
-      <div className="admin-charts-grid">
+      <div className="grid gap-6 lg:grid-cols-2">
         <AdminGrowthChart pontos={data.crescimentoAdesao} bucketLabel={data.bucketLabel} />
         <AdminScraperChart dias={data.performanceScraper} bucketLabel={data.bucketLabel} />
       </div>
 
-      <div className="admin-charts-grid">
+      <div className="grid gap-6 lg:grid-cols-2">
         <AdminTopProducts produtos={data.topProdutos} />
         <AdminMap alcance={data.alcanceGeografico} />
       </div>

@@ -1,4 +1,5 @@
-import './AdminTopProducts.css';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/table';
+import { Card } from '../../../components/ui/card';
 import type { ReactElement } from 'react';
 import type { TopProduto } from '../types';
 import { MetricHead } from './MetricHead';
@@ -35,78 +36,78 @@ const IconNeutral = (
 
 const variationVisual = (variacao: number): { className: string; icon: ReactElement } => {
   if (variacao > 0) {
-    return { className: 'admin-variation--up', icon: IconUp };
+    return { className: 'text-primary', icon: IconUp };
   }
   if (variacao < 0) {
-    return { className: 'admin-variation--down', icon: IconDown };
+    return { className: 'text-red-300', icon: IconDown };
   }
-  return { className: 'admin-variation--neutral', icon: IconNeutral };
+  return { className: 'text-muted-foreground', icon: IconNeutral };
 };
 
 export function AdminTopProducts({ produtos }: AdminTopProductsProps) {
   return (
-    <div className="card admin-chart-card">
+    <Card className="min-w-0 gap-4 px-4">
       <MetricHead title="Top Produtos na Bahia" tooltip={TOOLTIP} />
 
-      <div className="admin-top-products-legend">
-        <p className="admin-top-products-legend-note">
+      <div className="space-y-2">
+        <div className="m-0 text-xs text-muted-foreground">
           Variação do preço médio em relação ao período anterior
-        </p>
-        <div className="admin-chart-legend">
-          <span className="admin-chart-legend-item">
-            <span className="admin-variation admin-variation--up">{IconUp}</span>
+        </div>
+        <div className="flex flex-wrap gap-4">
+          <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="inline-flex items-center justify-end gap-1 whitespace-nowrap text-primary">{IconUp}</span>
             Subiu
           </span>
-          <span className="admin-chart-legend-item">
-            <span className="admin-variation admin-variation--down">{IconDown}</span>
+          <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="inline-flex items-center justify-end gap-1 whitespace-nowrap text-red-300">{IconDown}</span>
             Caiu
           </span>
-          <span className="admin-chart-legend-item">
-            <span className="admin-variation admin-variation--neutral">{IconNeutral}</span>
+          <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="inline-flex items-center justify-end gap-1 whitespace-nowrap text-muted-foreground">{IconNeutral}</span>
             Estável / sem base
           </span>
         </div>
       </div>
 
-      <div className="table-container">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Produto</th>
-              <th style={{ textAlign: 'right' }}>Compras</th>
-              <th style={{ textAlign: 'right' }}>Preço Médio</th>
-              <th style={{ textAlign: 'right' }}>Variação</th>
-            </tr>
-          </thead>
-          <tbody>
+      <div className="min-w-0 overflow-x-auto">
+        <Table aria-label="Produtos mais comprados">
+          <TableHeader>
+            <TableRow>
+              <TableHead scope="col">Produto</TableHead>
+              <TableHead scope="col" className="text-right tabular-nums">Compras</TableHead>
+              <TableHead scope="col" className="text-right tabular-nums">Preço Médio</TableHead>
+              <TableHead scope="col" className="text-right tabular-nums">Variação</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {produtos.length === 0 ? (
-              <tr>
-                <td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
+              <TableRow>
+                <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
                   Nenhum item catalogado no período selecionado.
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ) : (
               produtos.map((produto) => {
                 const variation = variationVisual(produto.variacaoPercentual);
                 const absVariation = `${Math.abs(produto.variacaoPercentual).toFixed(1)}%`;
                 return (
-                  <tr key={produto.nome}>
-                    <td>{produto.nome}</td>
-                    <td style={{ textAlign: 'right' }}>{produto.ocorrencias}</td>
-                    <td style={{ textAlign: 'right' }}>{formatBRL(produto.precoMedio)}</td>
-                    <td style={{ textAlign: 'right' }}>
-                      <span className={`admin-variation ${variation.className}`}>
+                  <TableRow key={produto.nome}>
+                    <TableCell>{produto.nome}</TableCell>
+                    <TableCell className="text-right tabular-nums">{produto.ocorrencias}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatBRL(produto.precoMedio)}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      <span className={`inline-flex items-center justify-end gap-1 whitespace-nowrap ${variation.className}`}>
                         {variation.icon}
                         {absVariation}
                       </span>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })
             )}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
-    </div>
+    </Card>
   );
 }

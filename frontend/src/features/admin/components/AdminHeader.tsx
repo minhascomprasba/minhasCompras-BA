@@ -1,5 +1,5 @@
-import './AdminHeader.css';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '../../../components/ui/button';
 import { InfoTooltip } from './InfoTooltip';
 import { AdminPeriodPicker } from './AdminPeriodPicker';
 import type { AdminPeriod } from '../types';
@@ -30,26 +30,26 @@ export function AdminHeader({
   isRefreshing = false,
   showUsersLink = false,
 }: AdminHeaderProps) {
+  const navigate = useNavigate();
   return (
-    <div className="admin-header">
+    <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
       <div>
-        <h1 className="admin-title">Painel de Gestão</h1>
-        <p className="admin-subtitle">
+        <h1 className="mb-1 text-2xl font-semibold text-foreground">Painel de Gestão</h1>
+        <div className="text-sm text-muted-foreground">
           Acompanhamento de uso, compras e adesão ao projeto
           {janelaLabel ? ` — ${janelaLabel}` : ''}
           {isRefreshing ? ' • atualizando...' : ''}
-        </p>
+        </div>
       </div>
 
-      <div className="admin-header-actions">
+      <div className="flex flex-wrap items-center gap-3">
         {showUsersLink && (
-          <Link to="/admin/usuarios" className="btn btn-secondary btn-sm">
+          <Button type="button" variant="outline" onClick={() => navigate('/admin/usuarios')}>
             Gerenciar usuários
-          </Link>
+          </Button>
         )}
 
-        {/* Componente Modular do Seletor */}
-        <div className="period-selector admin-period-selector">
+        <div className="flex items-center gap-2">
           <AdminPeriodPicker
             period={period}
             onPeriodChange={onPeriodChange}

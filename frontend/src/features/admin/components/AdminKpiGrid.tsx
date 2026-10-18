@@ -1,4 +1,4 @@
-import './AdminKpiGrid.css';
+import { Card } from '../../../components/ui/card';
 import type { ReactElement } from 'react';
 import type { AdminKpi, KpiIconKey } from '../types';
 import { InfoTooltip } from './InfoTooltip';
@@ -68,36 +68,33 @@ const kpiVisuals: Record<KpiIconKey, { tone: string; icon: ReactElement }> = {
 };
 
 const toneClass: Record<string, string> = {
-  blue: 'admin-kpi-icon--blue',
-  green: 'admin-kpi-icon--green',
-  amber: 'admin-kpi-icon--amber',
-  pink: 'admin-kpi-icon--pink',
-  red: 'admin-kpi-icon--red',
+  blue: 'bg-blue-400/10 text-blue-300',
+  green: 'bg-primary/10 text-primary',
+  amber: 'bg-amber-400/10 text-amber-300',
+  pink: 'bg-pink-400/10 text-pink-300',
+  red: 'bg-red-400/10 text-red-300',
 };
 
 export function AdminKpiGrid({ kpis }: AdminKpiGridProps) {
   return (
-    <div className="admin-kpi-grid">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       {kpis.map((kpi) => {
         const visual = kpiVisuals[kpi.icon];
         return (
-          <div key={kpi.id} className="card admin-kpi-card">
-            <div className={`admin-kpi-icon-wrap ${toneClass[visual.tone] ?? ''}`}>
-              {visual.icon}
-            </div>
-            <div className="admin-kpi-content">
-              <div className="admin-kpi-label-row">
-                <p className="admin-kpi-label">{kpi.label}</p>
-                <InfoTooltip content={kpi.description} />
+          <Card key={kpi.id} className="row-span-4 grid min-w-0 grid-rows-subgrid gap-2 px-4">
+            <div className="flex items-start gap-2">
+              <div className={`flex size-8 shrink-0 items-center justify-center rounded-full [&_svg]:size-4 ${toneClass[visual.tone] ?? ''}`}>
+                {visual.icon}
               </div>
-              <p className="admin-kpi-value">{kpi.value}</p>
-              {kpi.extraMetric && (
-                <p className="admin-kpi-extra">
-                  {kpi.extraMetric.label}: {kpi.extraMetric.value}
-                </p>
-              )}
-              <p className={`admin-kpi-trend admin-kpi-trend--${kpi.trendDirection}`}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <div className="min-w-0 flex-1 self-center text-xs font-medium text-muted-foreground">{kpi.label}</div>
+              <InfoTooltip content={kpi.description} />
+            </div>
+            <div className="min-w-0 text-xl font-bold break-words text-foreground tabular-nums">{kpi.value}</div>
+            <div className="min-w-0 text-xs break-words text-muted-foreground">
+              {kpi.extraMetric && <>{kpi.extraMetric.label}: {kpi.extraMetric.value}</>}
+            </div>
+              <div className={`m-0 flex min-w-0 items-start gap-1 text-xs ${kpi.trendDirection === 'up' ? 'text-primary' : 'text-red-300'}`}>
+                <svg className="mt-0.5 shrink-0" aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   {kpi.trendDirection === 'up' ? (
                     <>
                       <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
@@ -110,10 +107,9 @@ export function AdminKpiGrid({ kpis }: AdminKpiGridProps) {
                     </>
                   )}
                 </svg>
-                {kpi.trendLabel}
-              </p>
-            </div>
-          </div>
+                <span className="min-w-0 break-words">{kpi.trendLabel}</span>
+              </div>
+          </Card>
         );
       })}
     </div>

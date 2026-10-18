@@ -1,4 +1,5 @@
-import './AdminScraperChart.css';
+import { AdminChartTooltip } from './AdminChartTooltip';
+import { Card } from '../../../components/ui/card';
 import {
   ResponsiveContainer,
   BarChart,
@@ -26,64 +27,38 @@ export function AdminScraperChart({ dias, bucketLabel }: AdminScraperChartProps)
     0
   );
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="chart-tooltip">
-          <p className="chart-tooltip-title" style={{ marginBottom: '0.35rem' }}>
-            {bucketLabel}: {label}
-          </p>
-          {payload.map((entry: any, index: number) => (
-            <p
-              key={index}
-              style={{
-                margin: 0,
-                fontSize: '0.8rem',
-                color: entry.color,
-                fontWeight: 500,
-              }}
-            >
-              {entry.name}: {entry.value}
-            </p>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
-    <div className="card admin-chart-card">
+    <Card className="min-w-0 gap-4 px-4">
       <MetricHead title="Desempenho das Importações" tooltip={TOOLTIP_INFO} />
 
-      <div className="admin-chart-legend">
-        <span className="admin-chart-legend-item">
-          <span className="admin-chart-legend-dot admin-chart-legend-dot--completed" />
+      <div className="flex flex-wrap gap-4">
+        <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="size-2.5 shrink-0 rounded-sm bg-primary" />
           Concluídas
         </span>
-        <span className="admin-chart-legend-item">
-          <span className="admin-chart-legend-dot admin-chart-legend-dot--expired" />
+        <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="size-2.5 shrink-0 rounded-sm bg-amber-400" />
           Tempo Esgotado
         </span>
-        <span className="admin-chart-legend-item">
-          <span className="admin-chart-legend-dot admin-chart-legend-dot--failed" />
+        <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="size-2.5 shrink-0 rounded-sm bg-red-400" />
           Falhas
         </span>
       </div>
 
       {totalImportacoes === 0 ? (
-        <div className="admin-chart-placeholder">
+        <div className="flex min-h-64 items-center justify-center text-center text-sm text-muted-foreground">
           Nenhuma importação registrada no período selecionado.
         </div>
       ) : (
         <div style={{ width: '100%', height: '270px', marginTop: 'auto' }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={dias} margin={{ top: 10, right: 15, left: 10, bottom: 20 }}>
-              <CartesianGrid stroke="var(--border-color)" strokeDasharray="3 3" vertical={false} />
+              <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
 
               <XAxis
                 dataKey="dia"
-                stroke="var(--text-muted)"
+                stroke="var(--muted-foreground)"
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
@@ -92,13 +67,13 @@ export function AdminScraperChart({ dias, bucketLabel }: AdminScraperChartProps)
                   value={bucketLabel}
                   position="insideBottom"
                   offset={-12}
-                  fill="var(--text-muted)"
+                  fill="var(--muted-foreground)"
                   fontSize={11}
                 />
               </XAxis>
 
               <YAxis
-                stroke="var(--text-muted)"
+                stroke="var(--muted-foreground)"
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
@@ -109,13 +84,13 @@ export function AdminScraperChart({ dias, bucketLabel }: AdminScraperChartProps)
                   angle={-90}
                   position="insideLeft"
                   offset={-2}
-                  fill="var(--text-muted)"
+                  fill="var(--muted-foreground)"
                   fontSize={11}
                   style={{ textAnchor: 'middle' }}
                 />
               </YAxis>
 
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={props => <AdminChartTooltip {...props} bucketLabel={bucketLabel} />} />
 
               <Bar
                 dataKey="completed"
@@ -141,6 +116,6 @@ export function AdminScraperChart({ dias, bucketLabel }: AdminScraperChartProps)
           </ResponsiveContainer>
         </div>
       )}
-    </div>
+    </Card>
   );
 }
