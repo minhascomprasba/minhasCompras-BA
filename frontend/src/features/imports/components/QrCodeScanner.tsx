@@ -2,6 +2,7 @@ import { LoaderCircle, SwitchCamera } from 'lucide-react';
 import { Alert } from '../../../components/ui/alert';
 import { Button } from '../../../components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../../../components/ui/sheet';
 import { useCallback, useEffect, useId, useRef, useState, type ChangeEvent } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { pickDefaultCameraId, rankBackCameras } from '../utils/pickBackCamera';
@@ -12,6 +13,7 @@ import { ImageUploadIcon } from '../../../components/ImportActionIcons';
 type ScanOutcome = void | string | null;
 
 type QrCodeScannerProps = {
+  presentation?: 'dialog' | 'drawer';
   isOpen: boolean;
   onClose: () => void;
   /**
@@ -30,6 +32,7 @@ const noopFrameError = () => undefined;
 const CAMERA_HINT_DELAY_MS = 5000;
 
 export function QrCodeScanner({
+  presentation = 'dialog',
   isOpen,
   onClose,
   onScan,
@@ -275,10 +278,11 @@ export function QrCodeScanner({
       }
     };
 
-    void startScanner();
+    const startFrame = window.requestAnimationFrame(() => void startScanner());
 
     return () => {
       cancelled = true;
+      window.cancelAnimationFrame(startFrame);
       window.clearTimeout(cameraHintTimer);
       window.clearTimeout(hintTimer);
       void stopScanner();
@@ -289,13 +293,25 @@ export function QrCodeScanner({
     void stopScanner().then(onClose);
   };
 
+  const isDrawer = presentation === 'drawer';
+  const Root = isDrawer ? Sheet : Dialog;
+  const Content = isDrawer ? SheetContent : DialogContent;
+  const Header = isDrawer ? SheetHeader : DialogHeader;
+  const Title = isDrawer ? SheetTitle : DialogTitle;
+  const Description = isDrawer ? SheetDescription : DialogDescription;
+
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) closeScanner(); }}>
-      <DialogContent className="app-shell-theme space-y-5">
-        <DialogHeader>
-          <DialogTitle>Escaneie o QR Code da nota</DialogTitle>
-          <DialogDescription>Aponte a câmera para o QR Code impresso na nota fiscal.</DialogDescription>
-        </DialogHeader>
+    <Root open={isOpen} onOpenChange={(open) => { if (!open) closeScanner(); }}>
+      <Content
+        {...(isDrawer ? { side: 'bottom' as const, showCloseButton: false } : {})}
+        className={isDrawer
+          ? 'app-shell-theme mx-auto max-h-[90dvh] w-full max-w-lg gap-5 overflow-y-auto rounded-t-2xl p-5 pb-[calc(1.25rem+var(--safe-bottom))]'
+          : 'app-shell-theme space-y-5'}
+      >
+        <Header className="p-0">
+          <Title>Escaneie o QR Code da nota</Title>
+          <Description>Aponte a câmera para o QR Code impresso na nota fiscal.</Description>
+        </Header>
 
         <div id={readerId} className="min-h-48 w-full overflow-hidden rounded-lg border border-border bg-background [&_video]:rounded-lg" />
 
@@ -328,7 +344,7 @@ export function QrCodeScanner({
           <Button type="button" variant="destructive" className="min-h-11 w-full" disabled={isFileScanning} onClick={closeScanner}>Cancelar</Button>
         </div>
         <input ref={fileInputRef} type="file" accept="image/*" className="sr-only" aria-hidden="true" tabIndex={-1} onChange={handleFileSelected} />
-      </DialogContent>
-    </Dialog>
+      </Content>
+    </Root>
   );
 }

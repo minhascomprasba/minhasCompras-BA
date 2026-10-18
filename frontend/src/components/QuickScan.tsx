@@ -46,6 +46,7 @@ export function QuickScan() {
       </Button>
 
       <QrCodeScanner
+        presentation="drawer"
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         onScan={(decodedText) => handleAccessKey(decodedText, 'QR_CODE')}
