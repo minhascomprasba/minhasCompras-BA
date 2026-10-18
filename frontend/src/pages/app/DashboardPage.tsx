@@ -19,7 +19,7 @@ export function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="container dashboard-loading-container">
+      <div data-scope="dashboard" className="container dashboard-loading-container">
         <div className="dashboard-spinner-wrap">
           <div className="dashboard-spinner"></div>
           <span style={{ color: 'var(--text-secondary)' }}>Carregando dados do painel...</span>
@@ -30,7 +30,7 @@ export function DashboardPage() {
 
   if (isError || !dashboardData) {
     return (
-      <div className="container dashboard-error-container">
+      <div data-scope="dashboard" className="container dashboard-error-container">
         <div className="dashboard-error-card">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '12px' }}>
             <circle cx="12" cy="12" r="10"></circle>
@@ -48,7 +48,7 @@ export function DashboardPage() {
 
   if (dashboardData.length === 0) {
     return (
-      <div className="container dashboard-empty-container">
+      <div data-scope="dashboard" className="container dashboard-empty-container">
         <div className="dashboard-empty-card">
           <div className="dashboard-empty-icon-wrap">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
