@@ -652,6 +652,18 @@ body.menu-open {
   flex-shrink: 0;
 }
 
+@media (min-width: 1201px) {
+  .navbar-nav {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .navbar-menu {
+    justify-content: flex-end;
+  }
+}
+
 .nav-link {
   color: var(--text-secondary);
   font-size: 0.95rem;
