@@ -24,8 +24,79 @@
     flex-wrap: wrap;
   }
 
-  .admin-logs-card .admin-users-filters + .alert,
-  .admin-logs-card > .alert {
+  .admin-users-card .admin-users-filters + .alert,
+  .admin-users-card > .alert {
     margin: 1rem 1.5rem 0;
+  }
+
+  .admin-users-placeholder {
+    position: relative;
+    flex: 1;
+    min-height: 250px;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    background-image:
+      linear-gradient(to right, var(--border-color) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--border-color) 1px, transparent 1px);
+    background-size: 100% 25%;
+    background-repeat: repeat-y;
+    border-bottom: 1px dashed var(--border-color);
+  }
+
+  .admin-users-card {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .admin-users-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .admin-users-card .table-container {
+    border: none;
+    border-radius: 0;
+  }
+
+  .role-badge {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .role-badge--admin {
+    background: rgba(58, 143, 224, 0.15);
+    color: var(--brand-blue-light);
+  }
+
+  .role-badge--super_admin {
+    background: rgba(23, 200, 95, 0.15);
+    color: var(--brand-green);
+  }
+
+  .admin-role-select {
+    flex: 0 0 auto;
+    min-width: 180px;
+    width: 100%;
+    max-width: 220px;
+    padding-right: 2rem;
+    cursor: pointer;
+  }
+
+  .admin-role-select:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
   }
 }

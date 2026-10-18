@@ -102,7 +102,7 @@ export function UsersPage() {
     <div data-scope="admin" className="container admin-container">
       <div className="admin-header">
         <div>
-          <div className="admin-logs-title-row">
+          <div className="admin-users-title-row">
             <h1 className="admin-title">Perfis de Acesso</h1>
             <InfoTooltip content={ROLES_TOOLTIP} />
           </div>
@@ -118,7 +118,7 @@ export function UsersPage() {
         </Link>
       </div>
 
-      <div className="card admin-logs-card">
+      <div className="card admin-users-card">
         <div className="admin-users-filters">
           <input
             type="search"
@@ -151,7 +151,7 @@ export function UsersPage() {
         )}
 
         {isLoading ? (
-          <div className="admin-chart-placeholder">Carregando usuários...</div>
+          <div className="admin-users-placeholder">Carregando usuários...</div>
         ) : isError ? (
           <div className="alert alert-error">
             <span style={{ fontSize: '1.2rem' }}>⚠️</span>

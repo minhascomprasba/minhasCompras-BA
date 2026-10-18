@@ -6,10 +6,53 @@
     gap: 1.5rem;
   }
 
+  .admin-chart-card {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+  }
+
+  .admin-chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .admin-chart-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+  }
+
+  .admin-chart-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
   @media (max-width: 860px) {
     .admin-charts-grid {
       grid-template-columns: 1fr;
       gap: 1rem;
     }
+  }
+
+  .admin-chart-placeholder {
+    position: relative;
+    flex: 1;
+    min-height: 250px;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    background-image:
+      linear-gradient(to right, var(--border-color) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--border-color) 1px, transparent 1px);
+    background-size: 100% 25%;
+    background-repeat: repeat-y;
+    border-bottom: 1px dashed var(--border-color);
   }
 }
