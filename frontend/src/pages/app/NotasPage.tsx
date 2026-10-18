@@ -1,199 +1,133 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { LoaderCircle, Plus } from 'lucide-react';
+import { Alert } from '../../components/ui/alert';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
+import { Card, CardContent } from '../../components/ui/card';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
 import { useNotas } from '../../features/notas/hooks/useNotasQueries';
 import { useAuth } from '../../features/auth/AuthContext';
-import './NotasPage.css';
+
+const pageSize = 10;
+const currency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
 export function NotasPage() {
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(10);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
-  const [expandedKeys, setExpandedKeys] = useState<Record<number, boolean>>({});
-  
   const { logout, user } = useAuth();
   const navigate = useNavigate();
-
-  const queryParams = {
+  const { data, isLoading, isError, error, isPlaceholderData } = useNotas(user?.id ?? null, {
     page,
     page_size: pageSize,
     ...(dateFrom && { from: dateFrom }),
     ...(dateTo && { to: dateTo }),
-  };
-
-  const { data, isLoading, isError, error } = useNotas(user?.id ?? null, queryParams);
-
-  const handleDateFilter = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPage(1);
-  };
+  });
 
   const clearFilters = () => {
     setDateFrom('');
     setDateTo('');
     setPage(1);
   };
-
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
-
-  const toggleKey = (id: number) => {
-    setExpandedKeys(prev => ({ ...prev, [id]: !prev[id] }));
-  };
-
   const isFiltered = !!(dateFrom || dateTo);
 
   return (
-    <div data-scope="notas" className="container container-medium">
-      <div className="page-header-flex">
-        <div>
-          <h1 style={{ marginBottom: '0.25rem' }}>Minhas Notas Fiscais</h1>
+    <div className="container mx-auto max-w-4xl space-y-6">
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <h1 className="mb-0 text-2xl font-semibold text-foreground">Minhas Notas Fiscais</h1>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => { logout(); navigate('/'); }}>Sair</Button>
+          <Button type="button" className="text-white" onClick={() => navigate('/importar')}>
+            <Plus aria-hidden="true" /> Nova Importação
+          </Button>
         </div>
-        <div className="flex-wrap-gap">
-          <button onClick={handleLogout} className="btn btn-secondary">
-            Sair
-          </button>
-          <Link to="/importar" className="btn btn-primary">
-            Nova Importação
-          </Link>
-        </div>
-      </div>
+      </header>
 
-      <div className="card card-filters">
-        <form onSubmit={handleDateFilter} className="filters-form-flex">
-          <div className="form-group mb-0">
-            <label className="form-label">De (Data da compra):</label>
-            <input 
-              type="date" 
-              className="form-input"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-            />
-          </div>
-          <div className="form-group mb-0">
-            <label className="form-label">Até:</label>
-            <input 
-              type="date" 
-              className="form-input"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-            />
-          </div>
-          <button type="submit" className="btn btn-primary">
-            Filtrar
-          </button>
-          {isFiltered && (
-            <button type="button" onClick={clearFilters} className="btn btn-secondary">
-              Limpar
-            </button>
-          )}
-        </form>
-      </div>
+      <Card>
+        <CardContent>
+          <form onSubmit={(event) => { event.preventDefault(); setPage(1); }} className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
+            <div className="grid min-w-0 gap-2 sm:flex-1">
+              <Label htmlFor="notas-date-from">De (Data da compra):</Label>
+              <Input id="notas-date-from" type="date" value={dateFrom} onChange={(event) => { setDateFrom(event.target.value); setPage(1); }} />
+            </div>
+            <div className="grid min-w-0 gap-2 sm:flex-1">
+              <Label htmlFor="notas-date-to">Até:</Label>
+              <Input id="notas-date-to" type="date" value={dateTo} onChange={(event) => { setDateTo(event.target.value); setPage(1); }} />
+            </div>
+            <Button type="submit" className="h-10 text-white">Filtrar</Button>
+            {isFiltered && <Button type="button" variant="outline" className="h-10" onClick={clearFilters}>Limpar</Button>}
+          </form>
+        </CardContent>
+      </Card>
 
-      {isError && (
-        <div className="alert alert-error">
-          <strong>Erro:</strong> {error.message}
-        </div>
-      )}
-
+      {isError && <Alert variant="destructive"><strong>Erro:</strong> {error.message}</Alert>}
       {isLoading && !data && (
-        <div className="text-center py-4">
-          <div className="spinner spinner-large"></div>
+        <div role="status" className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
+          <LoaderCircle className="size-6 animate-spin" aria-hidden="true" />
+          <span>Carregando notas…</span>
         </div>
       )}
 
       {data && (
         <>
           {isFiltered && data.resumo && (
-            <div className="glass-panel summary-panel">
-              <div>
-                <h3 style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '1rem', fontWeight: 500 }}>Total Gasto no Período Selecionado</h3>
-              </div>
-              <div className="summary-value">
-                {data.resumo.total_gasto_periodo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-              </div>
-            </div>
+            <Card>
+              <CardContent className="flex flex-wrap items-center justify-between gap-4">
+                <span className="text-muted-foreground">Total Gasto no Período Selecionado</span>
+                <span className="text-2xl font-bold text-primary">{currency.format(data.resumo.total_gasto_periodo)}</span>
+              </CardContent>
+            </Card>
           )}
 
           {data.data.length === 0 ? (
-            <div className="card card-empty-state">
-              <p style={{ fontSize: '1.2rem', color: 'var(--text-primary)', marginBottom: '1rem' }}>Nenhuma nota encontrada.</p>
-              {!isFiltered && <Link to="/importar" className="btn btn-secondary">Importar primeira nota</Link>}
-            </div>
+            <Card>
+              <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
+                <p className="m-0 text-lg text-foreground">Nenhuma nota encontrada.</p>
+                {!isFiltered && (
+                  <Button variant="outline" render={<Link to="/importar" />} nativeButton={false}>Importar primeira nota</Button>
+                )}
+              </CardContent>
+            </Card>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {data.data.map((nota: any) => {
-                const isExpanded = !!expandedKeys[nota.id];
-                const key = nota.codigo_acesso || '';
-                const displayKey = isExpanded ? key : `${key.substring(0, 6)}...${key.substring(key.length - 6)}`;
+            <div className="space-y-4">
+              {data.data.map((nota) => {
                 return (
-                  <div key={nota.id} className="card card-row-layout">
-                    <div>
-                      <h3 style={{ color: 'var(--text-primary)', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <span className="text-success-bold">
-                          {(nota.valor_total_nota || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                        </span>
-                      </h3>
-                      <div 
-                        className="access-key-toggle" 
-                        onClick={() => toggleKey(nota.id)}
-                        title={isExpanded ? "Clique para encolher" : "Clique para mostrar chave completa"}
-                      >
-                        <span>Chave: {displayKey}</span>
-                        <span className="access-key-toggle-icon">{isExpanded ? '▲' : '▼'}</span>
+                  <Card key={nota.id}>
+                    <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0 space-y-3">
+                        <h2 className="m-0 text-xl font-bold text-primary">{currency.format(nota.valor_total_nota ?? 0)}</h2>
+                        <div className="min-w-0 text-sm">
+                          <span className="text-muted-foreground">Chave: </span>
+                          <span className="font-mono break-all text-foreground select-text">{nota.codigo_acesso || 'Indisponível'}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Badge variant={nota.data_compra ? 'secondary' : 'outline'} className="h-auto whitespace-normal">
+                            {nota.data_compra ? `Compra em: ${new Date(nota.data_compra).toLocaleString('pt-BR')}` : 'Data da compra indisponível'}
+                          </Badge>
+                          <Badge variant="outline">Itens: {nota.itens_count ?? 0}</Badge>
+                          <Badge variant="outline" className="h-auto whitespace-normal">Pagamento: {nota.meio_pagamento || 'não capturado'}</Badge>
+                        </div>
                       </div>
-                      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
-                        {nota.data_compra ? (
-                          <span className="badge badge-primary">
-                            Compra em: {new Date(nota.data_compra).toLocaleString('pt-BR')}
-                          </span>
-                        ) : (
-                          <span className="badge badge-outline">
-                            Data da compra indisponível
-                          </span>
-                        )}
-                        <span className="badge badge-outline">Itens: {nota.itens_count || 0}</span>
-                        {nota.meio_pagamento ? (
-                          <span className="badge badge-outline">Pagamento: {nota.meio_pagamento}</span>
-                        ) : (
-                          <span className="badge badge-outline">Pagamento: não capturado</span>
-                        )}
-                      </div>
-                    </div>
-                    <Link to={`/notas/${nota.id}`} className="btn btn-secondary">
-                      Ver Detalhes
-                    </Link>
-                  </div>
+                      <Button variant="outline" render={<Link to={`/notas/${nota.id}`} />} nativeButton={false}>Ver Detalhes</Button>
+                    </CardContent>
+                  </Card>
                 );
               })}
             </div>
           )}
 
-          {/* Pagination */}
           {data.total > 0 && (
-            <div className="pagination-container">
-              <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                Página <strong style={{ color: 'var(--text-primary)' }}>{data.page}</strong> (Total: {data.total} registros)
+            <nav aria-label="Paginação de notas" className="flex flex-col items-center justify-between gap-4 border-t border-border pt-6 sm:flex-row">
+              <span className="text-sm text-muted-foreground">
+                Página <strong className="text-foreground">{data.page}</strong> (Total: {data.total} registros)
               </span>
-              <div className="pagination-buttons">
-                <button 
-                  className="btn btn-secondary"
-                  disabled={page === 1}
-                  onClick={() => setPage(p => p - 1)}
-                >
-                  Anterior
-                </button>
-                <button 
-                  className="btn btn-secondary"
-                  disabled={page * pageSize >= data.total}
-                  onClick={() => setPage(p => p + 1)}
-                >
-                  Próxima
-                </button>
+              <div className="flex w-full gap-2 sm:w-auto">
+                <Button variant="outline" className="min-h-11 flex-1 sm:min-h-8" disabled={page === 1 || isPlaceholderData} onClick={() => setPage(p => p - 1)}>Anterior</Button>
+                <Button variant="outline" className="min-h-11 flex-1 sm:min-h-8" disabled={page * pageSize >= data.total || isPlaceholderData} onClick={() => setPage(p => p + 1)}>Próxima</Button>
               </div>
-            </div>
+            </nav>
           )}
         </>
       )}

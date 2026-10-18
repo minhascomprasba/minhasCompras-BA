@@ -1,4 +1,8 @@
 .app-shell-theme {
+  color-scheme: dark;
+  color: var(--text-primary);
+  --primary-foreground: var(--bg-main);
+  --destructive: #fca5a5;
   --background: var(--bg-main);
   --foreground: var(--text-primary);
   --card: var(--bg-card);
