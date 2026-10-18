@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
-import { ROLE_LABELS } from '../features/auth/authService';
+import { ProfileMenu } from './ProfileMenu';
 import { QuickScan } from './QuickScan';
 
 export function AuthenticatedLayout() {
-  const { user, logout, role, isAdmin, isSuperAdmin } = useAuth();
+  const { logout, isAdmin, isSuperAdmin } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -84,19 +84,8 @@ export function AuthenticatedLayout() {
                 Importar
               </NavLink>
             </nav>
-
-            <div className="navbar-user">
-              <span className="user-email" title={user?.email || ''}>
-                {user?.email ? (user.email.length > 24 ? `${user.email.substring(0, 21)}...` : user.email) : ''}
-              </span>
-              {role && role !== 'USER' && (
-                <span className={`role-badge role-badge--${role.toLowerCase()}`}>{ROLE_LABELS[role]}</span>
-              )}
-              <button onClick={handleLogout} className="btn btn-secondary btn-sm btn-logout">
-                Sair
-              </button>
-            </div>
           </div>
+          <ProfileMenu onLogout={handleLogout} />
         </div>
       </header>
 
