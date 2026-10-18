@@ -81,7 +81,7 @@ export function AuthenticatedLayout() {
               </Button>
             )}
             <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-              <SheetTrigger render={<Button variant="ghost" size="icon" className="shell-mobile-toggle size-11" />} aria-label="Abrir menu">
+              <SheetTrigger render={<Button variant="secondary" size="icon" className="shell-mobile-toggle shell-menu-button size-11" />} aria-label="Abrir menu">
                 <Menu aria-hidden="true" />
               </SheetTrigger>
               <SheetContent className="app-shell-theme overflow-y-auto pt-[var(--safe-top)] pb-[var(--safe-bottom)]" showCloseButton={false}>
@@ -89,7 +89,7 @@ export function AuthenticatedLayout() {
                   <SheetTitle>Minhas Compras BA</SheetTitle>
                   <SheetDescription>Navegue pelas suas compras.</SheetDescription>
                 </SheetHeader>
-                <SheetClose render={<Button variant="ghost" size="icon" className="absolute right-3 top-[calc(var(--safe-top)+0.75rem)] size-11" />} aria-label="Fechar menu">
+                <SheetClose render={<Button variant="secondary" size="icon" className="shell-menu-button absolute right-3 top-[calc(var(--safe-top)+0.75rem)] size-11" />} aria-label="Fechar menu">
                   <X aria-hidden="true" />
                 </SheetClose>
                 <nav aria-label="Navegação principal" className="flex flex-col gap-1 px-4">

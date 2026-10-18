@@ -83,6 +83,16 @@
 }
 
 /* Legacy global rules are unlayered, so shell overrides live here as well. */
+.app-shell-theme .shell-menu-button {
+  background: var(--bg-card-hover);
+  color: var(--text-secondary);
+}
+
+.app-shell-theme .shell-menu-button:is(:hover, :focus-visible) {
+  background: var(--border-color);
+  color: var(--text-primary);
+}
+
 .app-shell-theme [data-slot="navigation-menu-link"],
 .app-shell-theme nav a[data-slot="button"],
 .app-shell-theme .shell-admin-link {
