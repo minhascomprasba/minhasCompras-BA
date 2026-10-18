@@ -14,17 +14,7 @@
   .auth-logo {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 1.25rem;
-    font-weight: 700;
     transition: opacity 0.2s ease;
-  }
-
-  .auth-logo span {
-    background: linear-gradient(100deg, #17c85f, #3a8fe0);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
   }
 
   .auth-logo:hover {

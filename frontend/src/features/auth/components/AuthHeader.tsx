@@ -9,8 +9,7 @@ export function AuthHeader({ backTo = '/', backLabel = 'Voltar para a Home' }: {
   return (
       <header className="auth-header">
         <Link to="/" className="auth-logo">
-          <img src="/icon.png" alt="" className="brand-icon" />
-          <span>MinhasCompras.app</span>
+          <img src="/icon.png" alt="MinhasCompras" className="brand-icon" />
         </Link>
         <Link to={backTo} className="auth-back-link">
           <ArrowLeft size={16} aria-hidden="true" />
