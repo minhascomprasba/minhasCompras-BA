@@ -1,4 +1,4 @@
-import { FileText, Tag, Wallet } from 'lucide-react';
+import { FileText, Tag, Wallet } from '@phosphor-icons/react';
 import { Card, CardContent, CardDescription } from '@/components/ui/card';
 import type { DashboardData } from '../types';
 import { formatCurrency } from '../format';

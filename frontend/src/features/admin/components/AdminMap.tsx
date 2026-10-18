@@ -1,3 +1,5 @@
+import { renderToStaticMarkup } from 'react-dom/server';
+import { MapPin as MapMarker } from '@phosphor-icons/react';
 import './AdminMap.css';
 import { Badge } from '../../../components/ui/badge';
 import { Card } from '../../../components/ui/card';
@@ -111,11 +113,7 @@ export function AdminMap({ alcance }: AdminMapProps) {
       return;
     }
 
-    const pinSvg = `
-      <svg width="28" height="36" viewBox="0 0 30 40" xmlns="http://www.w3.org/2000/svg">
-        <path d="M15 0C6.7 0 0 6.7 0 15c0 10.5 15 25 15 25s15-14.5 15-25C30 6.7 23.3 0 15 0z" fill="#17c85f"/>
-        <circle cx="15" cy="15" r="6" fill="#033876"/>
-      </svg>`;
+    const pinSvg = renderToStaticMarkup(<MapMarker width={28} height={36} weight="fill" color="#17c85f" aria-hidden="true" />);
     const pinIcon = L.divIcon({
       html: pinSvg,
       className: 'map-pin',

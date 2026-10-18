@@ -1,6 +1,8 @@
+import { renderToStaticMarkup } from 'react-dom/server';
+import { MapPin as MapMarker } from '@phosphor-icons/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, LoaderCircle, MapPin, Receipt } from 'lucide-react';
+import { CaretRight as ChevronRight, CircleNotch as LoaderCircle, MapPin, Receipt } from '@phosphor-icons/react';
 import { Alert } from '../../components/ui/alert';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -191,11 +193,7 @@ export function MapPage() {
 
     if (locations.length === 0) return;
 
-    const pinSvg = `
-      <svg width="30" height="40" viewBox="0 0 30 40" xmlns="http://www.w3.org/2000/svg">
-        <path d="M15 0C6.7 0 0 6.7 0 15c0 10.5 15 25 15 25s15-14.5 15-25C30 6.7 23.3 0 15 0z" fill="#17c85f"/>
-        <circle cx="15" cy="15" r="6" fill="#033876"/>
-      </svg>`;
+    const pinSvg = renderToStaticMarkup(<MapMarker width={30} height={40} weight="fill" color="#17c85f" aria-hidden="true" />);
     const pinIcon = L.divIcon({
       html: pinSvg,
       className: 'map-pin',

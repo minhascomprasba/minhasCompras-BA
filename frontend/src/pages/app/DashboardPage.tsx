@@ -8,7 +8,7 @@ import { PriceEvolutionChart } from '../../features/dashboard/components/PriceEv
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert } from '@/components/ui/alert';
-import { ChevronLeft, ChevronRight, CircleAlert, LoaderCircle, Receipt, Upload } from 'lucide-react';
+import { CaretLeft as ChevronLeft, CaretRight as ChevronRight, WarningCircle as CircleAlert, CircleNotch as LoaderCircle, Receipt, UploadSimple as Upload } from '@phosphor-icons/react';
 import { DashboardMetrics } from '@/features/dashboard/components/DashboardMetrics';
 import { formatCurrency } from '@/features/dashboard/format';
 

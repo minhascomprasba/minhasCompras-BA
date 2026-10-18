@@ -11,7 +11,7 @@ import { scanQrCodeFromFile } from '../../features/imports/utils/scanQrFromFile'
 import { consumeQuickScan } from '../../features/imports/utils/quickScanStorage';
 import { ImageUploadIcon, QrCodeIcon } from '../../components/ImportActionIcons';
 import type { ImportSource } from '../../features/imports/types';
-import { LoaderCircle } from 'lucide-react';
+import { CircleNotch as LoaderCircle } from '@phosphor-icons/react';
 import { Alert } from '../../components/ui/alert';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader } from '../../components/ui/card';

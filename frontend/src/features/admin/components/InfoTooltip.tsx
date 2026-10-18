@@ -1,4 +1,4 @@
-import { Info } from 'lucide-react';
+import { Info } from '@phosphor-icons/react';
 import { Button } from '../../../components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../../components/ui/tooltip';
 

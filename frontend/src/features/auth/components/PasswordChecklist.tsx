@@ -1,3 +1,4 @@
+import { Check, Circle } from '@phosphor-icons/react';
 import './PasswordChecklist.css';
 
 const passwordRules = [
@@ -22,13 +23,9 @@ export function PasswordChecklist({ password }: { password: string }) {
                     >
                       <span className="password-checklist-icon" aria-hidden="true">
                         {passed ? (
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
+                          <Check size={14} aria-hidden="true" />
                         ) : (
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="12" cy="12" r="9" />
-                          </svg>
+                          <Circle size={14} aria-hidden="true" />
                         )}
                       </span>
                       <span>{rule.label}</span>

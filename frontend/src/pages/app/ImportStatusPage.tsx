@@ -1,3 +1,4 @@
+import { Check, X, Timer, Shield } from '@phosphor-icons/react';
 import './ImportStatusPage.css';
 import { useParams, Link } from 'react-router-dom';
 import { useImportStatusPolling } from '../../features/imports/hooks/useImportQueries';
@@ -54,7 +55,7 @@ export function ImportStatusPage() {
 
         {data.status === 'COMPLETED' && (
           <div>
-            <div className="status-icon text-success">✓</div>
+            <div className="status-icon text-success"><Check size="1em" className="mx-auto" aria-hidden="true" /></div>
             <h2 className="text-success">Importação Concluída!</h2>
             <p className="mb-8">
               Foram importados <strong style={{ color: 'var(--text-primary)' }}>{data.items_count} itens</strong> com sucesso.
@@ -67,7 +68,7 @@ export function ImportStatusPage() {
 
         {data.status === 'FAILED' && (
           <div>
-            <div className="status-icon text-error">✕</div>
+            <div className="status-icon text-error"><X size="1em" className="mx-auto" aria-hidden="true" /></div>
             <h2 className="text-error">Falha na Importação</h2>
             <p className="mb-6">Não foi possível concluir a importação da sua nota.</p>
             {data.error_message && (
@@ -83,7 +84,7 @@ export function ImportStatusPage() {
 
         {data.status === 'EXPIRED' && (
           <div>
-            <div className="status-icon text-warning">⏱</div>
+            <div className="status-icon text-warning"><Timer size="1em" className="mx-auto" aria-hidden="true" /></div>
             <h2 className="text-warning">Tempo Esgotado</h2>
             <p className="mb-8">O tempo limite para resolução do captcha expirou ou muitas tentativas foram feitas.</p>
             <Link to="/importar" className="btn btn-primary btn-full">
@@ -94,7 +95,7 @@ export function ImportStatusPage() {
         
         {data.status === 'WAITING_CAPTCHA' && (
           <div>
-            <div className="status-icon text-warning">🛡️</div>
+            <div className="status-icon text-warning"><Shield size="1em" className="mx-auto" aria-hidden="true" /></div>
             <h2 className="text-warning">Aguardando Captcha</h2>
             <p className="mb-8">Esta importação ainda está aguardando a resolução do captcha de segurança.</p>
             <Link to="/importar" className="btn btn-primary btn-full">

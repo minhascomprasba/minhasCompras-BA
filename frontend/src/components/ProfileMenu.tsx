@@ -1,4 +1,4 @@
-import { LogOut } from 'lucide-react';
+import { SignOut as LogOut } from '@phosphor-icons/react';
 import { useAuth } from '../features/auth/AuthContext';
 import { RoleBadge } from './RoleBadge';
 import { Avatar, AvatarFallback } from './ui/avatar';

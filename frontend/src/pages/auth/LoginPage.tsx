@@ -1,3 +1,4 @@
+import { Envelope, Lock, EyeSlash, Eye } from '@phosphor-icons/react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
@@ -84,10 +85,7 @@ export function LoginPage() {
             <Label htmlFor="email">E-mail</Label>
             <AuthFields>
               <span className="input-icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="4" width="20" height="16" rx="2" />
-                  <path d="m22 7-10 5L2 7" />
-                </svg>
+                <Envelope size={18} aria-hidden="true" />
               </span>
               <Input
                 type="email"
@@ -105,10 +103,7 @@ export function LoginPage() {
             <Label htmlFor="password">Senha</Label>
             <AuthFields>
               <span className="input-icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="11" width="18" height="11" rx="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
+                <Lock size={18} aria-hidden="true" />
               </span>
               <Input
                 type={showPassword ? 'text' : 'password'}
@@ -125,16 +120,9 @@ export function LoginPage() {
                 aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
               >
                 {showPassword ? (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 8 10 8a13.16 13.16 0 0 1-1.67 2.68" />
-                    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 8 10 8a9.74 9.74 0 0 0 5.39-1.61" />
-                    <line x1="2" y1="2" x2="22" y2="22" />
-                  </svg>
+                  <EyeSlash size={18} aria-hidden="true" />
                 ) : (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M2 12s3-8 10-8 10 8 10 8-3 8-10 8-10-8-10-8Z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
+                  <Eye size={18} aria-hidden="true" />
                 )}
               </Button>
             </AuthFields>

@@ -1,5 +1,6 @@
+import { ArrowLeft, ArrowRight } from '@phosphor-icons/react';
 import { useState } from 'react';
-import { CalendarDays } from 'lucide-react';
+import { CalendarDots as CalendarDays } from '@phosphor-icons/react';
 import { Button } from '../../../components/ui/button';
 import { Label } from '../../../components/ui/label';
 import { NativeSelect } from '../../../components/ui/native-select';
@@ -38,9 +39,9 @@ export function AdminPeriodPicker({ period, onPeriodChange, selectedMonth, onMon
         </div>}
         {mode === 'month' && <div className="space-y-3">
           <div className="flex items-center justify-between gap-2">
-            <Button type="button" variant="outline" aria-label="Ano anterior" onClick={() => setPickerYear(y => y - 1)}>←</Button>
+            <Button type="button" variant="outline" aria-label="Ano anterior" onClick={() => setPickerYear(y => y - 1)}><ArrowLeft aria-hidden="true" /></Button>
             <span className="font-medium">{pickerYear}</span>
-            <Button type="button" variant="outline" aria-label="Próximo ano" onClick={() => setPickerYear(y => y + 1)}>→</Button>
+            <Button type="button" variant="outline" aria-label="Próximo ano" onClick={() => setPickerYear(y => y + 1)}><ArrowRight aria-hidden="true" /></Button>
           </div>
           <div className="grid grid-cols-3 gap-2">{MONTHS.map((month, index) => {
             const value = `${pickerYear}-${String(index + 1).padStart(2, '0')}`;
