@@ -1403,23 +1403,12 @@ body.menu-open {
 
 
 
-/* ==========================================================================
-   Página de Mapa (Leaflet)
-   ========================================================================== */
-/* General Layout & Page Helpers */
 /* Shared layout utilities */
 .flex-wrap-gap { display: flex; gap: 1rem; flex-wrap: wrap; }
 .mb-0 { margin-bottom: 0 !important; }
 .text-center { text-align: center; }
 .py-4 { padding: 4rem 0; }
 .spinner-large { width: 3rem; height: 3rem; border-width: 3px; }
-
-/* Atribuição/controles mais discretos no tema escuro */
-.leaflet-control-attribution {
-  background: rgba(10, 14, 26, 0.8) !important;
-  color: var(--text-muted) !important;
-}
-.leaflet-control-attribution a { color: var(--brand-blue-light) !important; }
 
 /* Detail Page Helpers */
 .container-large {
@@ -1587,32 +1576,6 @@ body.menu-open {
   font-weight: 500;
 }
 
-@media (max-width: 860px) {
-  .map-layout {
-    grid-template-columns: 1fr;
-  }
-  .map-sidebar {
-    max-height: none;
-    flex-direction: row;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    padding-bottom: 0.5rem; /* Space for scrollbar */
-    -webkit-overflow-scrolling: touch;
-  }
-  .map-sidebar::-webkit-scrollbar {
-    height: 6px;
-  }
-  .map-sidebar::-webkit-scrollbar-track {
-    background: rgba(31, 51, 80, 0.2);
-    border-radius: var(--radius-md);
-  }
-  .map-sidebar::-webkit-scrollbar-thumb {
-    background: var(--border-light);
-    border-radius: var(--radius-md);
-  }
-  .map-location-card { min-width: 240px; }
-  .map-view, .map-error { height: 55vh; }
-}
 
 .mb-6 {
   margin-bottom: 1.5rem !important;
@@ -1626,16 +1589,6 @@ body.menu-open {
 .page-subtitle {
   color: var(--text-secondary);
   margin: 0 !important;
-}
-
-.map-selected-title {
-  font-size: 1.2rem;
-  margin-bottom: 0.15rem;
-}
-
-.map-selected-subtitle {
-  color: var(--text-secondary);
-  font-size: 0.9rem;
 }
 
 .text-secondary {

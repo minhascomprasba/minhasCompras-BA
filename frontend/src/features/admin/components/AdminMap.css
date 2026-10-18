@@ -91,4 +91,11 @@
       height: 220px;
     }
   }
+
+  /* Atribuição/controles mais discretos no tema escuro */
+  .leaflet-control-attribution {
+    background: rgba(10, 14, 26, 0.8) !important;
+    color: var(--text-muted) !important;
+  }
+  .leaflet-control-attribution a { color: var(--brand-blue-light) !important; }
 }

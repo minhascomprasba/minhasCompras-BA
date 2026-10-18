@@ -228,4 +228,47 @@
   .leaflet-popup-close-button { color: var(--text-muted) !important; }
   .leaflet-container a.leaflet-popup-close-button:hover { color: var(--text-primary) !important; }
 
+  /* Atribuição/controles mais discretos no tema escuro */
+  .leaflet-control-attribution {
+    background: rgba(10, 14, 26, 0.8) !important;
+    color: var(--text-muted) !important;
+  }
+  .leaflet-control-attribution a { color: var(--brand-blue-light) !important; }
+
+  .map-selected-title {
+    font-size: 1.2rem;
+    margin-bottom: 0.15rem;
+  }
+
+  .map-selected-subtitle {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+  @media (max-width: 860px) {
+    .map-layout {
+      grid-template-columns: 1fr;
+    }
+    .map-sidebar {
+      max-height: none;
+      flex-direction: row;
+      overflow-x: auto;
+      flex-wrap: nowrap;
+      padding-bottom: 0.5rem; /* Space for scrollbar */
+      -webkit-overflow-scrolling: touch;
+    }
+    .map-sidebar::-webkit-scrollbar {
+      height: 6px;
+    }
+    .map-sidebar::-webkit-scrollbar-track {
+      background: rgba(31, 51, 80, 0.2);
+      border-radius: var(--radius-md);
+    }
+    .map-sidebar::-webkit-scrollbar-thumb {
+      background: var(--border-light);
+      border-radius: var(--radius-md);
+    }
+    .map-location-card { min-width: 240px; }
+    .map-view, .map-error { height: 55vh; }
+  }
 }
