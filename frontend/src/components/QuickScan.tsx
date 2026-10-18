@@ -1,4 +1,4 @@
-import './QuickScan.css';
+import { Button } from './ui/button';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QrCodeScanner } from '../features/imports/components/QrCodeScanner';
@@ -35,15 +35,15 @@ export function QuickScan() {
 
   return (
     <>
-      <button
+      <Button
         type="button"
-        className="scan-fab"
+        className="fixed right-[calc(1.5rem+var(--safe-right))] bottom-[calc(2rem+var(--safe-bottom))] z-30 size-16 rounded-full text-white shadow-lg hover:shadow-xl"
         aria-label="Escanear nova nota fiscal"
         title="Escanear nova nota fiscal"
         onClick={() => setIsOpen(true)}
       >
-        <QrCodeIcon />
-      </button>
+        <QrCodeIcon className="size-8" />
+      </Button>
 
       <QrCodeScanner
         isOpen={isOpen}
