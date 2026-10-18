@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../features/auth/AuthContext';
-import { ROLE_LABELS } from '../features/auth/authService';
+import { RoleBadge } from './RoleBadge';
 import './ProfileMenu.css';
 
 export function ProfileMenu({ onLogout }: { onLogout: () => void }) {
@@ -53,7 +53,7 @@ export function ProfileMenu({ onLogout }: { onLogout: () => void }) {
           <h2>Meu perfil</h2>
           <dl className="profile-details">
             <dt>Perfil de acesso</dt>
-            <dd>{role && <span className={`role-badge role-badge--${role.toLowerCase()}`}>{ROLE_LABELS[role]}</span>}</dd>
+            <dd>{role && <RoleBadge role={role} />}</dd>
             <dt>E-mail</dt>
             <dd>{user?.email}</dd>
           </dl>

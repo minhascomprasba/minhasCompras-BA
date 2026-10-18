@@ -57,5 +57,4 @@
   .profile-details dd { margin: 0.25rem 0 0; overflow-wrap: anywhere; font-size: 0.9rem; }
   .profile-logout { width: 100%; margin-top: 1rem; min-height: 44px; }
   .profile-logout:hover:not(:disabled), .profile-logout:focus-visible { color: var(--error); background: var(--error-bg); border-color: var(--error); }
-  .role-badge--user { background: var(--brand-green-soft); color: var(--brand-green); }
 }

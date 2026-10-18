@@ -1,0 +1,29 @@
+@scope ([data-scope="role-badge"]) {
+  :scope {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  :scope.role-badge--user {
+    background: var(--brand-green-soft);
+    color: var(--brand-green);
+  }
+
+  :scope.role-badge--admin {
+    background: rgba(58, 143, 224, 0.15);
+    color: var(--brand-blue-light);
+  }
+
+  :scope.role-badge--super_admin {
+    background: rgba(23, 200, 95, 0.15);
+    color: var(--brand-green);
+  }
+}

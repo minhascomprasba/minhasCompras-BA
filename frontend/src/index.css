@@ -1998,11 +1998,6 @@ body.menu-open {
   border-color: var(--error);
 }
 
-.role-badge--user {
-  background: var(--brand-green-soft);
-  color: var(--brand-green);
-}
-
 @media (max-width: 1200px) {
   .navbar-toggle { margin-left: auto; }
 }
