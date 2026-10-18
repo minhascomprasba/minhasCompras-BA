@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { ChevronRight, LoaderCircle, MapPin, Receipt } from 'lucide-react';
+import { Alert } from '../../components/ui/alert';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { mapaService, type MapaNota, type MapaPonto } from '../../features/mapa/mapaService';
 import './MapPage.css';
@@ -71,6 +76,7 @@ function formatBRL(value: number): string {
 type Status = 'loading' | 'ready' | 'empty' | 'error';
 
 export function MapPage() {
+  const navigate = useNavigate();
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
   const markersRef = useRef<Record<string, any>>({});
@@ -235,137 +241,109 @@ export function MapPage() {
   const selectedLocation = locations.find((l) => l.id === selectedId) ?? null;
 
   return (
-    <div data-scope="map" className="container">
-      <div className="mb-6">
-        <h1 className="page-title">Mapa das Compras</h1>
-        <p className="page-subtitle">
+    <div data-scope="map" className="container space-y-6 text-foreground">
+      <header className="space-y-2">
+        <h1 className="mb-0 text-2xl font-semibold text-foreground">Mapa das Compras</h1>
+        <div className="text-sm text-muted-foreground">
           Localização dos estabelecimentos onde suas notas foram emitidas.
           Clique em um marcador ou em um local da lista para ver os detalhes.
-        </p>
-      </div>
+        </div>
+      </header>
 
-      <div className="map-layout">
-        <aside className="map-sidebar">
-          <span className="map-sidebar-title">
+      <div className="grid items-start gap-6 min-[861px]:grid-cols-[280px_minmax(0,1fr)]">
+        <aside aria-labelledby="map-locations-title" className="min-w-0 space-y-3">
+          <h2 id="map-locations-title" className="m-0 text-base font-medium text-foreground">
             {isBusy ? 'Carregando locais…' : `Locais (${locations.length})`}
-          </span>
-
+          </h2>
           {isBusy && (
-            <div className="map-location-card map-location-card--placeholder">
-              <span className="spinner" style={{ width: 18, height: 18 }} />
-              <span className="map-location-info">
-                <strong>Carregando mapa…</strong>
-                <span>Buscando estabelecimentos com coordenadas</span>
-              </span>
-            </div>
+            <Card>
+              <CardContent role="status" className="flex items-center gap-2 text-muted-foreground">
+                <LoaderCircle className="size-5 shrink-0 animate-spin" aria-hidden="true" />
+                <span>Buscando estabelecimentos com coordenadas…</span>
+              </CardContent>
+            </Card>
           )}
-
           {!isBusy && status === 'error' && (
-            <div className="map-location-card map-location-card--placeholder">
-              <span className="map-location-info">
-                <strong>Erro ao carregar</strong>
-                <span>Não foi possível buscar seus estabelecimentos.</span>
-              </span>
-            </div>
+            <Alert variant="destructive">Não foi possível buscar seus estabelecimentos.</Alert>
           )}
-
           {!isBusy && status === 'empty' && (
-            <div className="map-location-card map-location-card--placeholder">
-              <span className="map-location-info">
-                <strong>Nenhum local encontrado</strong>
-                <span>Importe notas com CEP para vê-las no mapa.</span>
-              </span>
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Nenhum local encontrado</CardTitle>
+                <CardDescription>Importe notas com CEP para vê-las no mapa.</CardDescription>
+              </CardHeader>
+            </Card>
           )}
-
-          {locations.map((loc) => (
-            <button
-              key={loc.id}
-              type="button"
-              className={`map-location-card ${selectedId === loc.id ? 'map-location-card--active' : ''}`}
-              onClick={() => focusLocation(loc)}
-            >
-              <span className="map-location-pin" aria-hidden="true">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                  <circle cx="12" cy="10" r="3" />
-                </svg>
-              </span>
-              <span className="map-location-info">
-                <strong>{loc.label}</strong>
-                <span>CEP {formatCep(loc.cep)}</span>
-                <span className="map-location-address">{loc.address}</span>
-                <span className="map-location-count">{loc.notasCount} nota(s)</span>
-              </span>
-            </button>
-          ))}
-
-          {failedCeps.length > 0 && (
-            <span className="map-failed-note">
-              Não localizados: {failedCeps.join(', ')}
-            </span>
-          )}
+          <div className="flex gap-3 overflow-x-auto pb-1 min-[861px]:max-h-[65vh] min-[861px]:flex-col min-[861px]:overflow-y-auto min-[861px]:p-1">
+            {locations.map(loc => (
+              <Button
+                key={loc.id}
+                type="button"
+                variant="outline"
+                aria-pressed={selectedId === loc.id}
+                className="h-auto w-64 shrink-0 items-start justify-start gap-3 p-4 text-left whitespace-normal aria-pressed:border-primary aria-pressed:bg-primary/10 min-[861px]:w-full"
+                onClick={() => focusLocation(loc)}
+              >
+                <MapPin className="mt-1 size-5 text-primary" aria-hidden="true" />
+                <span className="flex min-w-0 flex-col gap-1 break-words">
+                  <strong className="text-foreground">{loc.label}</strong>
+                  <span className="text-xs text-muted-foreground">CEP {formatCep(loc.cep)}</span>
+                  <span className="text-xs text-muted-foreground">{loc.address}</span>
+                  <Badge variant="secondary">{loc.notasCount} nota(s)</Badge>
+                </span>
+              </Button>
+            ))}
+          </div>
+          {failedCeps.length > 0 && <Alert className="border-amber-400/30 bg-amber-400/10 text-amber-300">Não localizados: {failedCeps.join(', ')}</Alert>}
         </aside>
 
-        <div className="map-canvas">
+        <Card className="relative z-0 min-w-0 py-0">
           {mapError ? (
-            <div className="map-error">
-              Não foi possível carregar o mapa. Verifique sua conexão com a internet e tente novamente.
+            <div className="flex min-h-[420px] items-center p-6">
+              <Alert variant="destructive">Não foi possível carregar o mapa. Verifique sua conexão com a internet e tente novamente.</Alert>
             </div>
           ) : (
-            <div ref={mapContainerRef} className="map-view" />
+            <div ref={mapContainerRef} role="region" aria-label="Mapa dos estabelecimentos" className="h-[55vh] min-h-[420px] w-full bg-card min-[861px]:h-[70vh]" />
           )}
-        </div>
+        </Card>
       </div>
 
       {selectedLocation && (
-        <section className="map-notas-panel">
-          <div className="map-notas-header">
-            <div>
-              <h2 className="map-selected-title">
-                Notas de {selectedLocation.label}
-              </h2>
-              <span className="map-selected-subtitle">
-                CEP {formatCep(selectedLocation.cep)} · {selectedLocation.address}
-              </span>
+        <Card>
+          <CardHeader className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 space-y-1">
+              <h2 className="m-0 text-xl font-semibold break-words text-foreground">Notas de {selectedLocation.label}</h2>
+              <CardDescription>CEP {formatCep(selectedLocation.cep)} · {selectedLocation.address}</CardDescription>
             </div>
-            <span className="map-notas-badge">
-              {selectedLocation.notasCount} nota(s)
-            </span>
-          </div>
-
-          {selectedLocation.notas.length === 0 ? (
-            <p className="text-secondary" style={{ margin: 0 }}>
-              Nenhuma nota detalhada disponível para este local.
-            </p>
-          ) : (
-            <div className="map-notas-list">
-              {selectedLocation.notas.map((nota) => (
-                <Link key={nota.id} to={`/notas/${nota.id}`} className="map-nota-row">
-                  <span className="map-nota-icon" aria-hidden="true">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                      <polyline points="14 2 14 8 20 8" />
-                      <line x1="16" y1="13" x2="8" y2="13" />
-                      <line x1="16" y1="17" x2="8" y2="17" />
-                    </svg>
-                  </span>
-                  <span className="map-nota-main">
-                    <strong>{formatBRL(nota.valor_total_nota)}</strong>
-                    <span className="map-nota-sub">
-                      {formatDate(nota.data_compra ?? nota.created_at)} · nº ...{nota.codigo_acesso.slice(-8)}
-                    </span>
-                  </span>
-                  <span className="map-nota-arrow" aria-hidden="true">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="9 18 15 12 9 6" />
-                    </svg>
-                  </span>
-                </Link>
-              ))}
-            </div>
-          )}
-        </section>
+            <Badge variant="secondary">{selectedLocation.notasCount} nota(s)</Badge>
+          </CardHeader>
+          <CardContent>
+            {selectedLocation.notas.length === 0 ? (
+              <div className="text-muted-foreground">Nenhuma nota detalhada disponível para este local.</div>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {selectedLocation.notas.map(nota => (
+                  <Card key={nota.id}>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Receipt className="size-5 text-primary" aria-hidden="true" />
+                        <strong className="text-lg text-primary">{formatBRL(nota.valor_total_nota)}</strong>
+                      </div>
+                      <div className="text-sm text-muted-foreground">{formatDate(nota.data_compra ?? nota.created_at)}</div>
+                      <div className="text-xs">
+                        <span className="text-muted-foreground">Chave: </span>
+                        <span className="font-mono break-all text-foreground select-text">{nota.codigo_acesso || 'Indisponível'}</span>
+                      </div>
+                      <Button type="button" variant="outline" className="w-full" onClick={() => navigate(`/notas/${nota.id}`)}>
+                        Ver Detalhes <ChevronRight aria-hidden="true" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
     </div>
   );
