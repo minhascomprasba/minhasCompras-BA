@@ -1,3 +1,4 @@
+import './AdminMap.css';
 import { useEffect, useRef, useState } from 'react';
 import type { AlcanceGeografico, AlcancePonto } from '../types';
 import { MetricHead } from './MetricHead';

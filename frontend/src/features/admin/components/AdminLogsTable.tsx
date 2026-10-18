@@ -1,3 +1,4 @@
+import './AdminLogsTable.css';
 import type { AdminLog, LogStatus } from '../types';
 import { InfoTooltip } from './InfoTooltip';
 

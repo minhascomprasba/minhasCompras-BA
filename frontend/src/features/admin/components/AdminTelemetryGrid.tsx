@@ -1,3 +1,4 @@
+import './AdminTelemetryGrid.css';
 import type { AdminTelemetria, QualidadeCatalogo, TelemetriaSlice } from '../types';
 import { InfoTooltip } from './InfoTooltip';
 

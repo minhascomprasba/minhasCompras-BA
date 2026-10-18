@@ -1,3 +1,4 @@
+import './InfoTooltip.css';
 import { useEffect, useRef, useState } from 'react';
 
 const TOOLTIP_MAX_WIDTH = 280;

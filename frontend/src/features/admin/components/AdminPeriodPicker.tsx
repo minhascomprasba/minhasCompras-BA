@@ -1,3 +1,4 @@
+import './AdminPeriodPicker.css';
 import { useState, useEffect, useRef } from 'react';
 import type { AdminPeriod } from '../types';
 

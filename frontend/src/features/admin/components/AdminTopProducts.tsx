@@ -1,3 +1,4 @@
+import './AdminTopProducts.css';
 import type { ReactElement } from 'react';
 import type { TopProduto } from '../types';
 import { MetricHead } from './MetricHead';

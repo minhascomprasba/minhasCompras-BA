@@ -1,0 +1,123 @@
+@scope ([data-scope="admin"]) {
+  /* ==========================================
+     KPI Cards - Ajuste Antivazamento
+     ========================================== */
+  .admin-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  @media (max-width: 1200px) {
+    .admin-kpi-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 768px) {
+    .admin-kpi-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .admin-kpi-card {
+    padding: 0.85rem 0.75rem;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    transition: var(--transition);
+  }
+
+  .admin-kpi-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(23, 200, 95, 0.3);
+    box-shadow: var(--shadow-md), var(--shadow-glow);
+  }
+
+  .admin-kpi-icon-wrap {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .admin-kpi-icon-wrap svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .admin-kpi-content {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .admin-kpi-label-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.2rem;
+    min-width: 0;
+  }
+
+  .admin-kpi-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--text-muted);
+    margin: 0;
+    white-space: normal;
+    line-height: 1.2;
+    overflow: visible;
+  }
+
+  .admin-kpi-value {
+    font-size: 1.18rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0.15rem 0 0;
+    white-space: nowrap;
+    overflow: visible;
+  }
+
+  .admin-kpi-extra {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin: 0.15rem 0 0;
+    white-space: nowrap;
+  }
+
+  .admin-kpi-trend {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    font-size: 0.72rem;
+    margin: 0.15rem 0 0;
+    white-space: nowrap;
+    overflow: visible;
+  }
+
+  @media (max-width: 1440px) {
+    .admin-kpi-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 860px) {
+    .admin-kpi-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 480px) {
+    .admin-kpi-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+}

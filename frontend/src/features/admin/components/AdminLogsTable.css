@@ -1,0 +1,37 @@
+@scope ([data-scope="admin"]) {
+  .admin-logs-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    background: rgba(23, 35, 58, 0.3);
+    flex-wrap: wrap;
+  }
+
+  .admin-logs-title-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+  }
+
+  .admin-logs-title {
+    font-size: 1.125rem;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  .admin-logs-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin: 0;
+  }
+
+  .admin-mono {
+    font-family: var(--mono);
+    font-size: 0.8125rem;
+    white-space: nowrap;
+  }
+}

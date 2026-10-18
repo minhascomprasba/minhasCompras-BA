@@ -1,3 +1,4 @@
+import './MetricHead.css';
 import { InfoTooltip } from './InfoTooltip';
 
 interface MetricHeadProps {

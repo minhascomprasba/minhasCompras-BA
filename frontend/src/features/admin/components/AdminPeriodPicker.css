@@ -1,0 +1,232 @@
+@scope ([data-scope="admin"]) {
+  /* Botão único com largura mínima fixa para NUNCA dançar na tela */
+  .admin-period-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-width: 170px;
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 0.35rem 0.5rem;
+    border-radius: var(--radius-md);
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: var(--transition);
+  }
+
+  .admin-period-trigger:hover {
+    color: var(--brand-green);
+  }
+
+  .admin-period-value {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ==========================================
+     Admin Period Picker Popover (Componente)
+     ========================================== */
+  .admin-period-picker-root {
+    position: relative;
+  }
+
+  .admin-picker-popover {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    z-index: 80;
+    width: 280px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: 0.6rem;
+    animation: fadeIn 0.15s ease-out;
+  }
+
+  /* Abas de Navegação */
+  .admin-picker-tabs {
+    display: flex;
+    gap: 0.25rem;
+    background: var(--bg-main);
+    padding: 0.25rem;
+    border-radius: var(--radius-md);
+    margin-bottom: 0.6rem;
+    border: 1px solid var(--border-color);
+  }
+
+  .admin-picker-tab {
+    flex: 1;
+    padding: 0.35rem 0.2rem;
+    font-size: 0.74rem;
+    font-weight: 600;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: var(--transition);
+    text-align: center;
+  }
+
+  .admin-picker-tab:hover {
+    color: var(--text-primary);
+  }
+
+  .admin-picker-tab--active {
+    background: var(--bg-card);
+    color: var(--brand-green);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Conteúdo das Abas */
+  .admin-picker-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .admin-picker-btn {
+    width: 100%;
+    text-align: left;
+    padding: 0.55rem 0.75rem;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .admin-picker-btn:hover {
+    background: var(--bg-card-hover);
+    color: var(--text-primary);
+  }
+
+  .admin-picker-btn--active {
+    color: var(--brand-green);
+    background: rgba(23, 200, 95, 0.08);
+    font-weight: 600;
+  }
+
+  /* Navegação de Ano dentro de Mês a Mês */
+  .admin-year-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.2rem 0.4rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.4rem;
+  }
+
+  .admin-year-nav-btn {
+    background: var(--bg-main);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.9rem;
+    transition: var(--transition);
+  }
+
+  .admin-year-nav-btn:hover {
+    border-color: var(--brand-green);
+    color: var(--brand-green);
+  }
+
+  .admin-year-nav-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  /* Grade 4x3 de Meses */
+  .admin-month-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.3rem;
+  }
+
+  .admin-month-cell {
+    padding: 0.5rem 0.2rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: var(--bg-main);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    cursor: pointer;
+    text-align: center;
+    transition: var(--transition);
+  }
+
+  .admin-month-cell:hover {
+    background: var(--bg-card-hover);
+    color: var(--text-primary);
+    border-color: var(--border-light);
+  }
+
+  .admin-month-cell--active {
+    background: var(--brand-green);
+    color: #0b0f19;
+    border-color: var(--brand-green);
+    font-weight: 700;
+  }
+
+  .admin-year-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .admin-period-option {
+    width: 100%;
+    text-align: left;
+    padding: 0.55rem 0.75rem;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: 0.88rem;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .admin-period-option:hover {
+    background: var(--bg-card-hover);
+    color: var(--text-primary);
+  }
+
+  .admin-period-option--active {
+    color: var(--brand-green);
+    font-weight: 600;
+  }
+
+  /* Seletor Secundário (Mês / Ano) no Cabeçalho */
+  .admin-sub-period-select {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 0.35rem 0.65rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    outline: none;
+    transition: var(--transition);
+  }
+
+  .admin-sub-period-select:hover,
+  .admin-sub-period-select:focus {
+    border-color: var(--brand-green);
+  }
+}

@@ -1,0 +1,94 @@
+@scope ([data-scope="admin"]) {
+  .admin-map-placeholder {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .admin-map-body {
+    /* Keep Leaflet panes and controls below the card's info tooltip. */
+    position: relative;
+    z-index: 0;
+  }
+
+  .admin-map-canvas {
+    position: relative;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    background: var(--bg-main);
+    min-height: 260px;
+  }
+
+  .admin-map-view {
+    width: 100%;
+    height: 280px;
+    background: var(--bg-main);
+  }
+
+  .admin-map-overlay,
+  .admin-map-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1.25rem;
+    text-align: center;
+    background: rgba(8, 18, 36, 0.72);
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    z-index: 400;
+    pointer-events: none;
+  }
+
+  .admin-map-empty {
+    position: relative;
+    min-height: 260px;
+    background: var(--bg-main);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    pointer-events: auto;
+  }
+
+  .admin-map-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .admin-map-summary > p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin: 0;
+  }
+
+  .admin-map-placeholder-stats {
+    font-size: 0.8rem !important;
+    color: var(--text-secondary) !important;
+    font-weight: 500;
+  }
+
+  .admin-map-redes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.15rem;
+  }
+
+  .admin-map-redes-chip {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    background: var(--brand-blue-soft);
+    color: var(--brand-blue-light);
+    border: 1px solid rgba(58, 143, 224, 0.2);
+  }
+
+  @media (max-width: 860px) {
+    .admin-map-view {
+      height: 220px;
+    }
+  }
+}

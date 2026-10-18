@@ -1,3 +1,4 @@
+import './AdminUsersTable.css';
 import type { UserRole } from '../../auth/authService';
 import { ROLE_LABELS } from '../../auth/authService';
 import type { AdminUsuario } from '../types';

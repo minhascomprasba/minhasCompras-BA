@@ -1,3 +1,4 @@
+import './AdminScraperChart.css';
 import {
   ResponsiveContainer,
   BarChart,

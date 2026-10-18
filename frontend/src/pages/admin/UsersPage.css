@@ -1,0 +1,31 @@
+@scope ([data-scope="admin"]) {
+  .admin-users-filters {
+    display: flex;
+    gap: 1rem;
+    padding: 1.5rem 1.5rem 0;
+    flex-wrap: wrap;
+  }
+
+  .admin-users-filters .form-input {
+    flex: 1;
+    min-width: 220px;
+    margin: 0;
+  }
+
+  .admin-users-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+  }
+
+  .admin-logs-card .admin-users-filters + .alert,
+  .admin-logs-card > .alert {
+    margin: 1rem 1.5rem 0;
+  }
+}

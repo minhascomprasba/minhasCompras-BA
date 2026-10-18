@@ -1,3 +1,4 @@
+import './DashboardPage.css';
 import { useState } from 'react';
 import { useAdminData } from '../../features/admin/hooks/useAdminData';
 import { AdminHeader } from '../../features/admin/components/AdminHeader';
