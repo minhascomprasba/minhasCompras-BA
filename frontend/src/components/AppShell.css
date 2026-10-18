@@ -1,6 +1,11 @@
 .app-shell-theme {
   --background: var(--bg-main);
   --foreground: var(--text-primary);
+  --card: var(--bg-card);
+  --card-foreground: var(--text-primary);
+  --secondary: var(--bg-card-hover);
+  --secondary-foreground: var(--text-primary);
+  --input: var(--border-color);
   --popover: var(--bg-card);
   --popover-foreground: var(--text-primary);
   --muted: var(--bg-card-hover);
