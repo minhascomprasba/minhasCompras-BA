@@ -264,7 +264,7 @@ export function MapPage() {
       </header>
 
       <div className="grid items-start gap-6 min-[861px]:grid-cols-[280px_minmax(0,1fr)]">
-        <aside aria-labelledby="map-locations-title" className="order-3 min-w-0 space-y-3 min-[861px]:order-1 min-[861px]:row-span-2">
+        <aside aria-labelledby="map-locations-title" className="order-2 min-w-0 space-y-3 min-[861px]:order-1 min-[861px]:row-span-2">
           <h2 id="map-locations-title" style={{ margin: 0 }} className="text-base font-medium text-foreground">
             {isBusy ? 'Carregando locais…' : `Locais (${locations.length})`}
           </h2>
@@ -322,7 +322,7 @@ export function MapPage() {
             <div ref={mapContainerRef} role="region" aria-label="Mapa dos estabelecimentos" className="h-[45vh] min-h-[300px] w-full bg-card min-[861px]:h-[55vh] min-[861px]:min-h-[420px]" />
           )}
         </Card>
-      <div id="map-selected-notes" ref={notesRef} className="order-2 min-w-0 scroll-mt-24 min-[861px]:order-3 min-[861px]:col-start-2">
+      <div id="map-selected-notes" ref={notesRef} className="order-3 min-w-0 scroll-mt-24 min-[861px]:order-3 min-[861px]:col-start-2">
       {selectedLocation ? (
         <Card>
           <CardHeader className="flex flex-wrap items-start justify-between gap-3">
