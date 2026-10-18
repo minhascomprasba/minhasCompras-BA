@@ -11,7 +11,7 @@ export function ProfileMenu({ onLogout }: { onLogout: () => void }) {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="profile-trigger size-11 rounded-full" />} aria-label="Abrir perfil">
+      <DropdownMenuTrigger openOnHover delay={150} closeDelay={200} render={<Button variant="ghost" size="icon" className="profile-trigger size-11 rounded-full" />} aria-label="Abrir perfil">
         <Avatar className="size-11">
           <AvatarFallback className="profile-initial font-bold">{initials}</AvatarFallback>
         </Avatar>
