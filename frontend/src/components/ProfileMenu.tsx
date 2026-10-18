@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../features/auth/AuthContext';
 import { ROLE_LABELS } from '../features/auth/authService';
+import './ProfileMenu.css';
 
 export function ProfileMenu({ onLogout }: { onLogout: () => void }) {
   const { user, role } = useAuth();
@@ -33,7 +34,7 @@ export function ProfileMenu({ onLogout }: { onLogout: () => void }) {
   }, [open]);
 
   return (
-    <div className="profile-menu" ref={containerRef} onBlur={(event) => {
+    <div data-scope="profile-menu" className="profile-menu" ref={containerRef} onBlur={(event) => {
       if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
     }}>
       <button

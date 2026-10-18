@@ -1,0 +1,125 @@
+@scope ([data-scope="app-shell"]) {
+  .app-navbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    height: 70px;
+    background: rgba(11, 15, 25, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    padding-top: var(--safe-top); /* safe area support */
+  }
+
+  /* App Shell Layout */
+  .app-navbar {
+    transition: transform 0.2s ease;
+  }
+
+  .app-navbar--hidden {
+    transform: translateY(-100%);
+  }
+
+  .app-navbar:focus-within {
+    transform: translateY(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .app-navbar {
+      transition: none;
+    }
+  }
+
+  :scope {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  .app-main {
+    flex: 1 0 auto;
+  }
+
+  .app-footer {
+    text-align: center;
+    padding: 1.5rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    border-top: 1px solid var(--border-color);
+    margin-top: auto;
+    padding-bottom: calc(1.5rem + var(--safe-bottom)); /* safe area support */
+  }
+
+  .btn-logout {
+    flex-shrink: 0;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  body.menu-open {
+    overflow: hidden;
+  }
+
+  @media (max-width: 1200px) {
+    .btn-logout {
+      min-height: 44px; /* Touch target minimum on mobile */
+      width: 100%;
+      margin-top: 0.5rem;
+    }
+  }
+
+  .navbar-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  /* Menu (nav + usuario). No desktop fica em linha; no mobile vira dropdown. */
+  .navbar-menu {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex: 1;
+    min-width: 0;
+    margin-left: 1rem;
+  }
+
+  /* Botão hamburger — visível apenas no mobile */
+  .navbar-toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 0.4rem;
+    border-radius: var(--radius-md);
+  }
+  .navbar-toggle:hover {
+    background: var(--bg-card-hover);
+  }
+
+  .navbar-logo {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+  }
+
+  @media (max-width: 1200px) {
+    .navbar-toggle { margin-left: auto; }
+  }
+}

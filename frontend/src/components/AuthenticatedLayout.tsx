@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
 import { ProfileMenu } from './ProfileMenu';
 import { QuickScan } from './QuickScan';
+import './AppShell.css';
 
 export function AuthenticatedLayout() {
   const { logout, isAdmin } = useAuth();
@@ -50,7 +51,7 @@ export function AuthenticatedLayout() {
     `nav-link ${isActive ? 'nav-link--active' : ''}`;
 
   return (
-    <div className="app-layout-wrapper">
+    <div data-scope="app-shell" className="app-layout-wrapper">
       <header className={`app-navbar${headerHidden && !menuOpen ? ' app-navbar--hidden' : ''}`}>
         <div className="navbar-container">
           <NavLink to="/dashboard" className="navbar-logo" onClick={closeMenu} aria-label="Minhas Compras BA — Dashboard" title="Minhas Compras BA">
