@@ -8,6 +8,7 @@ import type { UserRole } from '../features/auth/authService';
 import { ROLE_LABELS } from '../features/auth/authService';
 import { useAuth } from '../features/auth/AuthContext';
 
+import './Admin.css';
 const PAGE_SIZE = 20;
 
 const ROLES_TOOLTIP =
@@ -97,7 +98,7 @@ export function AdminUsersPage() {
   const resumo = data?.resumo_perfis;
 
   return (
-    <div className="container admin-container">
+    <div data-scope="admin" className="container admin-container">
       <div className="admin-header">
         <div>
           <div className="admin-logs-title-row">

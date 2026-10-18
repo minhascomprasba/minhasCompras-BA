@@ -11,6 +11,7 @@ import { AdminLogsTable } from '../features/admin/components/AdminLogsTable';
 import type { AdminPeriod } from '../features/admin/types';
 import { useAuth } from '../features/auth/AuthContext';
 
+import './Admin.css';
 function currentMonthKey(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -66,7 +67,7 @@ export function AdminPage() {
   }
 
   return (
-    <div className="container admin-container">
+    <div data-scope="admin" className="container admin-container">
       <AdminHeader
         period={period}
         onPeriodChange={setPeriod}
