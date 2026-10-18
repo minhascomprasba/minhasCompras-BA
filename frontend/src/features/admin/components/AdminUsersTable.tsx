@@ -1,5 +1,5 @@
 import { Button } from '../../../components/ui/button';
-import { NativeSelect } from '../../../components/ui/native-select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/table';
 import { Badge } from '../../../components/ui/badge';
 import type { UserRole } from '../../auth/authService';
@@ -65,24 +65,23 @@ export function AdminUsersTable({
                     {isSelf && <Badge variant="outline" className="ml-2">você</Badge>}
                   </TableCell>
                   <TableCell>
-                    <NativeSelect
-                      className="min-w-44"
-                      aria-label={`Perfil de ${usuario.email}`}
+                    <Select
+                      items={ROLE_OPTIONS.map(role => ({ value: role, label: ROLE_LABELS[role] }))}
                       value={usuario.role}
                       disabled={isSelf || isRowPending}
-                      title={
-                        isSelf
-                          ? 'Você não pode alterar o seu próprio perfil de acesso.'
-                          : 'Alterar perfil de acesso'
-                      }
-                      onChange={(event) => onRoleChange(usuario, event.target.value as UserRole)}
+                      onValueChange={role => { if (role !== null) onRoleChange(usuario, role); }}
                     >
-                      {ROLE_OPTIONS.map((role) => (
-                        <option key={role} value={role}>
-                          {ROLE_LABELS[role]}
-                        </option>
-                      ))}
-                    </NativeSelect>
+                      <SelectTrigger
+                        className="min-w-44"
+                        aria-label={`Perfil de ${usuario.email}`}
+                        title={isSelf ? 'Você não pode alterar o seu próprio perfil de acesso.' : 'Alterar perfil de acesso'}
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ROLE_OPTIONS.map(role => <SelectItem key={role} value={role}>{ROLE_LABELS[role]}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   </TableCell>
                   <TableCell className="text-right tabular-nums">{usuario.notas_count}</TableCell>
                   <TableCell className="text-right tabular-nums">{usuario.itens_count}</TableCell>

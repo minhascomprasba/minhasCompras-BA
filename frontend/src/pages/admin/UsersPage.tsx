@@ -13,7 +13,7 @@ import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { NativeSelect } from '../../components/ui/native-select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 const PAGE_SIZE = 20;
 
@@ -128,9 +128,12 @@ export function UsersPage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="admin-user-role">Perfil de acesso</Label>
-              <NativeSelect id="admin-user-role" value={roleFilter} onChange={event => { setRoleFilter(event.target.value as '' | UserRole); setPage(1); }}>
-                {ROLE_FILTERS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </NativeSelect>
+              <Select items={ROLE_FILTERS} value={roleFilter} onValueChange={value => { if (value !== null) { setRoleFilter(value); setPage(1); } }}>
+                <SelectTrigger id="admin-user-role"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {ROLE_FILTERS.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           {feedback && <Alert variant={feedback.type === 'error' ? 'destructive' : 'default'} className={feedback.type === 'success' ? 'border-primary/30 bg-primary/10 text-primary' : undefined}>{feedback.message}</Alert>}
