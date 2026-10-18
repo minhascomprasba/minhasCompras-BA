@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useNotas } from '../features/notas/hooks/useNotasQueries';
 import { useAuth } from '../features/auth/AuthContext';
+import './NotasPage.css';
 
 export function NotasPage() {
   const [page, setPage] = useState(1);
@@ -45,7 +46,7 @@ export function NotasPage() {
   const isFiltered = !!(dateFrom || dateTo);
 
   return (
-    <div className="container container-medium">
+    <div data-scope="notas" className="container container-medium">
       <div className="page-header-flex">
         <div>
           <h1 style={{ marginBottom: '0.25rem' }}>Minhas Notas Fiscais</h1>
