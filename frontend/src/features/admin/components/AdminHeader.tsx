@@ -1,3 +1,4 @@
+import { UsersIcon as Users } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../../components/ui/button';
 import { InfoTooltip } from './InfoTooltip';
@@ -45,7 +46,7 @@ export function AdminHeader({
       <div className="flex flex-wrap items-center gap-3">
         {showUsersLink && (
           <Button type="button" variant="outline" onClick={() => navigate('/admin/usuarios')}>
-            Gerenciar usuários
+            <Users aria-hidden="true" /> Gerenciar usuários
           </Button>
         )}
 

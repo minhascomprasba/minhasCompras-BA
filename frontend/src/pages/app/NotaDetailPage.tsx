@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeftIcon as ArrowLeft, CircleNotchIcon as LoaderCircle } from '@phosphor-icons/react';
+import { ArrowLeftIcon as ArrowLeft, CaretLeftIcon as CaretLeft, CaretRightIcon as CaretRight, CircleNotchIcon as LoaderCircle } from '@phosphor-icons/react';
 import { Alert } from '../../components/ui/alert';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -120,8 +120,8 @@ export function NotaDetailPage() {
                   <nav aria-label="Paginação de itens" className="flex flex-col items-center justify-between gap-4 border-t border-border pt-6 sm:flex-row">
                     <span className="text-sm text-muted-foreground">Página <strong className="text-foreground">{itensData.page}</strong></span>
                     <div className="flex w-full gap-2 sm:w-auto">
-                      <Button type="button" variant="outline" className="min-h-11 flex-1 sm:min-h-8" disabled={page === 1 || isPlaceholderData} onClick={() => setPage(p => p - 1)}>Anterior</Button>
-                      <Button type="button" variant="outline" className="min-h-11 flex-1 sm:min-h-8" disabled={page * pageSize >= itensData.total || isPlaceholderData} onClick={() => setPage(p => p + 1)}>Próxima</Button>
+                      <Button type="button" variant="outline" className="min-h-11 flex-1 sm:min-h-8" disabled={page === 1 || isPlaceholderData} onClick={() => setPage(p => p - 1)}><CaretLeft aria-hidden="true" /> Anterior</Button>
+                      <Button type="button" variant="outline" className="min-h-11 flex-1 sm:min-h-8" disabled={page * pageSize >= itensData.total || isPlaceholderData} onClick={() => setPage(p => p + 1)}>Próxima <CaretRight aria-hidden="true" /></Button>
                     </div>
                   </nav>
                 )}

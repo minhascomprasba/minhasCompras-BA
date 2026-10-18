@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { CircleNotchIcon as LoaderCircle, PlusIcon as Plus } from '@phosphor-icons/react';
+import { CircleNotchIcon as LoaderCircle, PlusIcon as Plus, FunnelIcon as Funnel, XIcon as X, SignOutIcon as SignOut, ReceiptIcon as Receipt, UploadSimpleIcon as UploadSimple, ArrowRightIcon as ArrowRight, CaretLeftIcon as CaretLeft, CaretRightIcon as CaretRight } from '@phosphor-icons/react';
 import { Alert } from '../../components/ui/alert';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -38,7 +38,7 @@ export function NotasPage() {
       <header className="flex flex-wrap items-start justify-between gap-4">
         <h1 className="mb-0 text-2xl font-semibold text-foreground">Minhas Notas Fiscais</h1>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => { logout(); navigate('/'); }}>Sair</Button>
+          <Button variant="outline" onClick={() => { logout(); navigate('/'); }}><SignOut aria-hidden="true" /> Sair</Button>
           <Button type="button" className="text-white" onClick={() => navigate('/importar')}>
             <Plus aria-hidden="true" /> Nova Importação
           </Button>
@@ -56,8 +56,8 @@ export function NotasPage() {
               <Label htmlFor="notas-date-to">Até:</Label>
               <Input id="notas-date-to" type="date" value={dateTo} onChange={(event) => { setDateTo(event.target.value); setPage(1); }} />
             </div>
-            <Button type="submit" className="h-10 text-white">Filtrar</Button>
-            {isFiltered && <Button type="button" variant="outline" className="h-10" onClick={clearFilters}>Limpar</Button>}
+            <Button type="submit" className="h-10 text-white"><Funnel aria-hidden="true" /> Filtrar</Button>
+            {isFiltered && <Button type="button" variant="outline" className="h-10" onClick={clearFilters}><X aria-hidden="true" /> Limpar</Button>}
           </form>
         </CardContent>
       </Card>
@@ -84,9 +84,10 @@ export function NotasPage() {
           {data.data.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
+                <Receipt className="size-10 text-muted-foreground" aria-hidden="true" />
                 <p className="m-0 text-lg text-foreground">Nenhuma nota encontrada.</p>
                 {!isFiltered && (
-                  <Button variant="outline" render={<Link to="/importar" />} nativeButton={false}>Importar primeira nota</Button>
+                  <Button variant="outline" render={<Link to="/importar" />} nativeButton={false}><UploadSimple aria-hidden="true" /> Importar primeira nota</Button>
                 )}
               </CardContent>
             </Card>
@@ -110,7 +111,7 @@ export function NotasPage() {
                           <Badge variant="outline" className="h-auto whitespace-normal">Pagamento: {nota.meio_pagamento || 'não capturado'}</Badge>
                         </div>
                       </div>
-                      <Button variant="outline" render={<Link to={`/notas/${nota.id}`} />} nativeButton={false}>Ver Detalhes</Button>
+                      <Button variant="outline" render={<Link to={`/notas/${nota.id}`} />} nativeButton={false}>Ver Detalhes <ArrowRight aria-hidden="true" /></Button>
                     </CardContent>
                   </Card>
                 );
@@ -124,8 +125,8 @@ export function NotasPage() {
                 Página <strong className="text-foreground">{data.page}</strong> (Total: {data.total} registros)
               </span>
               <div className="flex w-full gap-2 sm:w-auto">
-                <Button variant="outline" className="min-h-11 flex-1 sm:min-h-8" disabled={page === 1 || isPlaceholderData} onClick={() => setPage(p => p - 1)}>Anterior</Button>
-                <Button variant="outline" className="min-h-11 flex-1 sm:min-h-8" disabled={page * pageSize >= data.total || isPlaceholderData} onClick={() => setPage(p => p + 1)}>Próxima</Button>
+                <Button variant="outline" className="min-h-11 flex-1 sm:min-h-8" disabled={page === 1 || isPlaceholderData} onClick={() => setPage(p => p - 1)}><CaretLeft aria-hidden="true" /> Anterior</Button>
+                <Button variant="outline" className="min-h-11 flex-1 sm:min-h-8" disabled={page * pageSize >= data.total || isPlaceholderData} onClick={() => setPage(p => p + 1)}>Próxima <CaretRight aria-hidden="true" /></Button>
               </div>
             </nav>
           )}

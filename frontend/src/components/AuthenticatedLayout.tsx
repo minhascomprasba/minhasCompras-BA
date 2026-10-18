@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
 import { ProfileMenu } from './ProfileMenu';
 import { QuickScan } from './QuickScan';
-import { ListIcon as Menu, XIcon as X } from '@phosphor-icons/react';
+import { ListIcon as Menu, XIcon as X, ChartPieIcon as ChartPie, ReceiptIcon as Receipt, MapPinIcon as MapPin, UploadSimpleIcon as UploadSimple, ShieldCheckIcon as ShieldCheck } from '@phosphor-icons/react';
 import { Button } from './ui/button';
 import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList } from './ui/navigation-menu';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet';
@@ -43,11 +43,11 @@ export function AuthenticatedLayout() {
   };
 
   const links = [
-    { to: '/dashboard', label: 'Dashboard' },
-    { to: '/notas', label: 'Notas' },
-    { to: '/mapa', label: 'Mapa' },
-    { to: '/importar', label: 'Importar' },
-    ...(isAdmin ? [{ to: '/admin', label: 'Gestão' }] : []),
+    { to: '/dashboard', icon: ChartPie, label: 'Dashboard' },
+    { to: '/notas', icon: Receipt, label: 'Notas' },
+    { to: '/mapa', icon: MapPin, label: 'Mapa' },
+    { to: '/importar', icon: UploadSimple, label: 'Importar' },
+    ...(isAdmin ? [{ to: '/admin', icon: ShieldCheck, label: 'Gestão' }] : []),
   ];
 
   return (
@@ -60,12 +60,13 @@ export function AuthenticatedLayout() {
 
           <NavigationMenu className="shell-desktop-nav" aria-label="Navegação principal">
             <NavigationMenuList className="m-0 p-0 gap-1">
-              {links.filter(({ to }) => to !== '/admin').map(({ to, label }) => (
+              {links.filter(({ to }) => to !== '/admin').map(({ to, label, icon: Icon }) => (
                 <NavigationMenuItem key={to}>
                   <NavigationMenuLink
                     render={<NavLink to={to} />}
-                    className="h-11 px-3 text-muted-foreground hover:text-foreground aria-[current=page]:bg-accent aria-[current=page]:text-foreground"
+                    className="h-11 flex-row items-center gap-2 px-3 text-muted-foreground hover:text-foreground aria-[current=page]:bg-accent aria-[current=page]:text-foreground"
                   >
+                    <Icon className="size-4 shrink-0" aria-hidden="true" />
                     {label}
                   </NavigationMenuLink>
                 </NavigationMenuItem>
@@ -76,7 +77,7 @@ export function AuthenticatedLayout() {
           <div className="ml-auto flex items-center gap-2">
             {isAdmin && (
               <Button variant="ghost" nativeButton={false} render={<NavLink to="/admin" />} className="shell-admin-link h-11 text-muted-foreground">
-                Gestão
+                <ShieldCheck aria-hidden="true" /> Gestão
               </Button>
             )}
             <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
@@ -92,8 +93,9 @@ export function AuthenticatedLayout() {
                   <X aria-hidden="true" />
                 </SheetClose>
                 <nav aria-label="Navegação principal" className="flex flex-col gap-1 px-4">
-                  {links.map(({ to, label }) => (
+                  {links.map(({ to, label, icon: Icon }) => (
                     <Button key={to} variant="ghost" nativeButton={false} render={<NavLink to={to} />} onClick={closeMenu} className="h-11 justify-start text-muted-foreground aria-[current=page]:bg-accent aria-[current=page]:text-foreground">
+                      <Icon className="size-4 shrink-0" aria-hidden="true" />
                       {label}
                     </Button>
                   ))}

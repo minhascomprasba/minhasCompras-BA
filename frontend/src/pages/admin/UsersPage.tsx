@@ -1,3 +1,4 @@
+import { ArrowLeftIcon as ArrowLeft, CaretLeftIcon as CaretLeft, CaretRightIcon as CaretRight, TrashIcon as Trash } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminUsuarios, useDeleteUsuario, useUpdateUsuarioRole } from '../../features/admin/hooks/useAdminData';
@@ -117,7 +118,7 @@ export function UsersPage() {
             {resumo ? ` — ${resumo.SUPER_ADMIN ?? 0} gestores principais, ${resumo.ADMIN ?? 0} gestores e ${resumo.USER ?? 0} usuários` : ''}
           </div>
         </div>
-        <Button type="button" variant="outline" onClick={() => navigate('/admin')}>Voltar à gestão</Button>
+        <Button type="button" variant="outline" onClick={() => navigate('/admin')}><ArrowLeft aria-hidden="true" /> Voltar à gestão</Button>
       </header>
       <Card>
         <CardContent className="space-y-5">
@@ -143,9 +144,9 @@ export function UsersPage() {
             <>
               <AdminUsersTable usuarios={data?.data ?? []} currentUserId={user?.id} pendingUsuarioId={updateRole.isPending ? updateRole.variables?.usuarioId ?? null : null} onRoleChange={handleRoleChange} onDelete={handleDeleteRequest} />
               {totalPages > 1 && <nav aria-label="Paginação de usuários" className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
-                <Button type="button" variant="outline" disabled={page <= 1} onClick={() => setPage(current => Math.max(1, current - 1))}>Anterior</Button>
+                <Button type="button" variant="outline" disabled={page <= 1} onClick={() => setPage(current => Math.max(1, current - 1))}><CaretLeft aria-hidden="true" /> Anterior</Button>
                 <span className="text-sm text-muted-foreground">Página {page} de {totalPages} • {total} usuários</span>
-                <Button type="button" variant="outline" disabled={page >= totalPages} onClick={() => setPage(current => Math.min(totalPages, current + 1))}>Próxima</Button>
+                <Button type="button" variant="outline" disabled={page >= totalPages} onClick={() => setPage(current => Math.min(totalPages, current + 1))}>Próxima <CaretRight aria-hidden="true" /></Button>
               </nav>}
             </>
           )}
@@ -161,7 +162,7 @@ export function UsersPage() {
           </DialogHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
             <Button type="button" variant="outline" disabled={deleteUsuario.isPending} onClick={() => setUsuarioParaExcluir(null)}>Cancelar</Button>
-            <Button type="button" variant="destructive" disabled={deleteUsuario.isPending} onClick={handleDeleteConfirm}>{deleteUsuario.isPending ? 'Excluindo...' : 'Excluir'}</Button>
+            <Button type="button" variant="destructive" disabled={deleteUsuario.isPending} onClick={handleDeleteConfirm}><Trash aria-hidden="true" /> {deleteUsuario.isPending ? 'Excluindo...' : 'Excluir'}</Button>
           </div>
         </DialogContent>
       </Dialog>
