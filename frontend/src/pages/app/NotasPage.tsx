@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { CircleNotchIcon as LoaderCircle, PlusIcon as Plus, XIcon as X, ReceiptIcon as Receipt, UploadSimpleIcon as UploadSimple, ArrowRightIcon as ArrowRight, CaretLeftIcon as CaretLeft, CaretRightIcon as CaretRight } from '@phosphor-icons/react';
+import { CircleNotchIcon as LoaderCircle, PlusIcon as Plus, ReceiptIcon as Receipt, UploadSimpleIcon as UploadSimple, ArrowRightIcon as ArrowRight, CaretLeftIcon as CaretLeft, CaretRightIcon as CaretRight } from '@phosphor-icons/react';
 import { Alert } from '../../components/ui/alert';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
@@ -24,11 +24,6 @@ export function NotasPage() {
     ...(dateTo && { to: dateTo }),
   });
 
-  const clearFilters = () => {
-    setDateFrom('');
-    setDateTo('');
-    setPage(1);
-  };
   const isFiltered = !!(dateFrom || dateTo);
 
   return (
@@ -39,7 +34,6 @@ export function NotasPage() {
           <div className="w-64 max-w-full">
             <DateRangePicker id="notas-date-range" label="Período da compra" value={{ from: dateFrom, to: dateTo }} onChange={({ from, to }) => { setDateFrom(from); setDateTo(to); setPage(1); }} />
           </div>
-          {isFiltered && <Button type="button" variant="outline" className="h-10" onClick={clearFilters}><X aria-hidden="true" /> Limpar</Button>}
           <Button type="button" className="h-10 text-white" onClick={() => navigate('/importar')}>
             <Plus aria-hidden="true" /> Nova Importação
           </Button>
