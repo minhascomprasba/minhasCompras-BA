@@ -60,6 +60,8 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* Reserve scrollbar space so navigation stays aligned between pages. */
+  scrollbar-gutter: stable;
 }
 
 body {
