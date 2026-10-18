@@ -101,11 +101,6 @@
   color: var(--foreground);
 }
 
-.app-shell-theme .profile-initial {
-  background: var(--bg-card-hover);
-  color: var(--text-primary);
-}
-
 .profile-dropdown {
   --destructive: #fca5a5;
   padding: 0.5rem;
