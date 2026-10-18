@@ -6,7 +6,10 @@ import { z } from 'zod';
 import { useAuth } from '../../features/auth/AuthContext';
 import { authService } from '../../features/auth/authService';
 import { AppError } from '../../shared/api/errors';
-import './styles.css';
+import { AuthHeader } from '../../features/auth/components/AuthHeader';
+import { AuthCard, AuthCardFooter } from '../../features/auth/components/AuthCard';
+import { AuthFields } from '../../features/auth/components/AuthFields';
+import './LoginPage.css';
 
 const loginSchema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -56,26 +59,9 @@ export function LoginPage() {
 
   return (
     <div data-scope="auth" className="auth-page">
-      <header className="auth-header">
-        <Link to="/" className="auth-logo">
-          <img src="/icon.png" alt="" className="brand-icon" />
-          <span>MinhasCompras.app</span>
-        </Link>
-        <Link to="/" className="auth-back-link">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="19" y1="12" x2="5" y2="12"></line>
-            <polyline points="12 19 5 12 12 5"></polyline>
-          </svg>
-          <span>Voltar para a Home</span>
-        </Link>
-      </header>
+      <AuthHeader />
 
-      <div className="auth-card">
-        <div className="auth-card-icon">
-          <img src="/icon.png" alt="Minhas Compras BA" />
-        </div>
-        <h1 className="auth-title">Bem-vindo de volta</h1>
-        <p className="auth-subtitle">Entre para acessar seu painel de compras</p>
+      <AuthCard title="Bem-vindo de volta" subtitle={<> Entre para acessar seu painel de compras </>}>
 
         {successMessage && (
           <div className="alert alert-success">
@@ -92,7 +78,7 @@ export function LoginPage() {
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="form-group">
             <label className="form-label">E-mail</label>
-            <div className="input-icon-wrap">
+            <AuthFields>
               <span className="input-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="2" y="4" width="20" height="16" rx="2" />
@@ -105,13 +91,13 @@ export function LoginPage() {
                 placeholder="seu@email.com"
                 {...register('email')}
               />
-            </div>
+            </AuthFields>
             {errors.email && <span className="form-error-text">{errors.email.message}</span>}
           </div>
 
           <div className="form-group auth-form-group-spaced">
             <label className="form-label">Senha</label>
-            <div className="input-icon-wrap">
+            <AuthFields>
               <span className="input-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="11" width="18" height="11" rx="2" />
@@ -143,7 +129,7 @@ export function LoginPage() {
                   </svg>
                 )}
               </button>
-            </div>
+            </AuthFields>
             {errors.password && <span className="form-error-text">{errors.password.message}</span>}
             <div className="auth-forgot-password-wrap">
               <Link to="/esqueci-senha" className="auth-forgot-password-link">
@@ -157,10 +143,10 @@ export function LoginPage() {
           </button>
         </form>
 
-        <div className="auth-footer-link">
+        <AuthCardFooter>
           Ainda não tem conta? <Link to="/register" className="font-semibold">Criar conta</Link>
-        </div>
-      </div>
+        </AuthCardFooter>
+      </AuthCard>
     </div>
   );
 }

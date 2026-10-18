@@ -1232,12 +1232,6 @@ body.menu-open {
 /* Auth utilities shared by recovery and confirmation flows */
 .btn-full { width: 100%; }
 .font-semibold { font-weight: 500; }
-.auth-container-narrow { max-width: 400px; margin-top: 4rem; }
-.auth-card-inner { padding: 2rem; }
-.auth-title-centered { text-align: center; margin-bottom: 1.5rem; font-size: 2rem; }
-.auth-subtitle-centered { text-align: center; margin-bottom: 1.5rem; color: var(--text-secondary); font-size: 0.9rem; }
-.auth-footer-centered { text-align: center; margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-secondary); }
-.auth-form-group-spaced { margin-bottom: 1.75rem; }
 
 /* Dashboard Page Helpers */
 .dashboard-loading-container,
@@ -1397,96 +1391,17 @@ body.menu-open {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
-.auth-divider::before,
-.auth-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border-color);
-}
 
-.auth-footer-link {
-  text-align: center;
-  margin-top: 1.5rem;
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-}
 
-.password-checklist {
-  list-style: none;
-  margin: 0.6rem 0 0;
-  padding: 0;
-  display: grid;
-  gap: 0.35rem;
-}
 
-.password-checklist-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-  transition: color 0.15s ease;
-}
 
-.password-checklist-item.is-valid {
-  color: var(--primary);
-}
 
-.password-checklist-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  color: currentColor;
-}
 
-.link-button {
-  background: none;
-  border: none;
-  padding: 0;
-  color: var(--primary, #2563eb);
-  cursor: pointer;
-  font-size: inherit;
-  font-family: inherit;
-}
 
-.link-button:hover:not(:disabled) {
-  text-decoration: underline;
-}
 
-.link-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
 
-@media (max-width: 480px) {
-  .auth-card {
-    padding: 2rem 1.4rem;
-  }
-}
 
-.auth-back-link {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.95rem;
-  color: var(--text-secondary);
-  font-weight: 500;
-  transition: var(--transition);
-}
 
-.auth-back-link svg {
-  transition: transform 0.2s ease;
-}
-
-.auth-back-link:hover {
-  color: var(--primary);
-}
-
-.auth-back-link:hover svg {
-  transform: translateX(-4px);
-}
 
 /* ==========================================================================
    Página de Mapa (Leaflet)
@@ -1905,14 +1820,7 @@ body.menu-open {
   }
 }
 
-@media (max-width: 480px) {
-  .auth-header {
-    padding: 1.25rem 1rem;
-    flex-direction: column;
-    gap: 0.75rem;
-    text-align: center;
-  }
-}
+
 
 /* Price Evolution Chart Helpers */
 .price-chart-wrapper {

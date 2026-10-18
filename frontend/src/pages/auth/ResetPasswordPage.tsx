@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { authService } from '../../features/auth/authService';
 import { AppError } from '../../shared/api/errors';
+import './ResetPasswordPage.css';
 
 const resetPasswordSchema = z.object({
   password: z.string()
@@ -59,7 +60,7 @@ export function ResetPasswordPage() {
   };
 
   return (
-    <div className="container auth-container-narrow">
+    <div data-scope="auth" className="container auth-container-narrow">
       <div className="card auth-card-inner">
         <h1 className="auth-title-centered">Redefinir senha</h1>
 

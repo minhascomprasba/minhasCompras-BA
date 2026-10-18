@@ -1,0 +1,43 @@
+@scope ([data-scope="auth"]) {
+  .input-icon-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .input-icon-wrap .input-icon {
+    position: absolute;
+    left: 0.9rem;
+    color: var(--text-muted);
+    pointer-events: none;
+    display: flex;
+  }
+  .form-input.has-icon {
+    padding-left: 2.6rem;
+  }
+  .form-input.has-toggle {
+    padding-right: 2.8rem;
+  }
+  .input-icon-wrap:focus-within .input-icon {
+    color: var(--primary);
+  }
+
+  .password-toggle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: 44px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    transition: var(--transition);
+  }
+  .password-toggle:hover {
+    color: var(--text-secondary);
+  }
+}

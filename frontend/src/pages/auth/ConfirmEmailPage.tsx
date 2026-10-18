@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '../../features/auth/AuthContext';
 import { authService } from '../../features/auth/authService';
 import { AppError } from '../../shared/api/errors';
-import './styles.css';
+import { AuthHeader } from '../../features/auth/components/AuthHeader';
+import { AuthCard, AuthCardFooter } from '../../features/auth/components/AuthCard';
+import './ConfirmEmailPage.css';
 
 const confirmEmailSchema = z.object({
   code: z.string()
@@ -76,29 +78,10 @@ export function ConfirmEmailPage() {
 
   return (
     <div data-scope="auth" className="auth-page">
-      <header className="auth-header">
-        <Link to="/" className="auth-logo">
-          <img src="/icon.png" alt="" className="brand-icon" />
-          <span>MinhasCompras.app</span>
-        </Link>
-        <Link to="/register" className="auth-back-link">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="19" y1="12" x2="5" y2="12"></line>
-            <polyline points="12 19 5 12 12 5"></polyline>
-          </svg>
-          <span>Voltar</span>
-        </Link>
-      </header>
+      <AuthHeader backTo="/register" backLabel="Voltar" />
 
-      <div className="auth-card">
-        <div className="auth-card-icon">
-          <img src="/icon.png" alt="Minhas Compras BA" />
-        </div>
-        <h1 className="auth-title">Confirme seu e-mail</h1>
-        <p className="auth-subtitle">
-          Enviamos um código de confirmação para{' '}
-          <strong>{email || 'seu e-mail'}</strong>. Insira-o abaixo para concluir o cadastro.
-        </p>
+      <AuthCard title="Confirme seu e-mail" subtitle={<> Enviamos um código de confirmação para{' '}
+          <strong>{email || 'seu e-mail'}</strong>. Insira-o abaixo para concluir o cadastro. </>}>
 
         {error && (
           <div className="alert alert-error">
@@ -132,7 +115,7 @@ export function ConfirmEmailPage() {
           </button>
         </form>
 
-        <div className="auth-footer-link">
+        <AuthCardFooter>
           Não recebeu o código?{' '}
           <button
             type="button"
@@ -142,8 +125,8 @@ export function ConfirmEmailPage() {
           >
             {isResending ? 'Reenviando...' : 'Reenviar código'}
           </button>
-        </div>
-      </div>
+        </AuthCardFooter>
+      </AuthCard>
     </div>
   );
 }

@@ -5,15 +5,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { authService } from '../../features/auth/authService';
 import { AppError } from '../../shared/api/errors';
-import './styles.css';
-
-const passwordRules = [
-  { key: 'length', label: 'Mínimo de 8 caracteres', test: (v: string) => v.length >= 8 },
-  { key: 'uppercase', label: 'Uma letra maiúscula', test: (v: string) => /[A-Z]/.test(v) },
-  { key: 'lowercase', label: 'Uma letra minúscula', test: (v: string) => /[a-z]/.test(v) },
-  { key: 'digit', label: 'Um número', test: (v: string) => /\d/.test(v) },
-  { key: 'special', label: 'Um caractere especial', test: (v: string) => /[^A-Za-z0-9]/.test(v) },
-] as const;
+import { AuthHeader } from '../../features/auth/components/AuthHeader';
+import { AuthCard, AuthCardFooter } from '../../features/auth/components/AuthCard';
+import { AuthFields } from '../../features/auth/components/AuthFields';
+import { PasswordChecklist } from '../../features/auth/components/PasswordChecklist';
+import './RegisterPage.css';
 
 const registerSchema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -70,26 +66,9 @@ export function RegisterPage() {
 
   return (
     <div data-scope="auth" className="auth-page">
-      <header className="auth-header">
-        <Link to="/" className="auth-logo">
-          <img src="/icon.png" alt="" className="brand-icon" />
-          <span>MinhasCompras.app</span>
-        </Link>
-        <Link to="/" className="auth-back-link">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="19" y1="12" x2="5" y2="12"></line>
-            <polyline points="12 19 5 12 12 5"></polyline>
-          </svg>
-          <span>Voltar para a Home</span>
-        </Link>
-      </header>
+      <AuthHeader />
 
-      <div className="auth-card">
-        <div className="auth-card-icon">
-          <img src="/icon.png" alt="Minhas Compras BA" />
-        </div>
-        <h1 className="auth-title">Crie sua conta</h1>
-        <p className="auth-subtitle">Comece a organizar suas compras gratuitamente</p>
+      <AuthCard title="Crie sua conta" subtitle={<> Comece a organizar suas compras gratuitamente </>}>
 
         {error && (
           <div className="alert alert-error">
@@ -100,7 +79,7 @@ export function RegisterPage() {
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="form-group">
             <label className="form-label">E-mail</label>
-            <div className="input-icon-wrap">
+            <AuthFields>
               <span className="input-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="2" y="4" width="20" height="16" rx="2" />
@@ -113,13 +92,13 @@ export function RegisterPage() {
                 placeholder="seu@email.com"
                 {...register('email')}
               />
-            </div>
+            </AuthFields>
             {errors.email && <span className="form-error-text">{errors.email.message}</span>}
           </div>
 
           <div className="form-group">
             <label className="form-label">Senha</label>
-            <div className="input-icon-wrap">
+            <AuthFields>
               <span className="input-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="11" width="18" height="11" rx="2" />
@@ -151,38 +130,13 @@ export function RegisterPage() {
                   </svg>
                 )}
               </button>
-            </div>
-            {passwordValue.length > 0 && (
-              <ul className="password-checklist">
-                {passwordRules.map((rule) => {
-                  const passed = rule.test(passwordValue);
-                  return (
-                    <li
-                      key={rule.key}
-                      className={`password-checklist-item ${passed ? 'is-valid' : ''}`}
-                    >
-                      <span className="password-checklist-icon" aria-hidden="true">
-                        {passed ? (
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        ) : (
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="12" cy="12" r="9" />
-                          </svg>
-                        )}
-                      </span>
-                      <span>{rule.label}</span>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+            </AuthFields>
+            <PasswordChecklist password={passwordValue} />
           </div>
 
           <div className="form-group auth-form-group-spaced">
             <label className="form-label">Confirmar Senha</label>
-            <div className="input-icon-wrap">
+            <AuthFields>
               <span className="input-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="11" width="18" height="11" rx="2" />
@@ -214,7 +168,7 @@ export function RegisterPage() {
                   </svg>
                 )}
               </button>
-            </div>
+            </AuthFields>
             {errors.password_confirm && <span className="form-error-text">{errors.password_confirm.message}</span>}
           </div>
 
@@ -223,10 +177,10 @@ export function RegisterPage() {
           </button>
         </form>
 
-        <div className="auth-footer-link">
+        <AuthCardFooter>
           Já tem conta? <Link to="/login" className="font-semibold">Fazer login</Link>
-        </div>
-      </div>
+        </AuthCardFooter>
+      </AuthCard>
     </div>
   );
 }

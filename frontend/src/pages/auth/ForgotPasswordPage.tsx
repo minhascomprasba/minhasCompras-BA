@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { authService } from '../../features/auth/authService';
 import { AppError } from '../../shared/api/errors';
+import './ForgotPasswordPage.css';
 
 const forgotPasswordSchema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -40,7 +41,7 @@ export function ForgotPasswordPage() {
   };
 
   return (
-    <div className="container auth-container-narrow">
+    <div data-scope="auth" className="container auth-container-narrow">
       <div className="card auth-card-inner">
         <h1 className="auth-title-centered">Esqueci minha senha</h1>
         <p className="auth-subtitle-centered">
