@@ -61,10 +61,6 @@
     justify-content: center;
   }
 
-  body.menu-open {
-    overflow: hidden;
-  }
-
   @media (max-width: 1200px) {
     .btn-logout {
       min-height: 44px; /* Touch target minimum on mobile */
@@ -119,7 +115,162 @@
     text-decoration: none;
   }
 
+  .logo-text {
+    font-size: 1.25rem;
+    font-weight: 700;
+    background: linear-gradient(100deg, #17c85f, #3a8fe0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.03em;
+    transition: var(--transition);
+  }
+
+  .navbar-logo:hover .logo-text {
+    opacity: 0.9;
+    filter: brightness(1.1);
+  }
+
+  .navbar-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    flex-shrink: 0;
+  }
+
+  @media (min-width: 1201px) {
+    .navbar-nav {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .navbar-menu {
+      justify-content: flex-end;
+    }
+  }
+
+  .nav-link {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    font-weight: 500;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-md);
+    transition: var(--transition);
+    text-decoration: none;
+  }
+
+  .nav-link:hover {
+    color: var(--text-primary);
+    background: var(--bg-card-hover);
+  }
+
+  .nav-link--active {
+    color: var(--text-primary);
+    background: var(--border-color);
+  }
+
+  /* Navbar mobile: colapsa o menu num dropdown acionado pelo hamburger */
+  @media (max-width: 1200px) {
+    .navbar-toggle {
+      display: flex;
+    }
+
+    .navbar-menu {
+      position: absolute;
+      top: 70px;
+      left: 0;
+      right: 0;
+      margin-left: 0;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+      gap: 0;
+      padding: 0.5rem 1rem 1rem;
+      background: rgba(10, 14, 26, 0.98);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      box-shadow: var(--shadow-lg);
+      display: none;
+      max-height: calc(100dvh - 70px - var(--safe-top));
+      overflow-y: auto;
+    }
+    .navbar-menu--open {
+      display: flex;
+    }
+
+    .navbar-nav {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.25rem;
+      width: 100%;
+    }
+    .navbar-nav .nav-link {
+      display: block;
+      padding: 0.85rem 0.75rem;
+      font-size: 1rem;
+    }
+
+    .navbar-user {
+      flex-wrap: wrap;
+      width: 100%;
+      justify-content: space-between;
+      padding-top: 0.85rem;
+      margin-top: 0.5rem;
+      border-top: 1px solid var(--border-color);
+    }
+    .navbar-user .user-email {
+      display: block;
+      font-size: 0.9rem;
+    }
+  }
+
+  .navbar-user {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  .user-email {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+  }
+
+  @media (max-width: 900px) {
+    .navbar-container {
+      padding: 0 1rem;
+    }
+
+    .navbar-logo .logo-text {
+      font-size: 1.1rem;
+    }
+
+    .navbar-nav {
+      gap: 0.75rem;
+    }
+
+    .nav-link {
+      font-size: 0.85rem;
+      padding: 0.4rem 0.6rem;
+    }
+
+    .user-email {
+      display: none;
+    }
+  }
+
   @media (max-width: 1200px) {
     .navbar-toggle { margin-left: auto; }
   }
+}
+
+body.menu-open {
+  overflow: hidden;
 }
