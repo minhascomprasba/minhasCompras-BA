@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useNotas } from '../features/notas/hooks/useNotasQueries';
-import { useAuth } from '../features/auth/AuthContext';
+import { useNotas } from '../../features/notas/hooks/useNotasQueries';
+import { useAuth } from '../../features/auth/AuthContext';
 import './NotasPage.css';
 
 export function NotasPage() {

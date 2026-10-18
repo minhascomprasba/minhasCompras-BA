@@ -1,19 +1,19 @@
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 
 import { HomePage } from '../pages/HomePage';
-import { ImportPage } from '../pages/ImportPage';
-import { ImportStatusPage } from '../pages/ImportStatusPage';
-import { NotasPage } from '../pages/NotasPage';
-import { NotaDetailPage } from '../pages/NotaDetailPage';
+import { ImportPage } from '../pages/app/ImportPage';
+import { ImportStatusPage } from '../pages/app/ImportStatusPage';
+import { NotasPage } from '../pages/app/NotasPage';
+import { NotaDetailPage } from '../pages/app/NotaDetailPage';
 import { LoginPage } from '../pages/auth/LoginPage';
 import { RegisterPage } from '../pages/auth/RegisterPage';
 import { ConfirmEmailPage } from '../pages/auth/ConfirmEmailPage';
 import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from '../pages/auth/ResetPasswordPage';
-import { DashboardPage as UserDashboardPage } from '../pages/DashboardPage';
+import { DashboardPage as UserDashboardPage } from '../pages/app/DashboardPage';
 import { DashboardPage as AdminDashboardPage } from '../pages/admin/DashboardPage';
 import { UsersPage } from '../pages/admin/UsersPage';
-import { MapPage } from '../pages/MapPage';
+import { MapPage } from '../pages/app/MapPage';
 import { AuthenticatedLayout } from '../components/AuthenticatedLayout';
 import { useAuth } from '../features/auth/AuthContext';
 import { NotFoundPage } from '../pages/NotFoundPage';

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useNota, useNotaItens } from '../features/notas/hooks/useNotasQueries';
-import { useAuth } from '../features/auth/AuthContext';
+import { useNota, useNotaItens } from '../../features/notas/hooks/useNotasQueries';
+import { useAuth } from '../../features/auth/AuthContext';
 
 export function NotaDetailPage() {
   const { notaId } = useParams<{ notaId: string }>();

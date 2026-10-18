@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
-import { useImportStatusPolling } from '../features/imports/hooks/useImportQueries';
-import { useAuth } from '../features/auth/AuthContext';
+import { useImportStatusPolling } from '../../features/imports/hooks/useImportQueries';
+import { useAuth } from '../../features/auth/AuthContext';
 
 export function ImportStatusPage() {
   const { importId } = useParams<{ importId: string }>();

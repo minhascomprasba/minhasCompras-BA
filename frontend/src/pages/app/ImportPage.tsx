@@ -3,14 +3,14 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useStartImport, useSubmitCaptcha } from '../features/imports/hooks/useImportMutations';
-import { importsService } from '../features/imports/services/importsService';
-import { QrCodeScanner } from '../features/imports/components/QrCodeScanner';
-import { extractAccessKeyFromQrContent, validateAccessKey } from '../features/imports/utils/extractAccessKey';
-import { scanQrCodeFromFile } from '../features/imports/utils/scanQrFromFile';
-import { consumeQuickScan } from '../features/imports/utils/quickScanStorage';
-import { ImageUploadIcon, QrCodeIcon } from '../components/ImportActionIcons';
-import type { ImportSource } from '../features/imports/types';
+import { useStartImport, useSubmitCaptcha } from '../../features/imports/hooks/useImportMutations';
+import { importsService } from '../../features/imports/services/importsService';
+import { QrCodeScanner } from '../../features/imports/components/QrCodeScanner';
+import { extractAccessKeyFromQrContent, validateAccessKey } from '../../features/imports/utils/extractAccessKey';
+import { scanQrCodeFromFile } from '../../features/imports/utils/scanQrFromFile';
+import { consumeQuickScan } from '../../features/imports/utils/quickScanStorage';
+import { ImageUploadIcon, QrCodeIcon } from '../../components/ImportActionIcons';
+import type { ImportSource } from '../../features/imports/types';
 import './ImportPage.css';
 
 const accessKeySchema = z.object({

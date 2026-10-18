@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { mapaService, type MapaNota, type MapaPonto } from '../features/mapa/mapaService';
+import { mapaService, type MapaNota, type MapaPonto } from '../../features/mapa/mapaService';
 import './MapPage.css';
 
 // Leaflet é carregado via CDN no index.html e exposto em window.L.
