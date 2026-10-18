@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { CircleNotchIcon as LoaderCircle, PlusIcon as Plus, FunnelIcon as Funnel, XIcon as X, SignOutIcon as SignOut, ReceiptIcon as Receipt, UploadSimpleIcon as UploadSimple, ArrowRightIcon as ArrowRight, CaretLeftIcon as CaretLeft, CaretRightIcon as CaretRight } from '@phosphor-icons/react';
+import { CircleNotchIcon as LoaderCircle, PlusIcon as Plus, FunnelIcon as Funnel, XIcon as X, ReceiptIcon as Receipt, UploadSimpleIcon as UploadSimple, ArrowRightIcon as ArrowRight, CaretLeftIcon as CaretLeft, CaretRightIcon as CaretRight } from '@phosphor-icons/react';
 import { Alert } from '../../components/ui/alert';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -17,7 +17,7 @@ export function NotasPage() {
   const [page, setPage] = useState(1);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
-  const { logout, user } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { data, isLoading, isError, error, isPlaceholderData } = useNotas(user?.id ?? null, {
     page,
@@ -35,14 +35,11 @@ export function NotasPage() {
 
   return (
     <div className="mx-auto w-full max-w-2xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <h1 className="mb-0 text-2xl font-semibold text-foreground">Minhas Notas Fiscais</h1>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => { logout(); navigate('/'); }}><SignOut aria-hidden="true" /> Sair</Button>
-          <Button type="button" className="text-white" onClick={() => navigate('/importar')}>
-            <Plus aria-hidden="true" /> Nova Importação
-          </Button>
-        </div>
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <h1 style={{ margin: 0 }} className="text-2xl font-semibold text-foreground">Minhas Notas Fiscais</h1>
+        <Button type="button" className="text-white" onClick={() => navigate('/importar')}>
+          <Plus aria-hidden="true" /> Nova Importação
+        </Button>
       </header>
 
       <Card>
