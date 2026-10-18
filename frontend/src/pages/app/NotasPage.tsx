@@ -5,7 +5,7 @@ import { Alert } from '../../components/ui/alert';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
-import { Input } from '../../components/ui/input';
+import { DatePicker } from '../../components/ui/date-picker';
 import { Label } from '../../components/ui/label';
 import { useNotas } from '../../features/notas/hooks/useNotasQueries';
 import { useAuth } from '../../features/auth/AuthContext';
@@ -50,11 +50,11 @@ export function NotasPage() {
           <form onSubmit={(event) => { event.preventDefault(); setPage(1); }} className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
             <div className="grid min-w-0 gap-2 sm:flex-1">
               <Label htmlFor="notas-date-from">De (Data da compra):</Label>
-              <Input id="notas-date-from" type="date" value={dateFrom} onChange={(event) => { setDateFrom(event.target.value); setPage(1); }} />
+              <DatePicker id="notas-date-from" label="De (Data da compra)" value={dateFrom} onChange={(value) => { setDateFrom(value); setPage(1); }} />
             </div>
             <div className="grid min-w-0 gap-2 sm:flex-1">
               <Label htmlFor="notas-date-to">Até:</Label>
-              <Input id="notas-date-to" type="date" value={dateTo} onChange={(event) => { setDateTo(event.target.value); setPage(1); }} />
+              <DatePicker id="notas-date-to" label="Até" value={dateTo} onChange={(value) => { setDateTo(value); setPage(1); }} />
             </div>
             <Button type="submit" className="h-10 text-white"><Funnel aria-hidden="true" /> Filtrar</Button>
             {isFiltered && <Button type="button" variant="outline" className="h-10" onClick={clearFilters}><X aria-hidden="true" /> Limpar</Button>}
