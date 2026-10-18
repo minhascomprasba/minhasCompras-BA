@@ -3,9 +3,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { authService } from '../features/auth/authService';
-import { AppError } from '../shared/api/errors';
-import './AuthPages.css';
+import { authService } from '../../features/auth/authService';
+import { AppError } from '../../shared/api/errors';
+import './styles.css';
 
 const passwordRules = [
   { key: 'length', label: 'Mínimo de 8 caracteres', test: (v: string) => v.length >= 8 },

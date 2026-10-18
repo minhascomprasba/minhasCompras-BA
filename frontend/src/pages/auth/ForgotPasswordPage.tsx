@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { authService } from '../features/auth/authService';
-import { AppError } from '../shared/api/errors';
+import { authService } from '../../features/auth/authService';
+import { AppError } from '../../shared/api/errors';
 
 const forgotPasswordSchema = z.object({
   email: z.string().email('E-mail inválido'),

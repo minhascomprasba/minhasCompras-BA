@@ -3,10 +3,10 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useAuth } from '../features/auth/AuthContext';
-import { authService } from '../features/auth/authService';
-import { AppError } from '../shared/api/errors';
-import './AuthPages.css';
+import { useAuth } from '../../features/auth/AuthContext';
+import { authService } from '../../features/auth/authService';
+import { AppError } from '../../shared/api/errors';
+import './styles.css';
 
 const confirmEmailSchema = z.object({
   code: z.string()
