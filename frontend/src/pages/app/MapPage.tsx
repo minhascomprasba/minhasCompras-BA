@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { MapPinIcon as MapMarker } from '@phosphor-icons/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CaretRightIcon as ChevronRight, CircleNotchIcon as LoaderCircle, MapPinIcon as MapPin, ReceiptIcon as Receipt } from '@phosphor-icons/react';
+import { ArrowRightIcon as ArrowRight, CircleNotchIcon as LoaderCircle, MapPinIcon as MapPin, ReceiptIcon as Receipt } from '@phosphor-icons/react';
 import { Alert } from '../../components/ui/alert';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -310,7 +310,7 @@ export function MapPage() {
         <Card>
           <CardHeader className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 space-y-1">
-              <h2 className="m-0 text-xl font-semibold break-words text-foreground">Notas de {selectedLocation.label}</h2>
+              <h2 style={{ margin: 0 }} className="text-xl font-semibold break-words text-foreground">Notas de {selectedLocation.label}</h2>
               <CardDescription>CEP {formatCep(selectedLocation.cep)} · {selectedLocation.address}</CardDescription>
             </div>
             <Badge variant="secondary">{selectedLocation.notasCount} nota(s)</Badge>
@@ -319,22 +319,38 @@ export function MapPage() {
             {selectedLocation.notas.length === 0 ? (
               <div className="text-muted-foreground">Nenhuma nota detalhada disponível para este local.</div>
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-4 lg:grid-cols-2">
                 {selectedLocation.notas.map(nota => (
-                  <Card key={nota.id}>
-                    <CardContent className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Receipt className="size-5 text-primary" aria-hidden="true" />
-                        <strong className="text-lg text-primary">{formatBRL(nota.valor_total_nota)}</strong>
+                  <Card key={nota.id} className="transition-shadow hover:ring-primary/30">
+                    <CardContent className="space-y-4">
+                      <div className="flex flex-wrap items-center justify-between gap-4">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                            <Receipt className="size-5" aria-hidden="true" />
+                          </span>
+                          <div className="flex flex-col gap-1">
+                            <span className="font-medium text-foreground">
+                              {nota.data_compra ? new Date(nota.data_compra).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }) : 'Data indisponível'}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {nota.data_compra ? `Compra às ${new Date(nota.data_compra).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : `Importada em ${formatDate(nota.created_at)}`}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-1 sm:text-right">
+                          <span className="text-xs text-muted-foreground">Total da compra</span>
+                          <span className="text-2xl font-semibold tracking-tight text-foreground tabular-nums">{formatBRL(nota.valor_total_nota)}</span>
+                        </div>
                       </div>
-                      <div className="text-sm text-muted-foreground">{formatDate(nota.data_compra ?? nota.created_at)}</div>
-                      <div className="text-xs">
-                        <span className="text-muted-foreground">Chave: </span>
-                        <span className="font-mono break-all text-foreground select-text">{nota.codigo_acesso || 'Indisponível'}</span>
+                      <div className="flex flex-wrap items-start justify-between gap-3 border-t border-border pt-3">
+                        <details className="min-w-0 flex-1 self-center text-xs text-muted-foreground">
+                          <summary className="cursor-pointer rounded-sm py-2 focus-visible:outline-2 focus-visible:outline-ring">Chave de acesso</summary>
+                          <span className="mt-2 block font-mono break-all text-foreground select-text">{nota.codigo_acesso || 'Indisponível'}</span>
+                        </details>
+                        <Button type="button" variant="ghost" className="shrink-0 bg-transparent text-primary hover:bg-primary/10 hover:text-primary" onClick={() => navigate(`/notas/${nota.id}`)}>
+                          Ver detalhes <ArrowRight aria-hidden="true" />
+                        </Button>
                       </div>
-                      <Button type="button" variant="outline" className="w-full" onClick={() => navigate(`/notas/${nota.id}`)}>
-                        Ver Detalhes <ChevronRight aria-hidden="true" />
-                      </Button>
                     </CardContent>
                   </Card>
                 ))}
