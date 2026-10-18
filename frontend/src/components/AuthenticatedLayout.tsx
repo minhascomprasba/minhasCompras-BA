@@ -5,7 +5,7 @@ import { ProfileMenu } from './ProfileMenu';
 import { QuickScan } from './QuickScan';
 
 export function AuthenticatedLayout() {
-  const { logout, isAdmin, isSuperAdmin } = useAuth();
+  const { logout, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -67,11 +67,6 @@ export function AuthenticatedLayout() {
               {isAdmin && (
                 <NavLink to="/admin" className={navLinkClass} onClick={closeMenu} end>
                   Admin
-                </NavLink>
-              )}
-              {isSuperAdmin && (
-                <NavLink to="/admin/usuarios" className={navLinkClass} onClick={closeMenu}>
-                  Usuários
                 </NavLink>
               )}
               <NavLink to="/notas" className={navLinkClass} onClick={closeMenu}>
