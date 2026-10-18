@@ -1,3 +1,4 @@
+import './QrCodeScanner.css';
 import { useCallback, useEffect, useId, useRef, useState, type ChangeEvent } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { pickDefaultCameraId, rankBackCameras } from '../utils/pickBackCamera';
