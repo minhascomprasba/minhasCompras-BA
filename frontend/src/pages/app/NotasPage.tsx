@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { CircleNotchIcon as LoaderCircle, PlusIcon as Plus, FunnelIcon as Funnel, XIcon as X, ReceiptIcon as Receipt, UploadSimpleIcon as UploadSimple, ArrowRightIcon as ArrowRight, CaretLeftIcon as CaretLeft, CaretRightIcon as CaretRight } from '@phosphor-icons/react';
+import { CircleNotchIcon as LoaderCircle, PlusIcon as Plus, XIcon as X, ReceiptIcon as Receipt, UploadSimpleIcon as UploadSimple, ArrowRightIcon as ArrowRight, CaretLeftIcon as CaretLeft, CaretRightIcon as CaretRight } from '@phosphor-icons/react';
 import { Alert } from '../../components/ui/alert';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 import { DateRangePicker } from '../../components/ui/date-picker';
-import { Label } from '../../components/ui/label';
 import { useNotas } from '../../features/notas/hooks/useNotasQueries';
 import { useAuth } from '../../features/auth/AuthContext';
 
@@ -36,23 +35,16 @@ export function NotasPage() {
     <div className="page-layout">
       <header className="page-header">
         <h1 className="page-title">Minhas Notas Fiscais</h1>
-        <Button type="button" className="text-white" onClick={() => navigate('/importar')}>
-          <Plus aria-hidden="true" /> Nova Importação
-        </Button>
+        <div role="group" aria-label="Ações das notas fiscais" className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2">
+          <div className="w-64 max-w-full">
+            <DateRangePicker id="notas-date-range" label="Período da compra" value={{ from: dateFrom, to: dateTo }} onChange={({ from, to }) => { setDateFrom(from); setDateTo(to); setPage(1); }} />
+          </div>
+          {isFiltered && <Button type="button" variant="outline" className="h-10" onClick={clearFilters}><X aria-hidden="true" /> Limpar</Button>}
+          <Button type="button" className="h-10 text-white" onClick={() => navigate('/importar')}>
+            <Plus aria-hidden="true" /> Nova Importação
+          </Button>
+        </div>
       </header>
-
-      <Card>
-        <CardContent>
-          <form onSubmit={(event) => { event.preventDefault(); setPage(1); }} className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
-            <div className="grid w-full min-w-0 gap-2 sm:w-80">
-              <Label htmlFor="notas-date-range">Período da compra:</Label>
-              <DateRangePicker id="notas-date-range" label="Período da compra" value={{ from: dateFrom, to: dateTo }} onChange={({ from, to }) => { setDateFrom(from); setDateTo(to); setPage(1); }} />
-            </div>
-            <Button type="submit" className="h-10 text-white"><Funnel aria-hidden="true" /> Filtrar</Button>
-            {isFiltered && <Button type="button" variant="outline" className="h-10" onClick={clearFilters}><X aria-hidden="true" /> Limpar</Button>}
-          </form>
-        </CardContent>
-      </Card>
 
       {isError && <Alert variant="destructive"><strong>Erro:</strong> {error.message}</Alert>}
       {isLoading && !data && (
