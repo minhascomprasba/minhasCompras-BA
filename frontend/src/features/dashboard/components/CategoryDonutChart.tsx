@@ -1,5 +1,6 @@
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import type { GastoPorCategoria } from '../types';
+import './CategoryDonutChart.css';
 
 interface CategoryDonutChartProps {
   data: GastoPorCategoria[];
@@ -42,7 +43,7 @@ export function CategoryDonutChart({ data }: CategoryDonutChartProps) {
   };
 
   return (
-    <div className="donut-chart-layout-wrapper">
+    <div data-scope="category-donut" className="donut-chart-layout-wrapper">
       {/* Container do Gráfico */}
       <div className="donut-chart-svg-container">
         <ResponsiveContainer width="100%" height="100%">

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import type { ProdutoFrequente } from '../types';
+import './PriceEvolutionChart.css';
 
 interface PriceEvolutionChartProps {
   data: ProdutoFrequente[];
@@ -87,7 +88,7 @@ export function PriceEvolutionChart({ data, onProductSelect }: PriceEvolutionCha
   }
 
   return (
-    <div className="price-chart-wrapper">
+    <div data-scope="price-evolution" className="price-chart-wrapper">
       {/* Barra de Pesquisa com Autocomplete */}
       <div ref={wrapperRef} className="product-search-wrapper">
         <div className="product-search-input-wrapper">

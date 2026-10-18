@@ -1,0 +1,6 @@
+@scope ([data-scope="price-evolution"]) {
+  :scope { width: 100%; }
+  .price-chart-wrapper { position: relative; width: 100%; }
+  .price-evolution-chart-container { height: 165px; width: 100%; }
+  .product-search-wrapper { position: relative; }
+}

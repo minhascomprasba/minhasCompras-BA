@@ -4,6 +4,7 @@ import { useAuth } from '../features/auth/AuthContext';
 import { useDashboard } from '../features/dashboard/hooks/useDashboard';
 import { CategoryDonutChart } from '../features/dashboard/components/CategoryDonutChart';
 import { PriceEvolutionChart } from '../features/dashboard/components/PriceEvolutionChart';
+import './DashboardPage.css';
 
 export function DashboardPage() {
   const { user } = useAuth();
@@ -91,7 +92,7 @@ export function DashboardPage() {
   };
 
   return (
-    <div className="container">
+      <div data-scope="dashboard" className="container">
       {/* Header com Seletor de Período */}
       <div className="dashboard-header">
         <div className="dashboard-title-wrapper">
