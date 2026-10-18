@@ -536,6 +536,24 @@ body.menu-open .scan-fab {
 }
 
 /* App Shell Layout */
+.app-navbar {
+  transition: transform 0.2s ease;
+}
+
+.app-navbar--hidden {
+  transform: translateY(-100%);
+}
+
+.app-navbar:focus-within {
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-navbar {
+    transition: none;
+  }
+}
+
 .app-layout-wrapper {
   display: flex;
   flex-direction: column;

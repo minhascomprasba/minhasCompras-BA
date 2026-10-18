@@ -8,8 +8,28 @@ export function AuthenticatedLayout() {
   const { logout, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [headerHidden, setHeaderHidden] = useState(false);
 
   const closeMenu = () => setMenuOpen(false);
+
+  useEffect(() => {
+    let previousScrollY = Math.max(0, window.scrollY);
+
+    const handleScroll = () => {
+      const scrollY = Math.max(0, window.scrollY);
+      if (scrollY <= 70) {
+        setHeaderHidden(false);
+      } else if (Math.abs(scrollY - previousScrollY) < 8) {
+        return;
+      } else {
+        setHeaderHidden(scrollY > previousScrollY);
+      }
+      previousScrollY = scrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     if (menuOpen) {
@@ -31,7 +51,7 @@ export function AuthenticatedLayout() {
 
   return (
     <div className="app-layout-wrapper">
-      <header className="app-navbar">
+      <header className={`app-navbar${headerHidden && !menuOpen ? ' app-navbar--hidden' : ''}`}>
         <div className="navbar-container">
           <NavLink to="/dashboard" className="navbar-logo" onClick={closeMenu} aria-label="Minhas Compras BA — Dashboard" title="Minhas Compras BA">
             <img src="/icon.png" alt="" className="brand-icon" />
