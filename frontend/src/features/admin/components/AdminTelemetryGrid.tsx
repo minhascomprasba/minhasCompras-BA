@@ -6,7 +6,7 @@ const CHANNELS_TOOLTIP =
 const PAYMENTS_TOOLTIP =
   'Distribuição das formas de pagamento registradas nas notas fiscais.';
 const CATALOG_TOOLTIP =
-  'Percentual de produtos que possuem código de barras universal (GTIN) frente aos itens sem identificador padrão.';
+  'Mostra a proporção de produtos com e sem código de barras cadastrado nas notas fiscais do período.';
 
 interface AdminTelemetryGridProps {
   telemetria: AdminTelemetria;
@@ -60,8 +60,8 @@ function DonutLegend({ slices }: DonutLegendProps) {
 
 function CatalogQuality({ qualidade }: { qualidade: QualidadeCatalogo }) {
   const slices: TelemetriaSlice[] = [
-    { label: 'Com Código (GTIN)', percentual: qualidade.comGtin, color: 'var(--brand-green)' },
-    { label: 'Sem Código', percentual: qualidade.semGtin, color: 'var(--warning)' },
+    { label: 'Com código de barras', percentual: qualidade.comGtin, color: 'var(--brand-green)' },
+    { label: 'Sem código de barras', percentual: qualidade.semGtin, color: 'var(--warning)' },
   ];
 
   return (
@@ -74,13 +74,13 @@ function CatalogQuality({ qualidade }: { qualidade: QualidadeCatalogo }) {
           <p className="admin-catalog-stat-value admin-catalog-stat-value--success">
             {qualidade.comGtin}%
           </p>
-          <p className="admin-catalog-stat-label">Com GTIN</p>
+          <p className="admin-catalog-stat-label">Com código de barras</p>
         </div>
         <div>
           <p className="admin-catalog-stat-value admin-catalog-stat-value--warning">
             {qualidade.semGtin}%
           </p>
-          <p className="admin-catalog-stat-label">Sem GTIN</p>
+          <p className="admin-catalog-stat-label">Sem código de barras</p>
         </div>
         <div>
           <p className="admin-catalog-stat-value">{qualidade.produtosCatalogados}</p>
@@ -118,7 +118,7 @@ export function AdminTelemetryGrid({ telemetria }: AdminTelemetryGridProps) {
 
       <div className="card admin-telemetry-card">
         <div className="admin-telemetry-title-row">
-          <h3 className="admin-telemetry-title">Índice de Identificação (GTIN)</h3>
+          <h3 className="admin-telemetry-title">Produtos com código de barras</h3>
           <InfoTooltip content={CATALOG_TOOLTIP} />
         </div>
         <CatalogQuality qualidade={telemetria.qualidadeCatalogo} />
