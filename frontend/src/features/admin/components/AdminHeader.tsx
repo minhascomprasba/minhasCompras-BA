@@ -33,10 +33,10 @@ export function AdminHeader({
 }: AdminHeaderProps) {
   const navigate = useNavigate();
   return (
-    <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-      <div>
-        <h1 className="mb-1 text-2xl font-semibold text-foreground">Painel de Gestão</h1>
-        <div className="text-sm text-muted-foreground">
+    <div className="page-header">
+      <div className="page-heading">
+        <h1 className="page-title">Painel de Gestão</h1>
+        <div className="page-description">
           Acompanhamento de uso, compras e adesão ao projeto
           {janelaLabel ? ` — ${janelaLabel}` : ''}
           {isRefreshing ? ' • atualizando...' : ''}

@@ -5,8 +5,8 @@
 }
 
 .status-footer {
-  margin-top: 3rem;
-  padding-top: 1.5rem;
+  margin-top: var(--page-gap);
+  padding-top: var(--page-gap);
   border-top: 1px solid var(--border-color);
   font-size: 0.8rem;
   color: var(--text-muted);
@@ -18,8 +18,4 @@
   }
 }
 
-@media (max-width: 480px) {
-  .status-footer {
-    margin-top: 2rem;
-  }
-}
+.status-footer .mono-font { overflow-wrap: anywhere; }

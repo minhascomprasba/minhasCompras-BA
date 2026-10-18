@@ -254,11 +254,11 @@ export function MapPage() {
   };
 
   return (
-    <div data-scope="map" className="mx-auto w-full max-w-7xl space-y-6 px-4 py-6 text-foreground sm:px-6 sm:py-8">
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <div className="space-y-2">
-          <h1 style={{ margin: 0 }} className="text-2xl font-semibold text-foreground">Mapa das Compras</h1>
-          <div className="text-sm text-muted-foreground">Explore os estabelecimentos e consulte suas notas fiscais.</div>
+    <div data-scope="map" className="page-layout">
+      <header className="page-header">
+        <div className="page-heading">
+          <h1 className="page-title">Mapa das Compras</h1>
+          <div className="page-description">Explore os estabelecimentos e consulte suas notas fiscais.</div>
         </div>
         <Button type="button" variant="outline" disabled={!mapReady || !locations.length} onClick={showAllLocations}>Ver todos os locais</Button>
       </header>

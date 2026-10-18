@@ -21,7 +21,7 @@ export function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="container flex min-h-[60vh] items-center justify-center" role="status">
+      <div className="page-layout page-state" role="status">
         <div className="flex flex-col items-center gap-3 text-muted-foreground">
           <LoaderCircle className="size-10 animate-spin" aria-hidden="true" />
           <span className="text-muted-foreground">Carregando dados do painel...</span>
@@ -32,7 +32,7 @@ export function DashboardPage() {
 
   if (isError || !dashboardData) {
     return (
-      <div data-scope="dashboard" className="container flex min-h-[60vh] items-center justify-center">
+      <div data-scope="dashboard" className="page-layout page-state">
         <Alert variant="destructive" className="max-w-md text-center">
           <CircleAlert className="size-5 shrink-0" aria-hidden="true" />
           <h2>Erro ao carregar dados</h2>
@@ -46,7 +46,7 @@ export function DashboardPage() {
 
   if (dashboardData.length === 0) {
     return (
-      <div data-scope="dashboard" className="container flex min-h-[60vh] items-center justify-center">
+      <div data-scope="dashboard" className="page-layout page-state">
         <Card className="max-w-lg p-6 text-center">
           <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-primary/10 text-primary">
             <Receipt className="size-5 shrink-0" aria-hidden="true" />
@@ -81,12 +81,12 @@ export function DashboardPage() {
   };
 
   return (
-    <div data-scope="dashboard" className="container space-y-6">
+    <div data-scope="dashboard" className="page-layout">
       {/* Header com Seletor de Período */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="[&_h1]:mb-1 [&_h1]:text-3xl [&_p]:mb-0 [&_p]:text-sm [&_p]:text-muted-foreground">
-          <h1>Painel de Controle</h1>
-          <p>Visão geral de seus hábitos e comportamento de gastos</p>
+      <div className="page-header">
+        <div className="page-heading">
+          <h1 className="page-title">Painel de Controle</h1>
+          <p className="page-description">Visão geral de seus hábitos e comportamento de gastos</p>
         </div>
 
         <div className="flex items-center gap-2 rounded-lg border border-border bg-card p-1">

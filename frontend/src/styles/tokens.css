@@ -1,4 +1,10 @@
 :root {
+  --page-max-width: 75rem;
+  --page-gutter: 1.5rem;
+  --page-padding-block: 2rem;
+  --page-gap: 1.5rem;
+  --panel-padding: 1.5rem;
+
   /* Color Palette - Brand Dark Theme (green #17c85f / blue #033876) */
   --bg-main: #0A0F1A;
   --bg-card: #111A2B;
@@ -50,4 +56,12 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
+}
+
+@media (max-width: 640px) {
+  :root {
+    --page-gutter: 1rem;
+    --page-padding-block: 1.5rem;
+    --panel-padding: 1rem;
+  }
 }

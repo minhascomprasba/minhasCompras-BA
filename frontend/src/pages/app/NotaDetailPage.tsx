@@ -34,11 +34,11 @@ export function NotaDetailPage() {
   const { data: itensData, isLoading: isItensLoading, isError: isItensError, error: itensError, isPlaceholderData } = useNotaItens(user?.id ?? null, id, { page, page_size: pageSize });
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-6 px-4 py-6 text-foreground sm:px-6 sm:py-8">
+    <div className="page-layout">
       <Button type="button" variant="ghost" className="bg-transparent" onClick={() => navigate('/notas')}>
         <ArrowLeft aria-hidden="true" /> Minhas notas fiscais
       </Button>
-      <h1 style={{ margin: 0 }} className="text-2xl font-semibold text-foreground">Detalhes da Nota</h1>
+      <h1 className="page-title">Detalhes da Nota</h1>
 
       {isNaN(id) ? <Alert variant="destructive">ID da nota inválido.</Alert> : (
         <>

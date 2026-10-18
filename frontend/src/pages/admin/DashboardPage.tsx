@@ -31,14 +31,14 @@ export function DashboardPage() {
   );
 
   if (isLoading) {
-    return <div role="status" className="flex min-h-80 items-center justify-center gap-2 text-muted-foreground"><LoaderCircle className="size-6 animate-spin" aria-hidden="true" />Carregando indicadores...</div>;
+    return <div role="status" className="page-layout page-state gap-2 text-muted-foreground"><LoaderCircle className="size-6 animate-spin" aria-hidden="true" />Carregando indicadores...</div>;
   }
   if (isError || !data) {
-    return <div className="mx-auto w-full max-w-6xl px-4 py-8"><Alert variant="destructive"><strong>Erro ao carregar indicadores: </strong>{error?.message || 'Ocorreu um erro ao carregar os dados de gestão. Tente novamente mais tarde.'}</Alert></div>;
+    return <div className="page-layout"><Alert variant="destructive"><strong>Erro ao carregar indicadores: </strong>{error?.message || 'Ocorreu um erro ao carregar os dados de gestão. Tente novamente mais tarde.'}</Alert></div>;
   }
 
   return (
-    <div data-scope="admin" className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 text-foreground sm:px-6 sm:py-8">
+    <div data-scope="admin" className="page-layout">
       <AdminHeader
         period={period}
         onPeriodChange={setPeriod}

@@ -33,9 +33,9 @@ export function NotasPage() {
   const isFiltered = !!(dateFrom || dateTo);
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <h1 style={{ margin: 0 }} className="text-2xl font-semibold text-foreground">Minhas Notas Fiscais</h1>
+    <div className="page-layout">
+      <header className="page-header">
+        <h1 className="page-title">Minhas Notas Fiscais</h1>
         <Button type="button" className="text-white" onClick={() => navigate('/importar')}>
           <Plus aria-hidden="true" /> Nova Importação
         </Button>
@@ -44,7 +44,7 @@ export function NotasPage() {
       <Card>
         <CardContent>
           <form onSubmit={(event) => { event.preventDefault(); setPage(1); }} className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
-            <div className="grid min-w-0 gap-2 sm:flex-1">
+            <div className="grid w-full min-w-0 gap-2 sm:w-80">
               <Label htmlFor="notas-date-range">Período da compra:</Label>
               <DateRangePicker id="notas-date-range" label="Período da compra" value={{ from: dateFrom, to: dateTo }} onChange={({ from, to }) => { setDateFrom(from); setDateTo(to); setPage(1); }} />
             </div>
@@ -84,7 +84,7 @@ export function NotasPage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-4">
+            <div className="grid gap-6 lg:grid-cols-2">
               {data.data.map((nota) => {
                 return (
                   <Card key={nota.id} className="transition-shadow hover:ring-primary/30">
