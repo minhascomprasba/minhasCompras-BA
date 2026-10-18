@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAdminUsuarios, useDeleteUsuario, useUpdateUsuarioRole } from '../features/admin/hooks/useAdminData';
-import { AdminUsersTable } from '../features/admin/components/AdminUsersTable';
-import { InfoTooltip } from '../features/admin/components/InfoTooltip';
-import type { AdminUsuario } from '../features/admin/types';
-import type { UserRole } from '../features/auth/authService';
-import { ROLE_LABELS } from '../features/auth/authService';
-import { useAuth } from '../features/auth/AuthContext';
+import { useAdminUsuarios, useDeleteUsuario, useUpdateUsuarioRole } from '../../features/admin/hooks/useAdminData';
+import { AdminUsersTable } from '../../features/admin/components/AdminUsersTable';
+import { InfoTooltip } from '../../features/admin/components/InfoTooltip';
+import type { AdminUsuario } from '../../features/admin/types';
+import type { UserRole } from '../../features/auth/authService';
+import { ROLE_LABELS } from '../../features/auth/authService';
+import { useAuth } from '../../features/auth/AuthContext';
 
-import './Admin.css';
+import './styles.css';
 const PAGE_SIZE = 20;
 
 const ROLES_TOOLTIP =
@@ -21,7 +21,7 @@ const ROLE_FILTERS: { value: '' | UserRole; label: string }[] = [
   { value: 'SUPER_ADMIN', label: 'Gestores principais' },
 ];
 
-export function AdminUsersPage() {
+export function UsersPage() {
   const { user } = useAuth();
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');

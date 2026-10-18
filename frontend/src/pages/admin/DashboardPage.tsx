@@ -1,23 +1,23 @@
 import { useState } from 'react';
-import { useAdminData } from '../features/admin/hooks/useAdminData';
-import { AdminHeader } from '../features/admin/components/AdminHeader';
-import { AdminKpiGrid } from '../features/admin/components/AdminKpiGrid';
-import { AdminGrowthChart } from '../features/admin/components/AdminGrowthChart';
-import { AdminScraperChart } from '../features/admin/components/AdminScraperChart';
-import { AdminTopProducts } from '../features/admin/components/AdminTopProducts';
-import { AdminMap } from '../features/admin/components/AdminMap';
-import { AdminTelemetryGrid } from '../features/admin/components/AdminTelemetryGrid';
-import { AdminLogsTable } from '../features/admin/components/AdminLogsTable';
-import type { AdminPeriod } from '../features/admin/types';
-import { useAuth } from '../features/auth/AuthContext';
+import { useAdminData } from '../../features/admin/hooks/useAdminData';
+import { AdminHeader } from '../../features/admin/components/AdminHeader';
+import { AdminKpiGrid } from '../../features/admin/components/AdminKpiGrid';
+import { AdminGrowthChart } from '../../features/admin/components/AdminGrowthChart';
+import { AdminScraperChart } from '../../features/admin/components/AdminScraperChart';
+import { AdminTopProducts } from '../../features/admin/components/AdminTopProducts';
+import { AdminMap } from '../../features/admin/components/AdminMap';
+import { AdminTelemetryGrid } from '../../features/admin/components/AdminTelemetryGrid';
+import { AdminLogsTable } from '../../features/admin/components/AdminLogsTable';
+import type { AdminPeriod } from '../../features/admin/types';
+import { useAuth } from '../../features/auth/AuthContext';
 
-import './Admin.css';
+import './styles.css';
 function currentMonthKey(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 }
 
-export function AdminPage() {
+export function DashboardPage() {
   const [period, setPeriod] = useState<AdminPeriod>('30d');
   const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthKey);
   const [selectedYear, setSelectedYear] = useState<string>(() => String(new Date().getFullYear()));

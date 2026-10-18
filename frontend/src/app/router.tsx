@@ -10,9 +10,9 @@ import { RegisterPage } from '../pages/RegisterPage';
 import { ConfirmEmailPage } from '../pages/ConfirmEmailPage';
 import { ForgotPasswordPage } from '../pages/ForgotPasswordPage';
 import { ResetPasswordPage } from '../pages/ResetPasswordPage';
-import { DashboardPage } from '../pages/DashboardPage';
-import { AdminPage } from '../pages/AdminPage';
-import { AdminUsersPage } from '../pages/AdminUsersPage';
+import { DashboardPage as UserDashboardPage } from '../pages/DashboardPage';
+import { DashboardPage as AdminDashboardPage } from '../pages/admin/DashboardPage';
+import { UsersPage } from '../pages/admin/UsersPage';
 import { MapPage } from '../pages/MapPage';
 import { AuthenticatedLayout } from '../components/AuthenticatedLayout';
 import { useAuth } from '../features/auth/AuthContext';
@@ -80,19 +80,19 @@ const router = createBrowserRouter([
   {
     path: '/admin',
     element: <AdminRoute />,
-    children: [{ index: true, element: <AdminPage /> }],
+    children: [{ index: true, element: <AdminDashboardPage /> }],
   },
   {
     path: '/admin/usuarios',
     element: <AdminRoute requireSuperAdmin />,
-    children: [{ index: true, element: <AdminUsersPage /> }],
+    children: [{ index: true, element: <UsersPage /> }],
   },
   {
     element: <PrivateRoute><AuthenticatedLayout /></PrivateRoute>,
     children: [
       {
         path: '/dashboard',
-        element: <DashboardPage />,
+        element: <UserDashboardPage />,
       },
       {
         path: '/importar',
