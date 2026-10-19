@@ -59,6 +59,10 @@ ENV CHROME_BIN=/usr/bin/google-chrome-stable \
 COPY requirements.txt ./
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
+# Pre-baixa o chromedriver no build (senao seria baixado no 1o uso, em runtime)
+COPY utils/ utils/
+RUN python -m utils.chromedriver
+
 COPY . .
 
 EXPOSE 10000

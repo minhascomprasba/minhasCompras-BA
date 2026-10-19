@@ -2,15 +2,21 @@ from __future__ import annotations
 
 import os
 
+from selenium.common.exceptions import SessionNotCreatedException
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.chrome.webdriver import WebDriver as ChromeDriver
 from selenium.webdriver.remote.webdriver import WebDriver
-from webdriver_manager.chrome import ChromeDriverManager
+
+from utils.chromedriver import ensure_chromedriver
+from utils.logger import setup_logger
 
 
-def build_chrome_driver(headless: bool = False) -> WebDriver:
+def _build_options(headless: bool) -> ChromeOptions:
     options = ChromeOptions()
+    # "eager" libera o driver.get no DOMContentLoaded, sem esperar CSS/imagens.
+    # A imagem do captcha e aguardada explicitamente em auth_flow.
+    options.page_load_strategy = "eager"
     options.add_argument("--disable-extensions")
     options.add_argument("--disable-background-networking")
     options.add_argument("--disable-background-timer-throttling")
@@ -20,6 +26,8 @@ def build_chrome_driver(headless: bool = False) -> WebDriver:
     options.add_argument("--ignore-ssl-errors")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-gpu")
+    options.add_argument("--no-first-run")
+    options.add_argument("--no-default-browser-check")
     options.add_argument("--window-size=1920,1080")
 
     if headless:
@@ -32,16 +40,42 @@ def build_chrome_driver(headless: bool = False) -> WebDriver:
     if chrome_bin:
         options.binary_location = chrome_bin
 
-    chromedriver_path = os.getenv("CHROMEDRIVER_PATH", "").strip()
-    if chromedriver_path:
-        service = ChromeService(chromedriver_path)
-        return ChromeDriver(service=service, options=options)
+    return options
+
+
+def _start(driver_path: str, options: ChromeOptions) -> WebDriver:
+    return ChromeDriver(service=ChromeService(driver_path), options=options)
+
+
+def build_chrome_driver(headless: bool = False) -> WebDriver:
+    options = _build_options(headless)
+
+    env_path = os.getenv("CHROMEDRIVER_PATH", "").strip()
+    if env_path:
+        return _start(env_path, options)
+
+    logger = setup_logger()
+    try:
+        driver_path = str(ensure_chromedriver())
+    except Exception:
+        logger.warning("Falha ao baixar chromedriver; usando Selenium Manager.", exc_info=True)
+        return ChromeDriver(options=options)
 
     try:
-        return ChromeDriver(options=options)
+        return _start(driver_path, options)
+    except SessionNotCreatedException as exc:
+        # So rebaixa quando o erro e de versao (Chrome atualizou); outras falhas
+        # de inicializacao do Chrome nao se resolvem trocando o driver.
+        if "only supports Chrome version" not in str(exc):
+            raise
+        logger.warning("chromedriver incompativel com o Chrome; baixando a versao correta.")
+
+    try:
+        driver_path = str(ensure_chromedriver(force=True))
     except Exception:
-        service = ChromeService(ChromeDriverManager().install())
-        return ChromeDriver(service=service, options=options)
+        logger.warning("Falha ao atualizar chromedriver; usando Selenium Manager.", exc_info=True)
+        return ChromeDriver(options=options)
+    return _start(driver_path, options)
 
 
 def open_file_with_default_viewer(file_path: str) -> None:

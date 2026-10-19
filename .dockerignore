@@ -12,3 +12,5 @@ data/captchas/*
 data/output/*
 .env
 docs/
+drivers/*
+!drivers/.gitkeep

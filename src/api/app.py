@@ -11,6 +11,7 @@ from src.api.routers import router
 from src.api.admin import admin_router
 from src.api.auth import auth_router
 from src.api.schemas import ErrorResponse
+from src.api.services.import_service import driver_pool
 from src.database.connection import engine
 from src.database.models import Base, UserRole
 from src.api import settings
@@ -117,6 +118,12 @@ def _ensure_schema_updates() -> None:
 def on_startup() -> None:
     Base.metadata.create_all(bind=engine)
     _ensure_schema_updates()
+    driver_pool.start()
+
+
+@app.on_event("shutdown")
+def on_shutdown() -> None:
+    driver_pool.shutdown()
 
 
 @app.exception_handler(ApiError)
