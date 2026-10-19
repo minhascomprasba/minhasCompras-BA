@@ -30,7 +30,7 @@
   .app-navbar {
     position: sticky;
     top: 0;
-    z-index: 40;
+    z-index: 50;
     height: calc(70px + var(--safe-top));
     padding-top: var(--safe-top);
     background: color-mix(in srgb, var(--background) 85%, transparent);
@@ -82,7 +82,6 @@
   }
 }
 
-/* Legacy global rules are unlayered, so shell overrides live here as well. */
 .app-shell-theme .shell-menu-button {
   background: var(--bg-card-hover);
   color: var(--text-secondary);

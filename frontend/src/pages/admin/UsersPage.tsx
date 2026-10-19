@@ -16,16 +16,17 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../components/ui/dialog';
+
 const PAGE_SIZE = 20;
 
 const ROLES_TOOLTIP =
-  'Usuário acessa apenas os próprios dados. Gestor acessa o painel de gestão do projeto. Gestor principal também gerencia os perfis de acesso da equipe.';
+  'Usuário acessa apenas os próprios dados. Gestor acessa os relatórios e indicadores sem poder excluir ou alterar usuários. Administrador tem acesso total, incluindo a gestão de equipe e exclusões.';
 
 const ROLE_FILTERS: { value: '' | UserRole; label: string }[] = [
   { value: '', label: 'Todos os perfis' },
   { value: 'USER', label: 'Usuários' },
   { value: 'ADMIN', label: 'Gestores' },
-  { value: 'SUPER_ADMIN', label: 'Gestores principais' },
+  { value: 'SUPER_ADMIN', label: 'Administradores' },
 ];
 
 export function UsersPage() {
@@ -38,7 +39,6 @@ export function UsersPage() {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const deleteUsuario = useDeleteUsuario();
   const [usuarioParaExcluir, setUsuarioParaExcluir] = useState<AdminUsuario | null>(null);
-
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -115,7 +115,7 @@ export function UsersPage() {
           </div>
           <div className="page-description">
             Governança de permissões da equipe do projeto de extensão
-            {resumo ? ` — ${resumo.SUPER_ADMIN ?? 0} gestores principais, ${resumo.ADMIN ?? 0} gestores e ${resumo.USER ?? 0} usuários` : ''}
+            {resumo ? ` — ${resumo.SUPER_ADMIN ?? 0} administradores, ${resumo.ADMIN ?? 0} gestores e ${resumo.USER ?? 0} usuários` : ''}
           </div>
         </div>
         <Button type="button" variant="outline" onClick={() => navigate('/admin')}><ArrowLeft aria-hidden="true" /> Voltar à gestão</Button>
@@ -129,7 +129,7 @@ export function UsersPage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="admin-user-role">Perfil de acesso</Label>
-              <Select items={ROLE_FILTERS} value={roleFilter} onValueChange={value => { if (value !== null) { setRoleFilter(value); setPage(1); } }}>
+              <Select items={ROLE_FILTERS} value={roleFilter} onValueChange={(value: '' | UserRole | null) => { if (value !== null) { setRoleFilter(value); setPage(1); } }}>
                 <SelectTrigger id="admin-user-role"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {ROLE_FILTERS.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
@@ -152,7 +152,7 @@ export function UsersPage() {
           )}
         </CardContent>
       </Card>
-      <Dialog open={!!usuarioParaExcluir} onOpenChange={open => { if (!open && !deleteUsuario.isPending) setUsuarioParaExcluir(null); }}>
+      <Dialog open={!!usuarioParaExcluir} onOpenChange={(open: boolean) => { if (!open && !deleteUsuario.isPending) setUsuarioParaExcluir(null); }}>
         <DialogContent className="app-shell-theme space-y-5">
           <DialogHeader>
             <DialogTitle>Excluir usuário</DialogTitle>
