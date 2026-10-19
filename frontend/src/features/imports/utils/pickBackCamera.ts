@@ -40,8 +40,9 @@ export function scoreCameraLabel(label: string): number {
     score -= 30;
   }
 
+  // Tele ajuda a ler QR pequeno na nota fiscal.
   if (TELEPHOTO_RE.test(l)) {
-    score -= 20;
+    score += 25;
   }
 
   if (/camera2?\s*1\b|,1,.*back/.test(l)) {
@@ -103,7 +104,12 @@ export function rankBackCameras(cameras: CameraDevice[]): CameraDevice[] {
     }
   }
 
-  return ranked.length > 0 ? ranked : cameras;
+  return ranked.length > 0 ? ranked : cameras.filter((c) => !isLikelyFrontCamera(c.label));
+}
+
+/** Só câmeras traseiras (nunca frontal/selfie) para o botão trocar. */
+export function listSwitchableCameras(cameras: CameraDevice[]): CameraDevice[] {
+  return rankBackCameras(cameras).filter((camera) => !isLikelyFrontCamera(camera.label));
 }
 
 /** ID da câmera traseira principal (primeira da lista ordenada). */

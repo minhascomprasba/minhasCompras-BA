@@ -1,12 +1,18 @@
-import { CircleNotchIcon as LoaderCircle, CameraRotateIcon as SwitchCamera } from '@phosphor-icons/react';
+import { CircleNotchIcon as LoaderCircle, CameraRotateIcon as SwitchCamera, MagnifyingGlassMinusIcon, MagnifyingGlassPlusIcon } from '@phosphor-icons/react';
 import { Alert } from '../../../components/ui/alert';
 import { Button } from '../../../components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../../../components/ui/sheet';
-import { useCallback, useEffect, useId, useRef, useState, type ChangeEvent } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
-import { pickDefaultCameraId, rankBackCameras } from '../utils/pickBackCamera';
-import { QR_SCANNER_CONFIG } from '../utils/qrScannerConfig';
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { decodeQrFromVideo, prepareQrDecoder } from '../utils/decodeQr';
+import {
+  getTrackZoom,
+  getTrackZoomRange,
+  openScanCamera,
+  setTrackZoom,
+  stopScanStream,
+} from '../utils/openScanCamera';
+import { listSwitchableCameras, pickDefaultCameraId, scoreCameraLabel } from '../utils/pickBackCamera';
 import { scanQrCodeFromFile } from '../utils/scanQrFromFile';
 import { ImageUploadIcon } from '../../../components/ImportActionIcons';
 
@@ -28,8 +34,11 @@ type QrCodeScannerProps = {
   galleryHintDelayMs?: number;
 };
 
-const noopFrameError = () => undefined;
-const CAMERA_HINT_DELAY_MS = 5000;
+function wait(ms: number) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
 
 export function QrCodeScanner({
   presentation = 'dialog',
@@ -39,9 +48,11 @@ export function QrCodeScanner({
   onFile,
   galleryHintDelayMs = 10000,
 }: QrCodeScannerProps) {
-  const readerId = useId().replace(/:/g, '');
-  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const sessionRef = useRef(0);
   const hasScannedRef = useRef(false);
+  const fileScanningRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const onScanRef = useRef(onScan);
   const onFileRef = useRef(onFile);
@@ -49,14 +60,33 @@ export function QrCodeScanner({
   const cameraIdsRef = useRef<string[]>([]);
   const activeCameraIdRef = useRef<string | null>(null);
   const isSwitchingRef = useRef(false);
+  const decodeCropRef = useRef(1);
 
   const [error, setError] = useState('');
   const [isStarting, setIsStarting] = useState(false);
   const [isFileScanning, setIsFileScanning] = useState(false);
   const [showGalleryHint, setShowGalleryHint] = useState(false);
-  const [showCameraHint, setShowCameraHint] = useState(false);
-  const [hasOtherCamera, setHasOtherCamera] = useState(false);
+  const [canSwitchCamera, setCanSwitchCamera] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [zoomMin, setZoomMin] = useState(1);
+  const [zoomMax, setZoomMax] = useState(1);
+  const [hasHardwareZoom, setHasHardwareZoom] = useState(false);
+  const [openGeneration, setOpenGeneration] = useState(isOpen);
+
+  if (openGeneration !== isOpen) {
+    setOpenGeneration(isOpen);
+    setError('');
+    setShowGalleryHint(false);
+    setCanSwitchCamera(false);
+    setIsFileScanning(false);
+    setIsSwitching(false);
+    setIsStarting(isOpen);
+    setZoom(1);
+    setZoomMin(1);
+    setZoomMax(1);
+    setHasHardwareZoom(false);
+  }
 
   useEffect(() => {
     onScanRef.current = onScan;
@@ -64,20 +94,40 @@ export function QrCodeScanner({
     onCloseRef.current = onClose;
   }, [onClose, onFile, onScan]);
 
-  const finishSuccess = useCallback(() => {
-    const scanner = scannerRef.current;
-    if (scanner?.isScanning) {
-      void scanner.stop().then(() => {
-        scannerRef.current = null;
-        onCloseRef.current();
-      });
-      return;
+  const stopScanner = useCallback(() => {
+    sessionRef.current += 1;
+    const stream = streamRef.current;
+    streamRef.current = null;
+    stopScanStream(stream);
+    const video = videoRef.current;
+    if (video) {
+      video.srcObject = null;
     }
-    scannerRef.current = null;
-    onCloseRef.current();
   }, []);
 
-  const onScanSuccess = useCallback((decodedText: string) => {
+  const finishSuccess = useCallback(() => {
+    stopScanner();
+    onCloseRef.current();
+  }, [stopScanner]);
+
+  const syncZoomFromStream = useCallback((stream: MediaStream) => {
+    const range = getTrackZoomRange(stream);
+    if (!range) {
+      setHasHardwareZoom(false);
+      setZoomMin(1);
+      setZoomMax(2.4);
+      // Sem zoom da câmera: aproximação visual para mirar o QR.
+      setZoom(1.8);
+      return;
+    }
+    const current = getTrackZoom(stream) ?? Math.min(range.max, Math.max(range.min, 2));
+    setHasHardwareZoom(true);
+    setZoomMin(range.min);
+    setZoomMax(range.max);
+    setZoom(current);
+  }, []);
+
+  const handleDecoded = useCallback((decodedText: string) => {
     if (hasScannedRef.current) {
       return;
     }
@@ -95,21 +145,27 @@ export function QrCodeScanner({
     finishSuccess();
   }, [finishSuccess]);
 
-  const stopScanner = useCallback(async () => {
-    const scanner = scannerRef.current;
-    if (!scanner) {
-      return;
+  const handleDecodedRef = useRef(handleDecoded);
+  useEffect(() => {
+    handleDecodedRef.current = handleDecoded;
+  }, [handleDecoded]);
+
+  const attachStream = useCallback(async (stream: MediaStream) => {
+    const video = videoRef.current;
+    if (!video) {
+      throw new Error('Prévia da câmera indisponível.');
     }
-    scannerRef.current = null;
+    video.srcObject = stream;
+    video.muted = true;
     try {
-      if (scanner.isScanning) {
-        await scanner.stop();
-      }
-      scanner.clear();
+      await video.play();
     } catch {
-      // ignorar falha ao parar
+      // o loop de leitura tenta reproduzir de novo se a prévia ainda estiver oculta
     }
-  }, []);
+    streamRef.current = stream;
+    activeCameraIdRef.current = stream.getVideoTracks()[0]?.getSettings().deviceId ?? null;
+    syncZoomFromStream(stream);
+  }, [syncZoomFromStream]);
 
   const handleFileSelected = useCallback(async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -120,6 +176,7 @@ export function QrCodeScanner({
 
     setError('');
     setIsFileScanning(true);
+    fileScanningRef.current = true;
 
     try {
       const decodedText = await scanQrCodeFromFile(file);
@@ -134,80 +191,124 @@ export function QrCodeScanner({
     } catch {
       setError('Não foi possível ler o QR Code na imagem. Tente outra foto com boa iluminação.');
     } finally {
+      fileScanningRef.current = false;
       setIsFileScanning(false);
     }
   }, [finishSuccess]);
 
+  const applyZoom = useCallback(async (nextZoom: number) => {
+    if (!hasHardwareZoom) {
+      setZoom(Math.min(2.4, Math.max(1, nextZoom)));
+      return;
+    }
+    const stream = streamRef.current;
+    if (!stream) {
+      return;
+    }
+    const applied = await setTrackZoom(stream, nextZoom);
+    if (applied != null) {
+      setZoom(applied);
+    }
+  }, [hasHardwareZoom]);
+
   const switchCamera = useCallback(async () => {
-    const scanner = scannerRef.current;
     const cameraIds = cameraIdsRef.current;
-    if (!scanner?.isScanning || cameraIds.length < 2 || isSwitchingRef.current) {
+    if (!streamRef.current || isSwitchingRef.current || cameraIds.length < 2) {
       return;
     }
 
+    const session = sessionRef.current;
     const previousId = activeCameraIdRef.current;
-    const currentIndex = cameraIds.indexOf(previousId ?? cameraIds[0]);
-    const nextId = cameraIds[(currentIndex + 1) % cameraIds.length];
+    const startIndex = Math.max(0, cameraIds.indexOf(previousId ?? cameraIds[0]));
     isSwitchingRef.current = true;
     setIsSwitching(true);
     setError('');
 
     try {
-      await scanner.stop();
-      if (scannerRef.current !== scanner) {
-        return;
-      }
-      await scanner.start(nextId, QR_SCANNER_CONFIG, onScanSuccess, noopFrameError);
-      activeCameraIdRef.current = nextId;
-    } catch {
-      if (scannerRef.current === scanner) {
+      let nextStream: MediaStream | null = null;
+      let previous = streamRef.current;
+
+      for (let offset = 1; offset <= cameraIds.length; offset += 1) {
+        const nextId = cameraIds[(startIndex + offset) % cameraIds.length];
+        if (nextId === previousId && offset < cameraIds.length) {
+          continue;
+        }
+
         try {
-          await scanner.start(
-            previousId ?? { facingMode: 'environment' },
-            QR_SCANNER_CONFIG,
-            onScanSuccess,
-            noopFrameError,
-          );
-          activeCameraIdRef.current = previousId;
+          const candidate = await openScanCamera({
+            deviceId: nextId,
+            facingMode: 'environment',
+            previousStream: previous,
+          });
+          previous = null;
+
+          if (sessionRef.current !== session) {
+            stopScanStream(candidate);
+            return;
+          }
+
+          // Alguns aparelhos não rotulam a frontal; se o navegador marcar "user", pula.
+          if (candidate.getVideoTracks()[0]?.getSettings().facingMode === 'user') {
+            stopScanStream(candidate);
+            cameraIdsRef.current = cameraIdsRef.current.filter((id) => id !== nextId);
+            continue;
+          }
+
+          nextStream = candidate;
+          break;
+        } catch {
+          // tenta a próxima lente traseira
+        }
+      }
+
+      if (!nextStream) {
+        throw new Error('Nenhuma câmera traseira disponível');
+      }
+
+      streamRef.current = null;
+      await attachStream(nextStream);
+      setCanSwitchCamera(cameraIdsRef.current.length > 1);
+    } catch {
+      if (sessionRef.current === session) {
+        try {
+          const restored = await openScanCamera({
+            deviceId: previousId,
+            facingMode: 'environment',
+            previousStream: streamRef.current,
+          });
+          if (sessionRef.current !== session) {
+            stopScanStream(restored);
+            return;
+          }
+          streamRef.current = null;
+          await attachStream(restored);
         } catch {
           setShowGalleryHint(true);
-          setHasOtherCamera(false);
+          setCanSwitchCamera(false);
         }
         setError('Não foi possível trocar a câmera. Tente enviar uma imagem da nota.');
+        setShowGalleryHint(true);
       }
     } finally {
       isSwitchingRef.current = false;
       setIsSwitching(false);
     }
-  }, [onScanSuccess]);
+  }, [attachStream]);
 
   useEffect(() => {
     if (!isOpen) {
       hasScannedRef.current = false;
-      setError('');
-      setShowGalleryHint(false);
-      setShowCameraHint(false);
-      setHasOtherCamera(false);
-      setIsFileScanning(false);
+      fileScanningRef.current = false;
       cameraIdsRef.current = [];
       activeCameraIdRef.current = null;
-      void stopScanner();
+      stopScanner();
       return;
     }
 
+    const session = sessionRef.current;
     let cancelled = false;
     hasScannedRef.current = false;
-    setError('');
-    setShowGalleryHint(false);
-    setShowCameraHint(false);
-    setHasOtherCamera(false);
-    setIsStarting(true);
-
-    const cameraHintTimer = window.setTimeout(() => {
-      if (!cancelled && !hasScannedRef.current) {
-        setShowCameraHint(true);
-      }
-    }, Math.min(CAMERA_HINT_DELAY_MS, galleryHintDelayMs / 2));
+    void prepareQrDecoder().catch(() => undefined);
 
     const hintTimer = window.setTimeout(() => {
       if (!cancelled && !hasScannedRef.current) {
@@ -215,64 +316,121 @@ export function QrCodeScanner({
       }
     }, galleryHintDelayMs);
 
-    const startScanner = async () => {
-      const html5QrCode = new Html5Qrcode(readerId, false);
-      scannerRef.current = html5QrCode;
+    const isCurrent = () => !cancelled && sessionRef.current === session;
 
+    const scanLoop = async () => {
+      while (isCurrent()) {
+        if (hasScannedRef.current || fileScanningRef.current || isSwitchingRef.current) {
+          await wait(150);
+          continue;
+        }
+
+        const video = videoRef.current;
+        if (!video || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA || video.videoWidth === 0) {
+          if (video?.paused) {
+            void video.play().catch(() => undefined);
+          }
+          await wait(80);
+          continue;
+        }
+
+        try {
+          const text = await decodeQrFromVideo(video, decodeCropRef.current);
+          if (!isCurrent() || hasScannedRef.current) {
+            return;
+          }
+          if (text) {
+            handleDecodedRef.current(text);
+          }
+        } catch {
+          // tenta o próximo quadro
+        }
+
+        await wait(40);
+      }
+    };
+
+    const waitForVideo = async () => {
+      for (let attempt = 0; attempt < 30 && isCurrent(); attempt += 1) {
+        if (videoRef.current) {
+          return videoRef.current;
+        }
+        await wait(50);
+      }
+      return videoRef.current;
+    };
+
+    const startScanner = async () => {
       try {
-        const devices = await Html5Qrcode.getCameras();
-        if (cancelled) {
+        const stream = await openScanCamera({ facingMode: 'environment' });
+        if (!isCurrent()) {
+          stopScanStream(stream);
+          return;
+        }
+        const video = await waitForVideo();
+        if (!isCurrent()) {
+          stopScanStream(stream);
+          return;
+        }
+        if (!video) {
+          stopScanStream(stream);
+          throw new Error('Prévia da câmera indisponível.');
+        }
+        await attachStream(stream);
+
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        if (!isCurrent()) {
           return;
         }
 
-        const cameraId = pickDefaultCameraId(devices);
-        const rankedCameras = rankBackCameras(devices);
-        const rankedIds = new Set(rankedCameras.map((camera) => camera.id));
-        cameraIdsRef.current = [
-          ...rankedCameras.map((camera) => camera.id),
-          ...devices.filter((camera) => !rankedIds.has(camera.id)).map((camera) => camera.id),
-        ];
-        setHasOtherCamera(cameraIdsRef.current.length > 1);
+        const cameras = devices
+          .filter((device) => device.kind === 'videoinput' && device.deviceId)
+          .map((device) => ({ id: device.deviceId, label: device.label }));
+        const switchable = listSwitchableCameras(cameras);
+        cameraIdsRef.current = switchable.map((camera) => camera.id);
+        // Só troca entre lentes traseiras; nunca usa a frontal.
+        setCanSwitchCamera(switchable.length > 1);
 
-        if (cameraId) {
+        const currentId = activeCameraIdRef.current;
+        const preferredId = pickDefaultCameraId(cameras);
+        const preferred = cameras.find((camera) => camera.id === preferredId);
+        const shouldPreferRanked = Boolean(
+          preferredId
+          && currentId
+          && preferredId !== currentId
+          && preferred?.label.trim()
+          && scoreCameraLabel(preferred.label) > 0,
+        );
+
+        if (shouldPreferRanked && preferredId) {
           try {
-            await html5QrCode.start(cameraId, QR_SCANNER_CONFIG, onScanSuccess, noopFrameError);
-            activeCameraIdRef.current = cameraId;
+            const preferredStream = await openScanCamera({
+              deviceId: preferredId,
+              facingMode: 'environment',
+              previousStream: streamRef.current,
+            });
+            if (!isCurrent()) {
+              stopScanStream(preferredStream);
+              return;
+            }
+            streamRef.current = null;
+            await attachStream(preferredStream);
           } catch {
-            await html5QrCode.start(
-              { facingMode: 'environment' },
-              QR_SCANNER_CONFIG,
-              onScanSuccess,
-              noopFrameError,
-            );
-            activeCameraIdRef.current = null;
+            // mantém a câmera traseira que o navegador já escolheu
           }
-        } else {
-          await html5QrCode.start(
-            { facingMode: 'environment' },
-            QR_SCANNER_CONFIG,
-            onScanSuccess,
-            noopFrameError,
-          );
+        }
+
+        if (isCurrent()) {
+          void scanLoop();
         }
       } catch {
-        if (!cancelled) {
+        if (isCurrent()) {
           setError('Não foi possível acessar a câmera. Verifique as permissões ou envie uma imagem da nota.');
           setShowGalleryHint(true);
-          setHasOtherCamera(false);
+          setCanSwitchCamera(false);
         }
       } finally {
-        if (cancelled) {
-          try {
-            if (html5QrCode.isScanning) {
-              await html5QrCode.stop();
-            }
-            html5QrCode.clear();
-          } catch {
-            // ignorar falha ao parar uma câmera aberta após fechar o scanner
-          }
-        }
-        if (!cancelled) {
+        if (isCurrent()) {
           setIsStarting(false);
         }
       }
@@ -283,15 +441,25 @@ export function QrCodeScanner({
     return () => {
       cancelled = true;
       window.cancelAnimationFrame(startFrame);
-      window.clearTimeout(cameraHintTimer);
       window.clearTimeout(hintTimer);
-      void stopScanner();
+      stopScanner();
     };
-  }, [isOpen, readerId, onScanSuccess, stopScanner, galleryHintDelayMs]);
+  }, [isOpen, attachStream, stopScanner, galleryHintDelayMs]);
 
   const closeScanner = () => {
-    void stopScanner().then(onClose);
+    stopScanner();
+    onClose();
   };
+
+  const displayMin = hasHardwareZoom ? zoomMin : 1;
+  const displayMax = hasHardwareZoom ? zoomMax : 2.4;
+  const zoomStep = Math.max(0.1, (displayMax - displayMin) / 8);
+  const previewScale = hasHardwareZoom ? 1 : Math.min(displayMax, Math.max(displayMin, zoom));
+  const decodeCrop = hasHardwareZoom ? 1 : previewScale;
+
+  useEffect(() => {
+    decodeCropRef.current = decodeCrop;
+  }, [decodeCrop]);
 
   const isDrawer = presentation === 'drawer';
   const Root = isDrawer ? Sheet : Dialog;
@@ -313,7 +481,71 @@ export function QrCodeScanner({
           <Description>Aponte a câmera para o QR Code impresso na nota fiscal.</Description>
         </Header>
 
-        <div id={readerId} className="min-h-48 w-full overflow-hidden rounded-lg border border-border bg-background [&_video]:rounded-lg" />
+        <div className="relative min-h-48 w-full overflow-hidden rounded-lg border border-border bg-black">
+          <video
+            ref={videoRef}
+            className="aspect-[3/4] max-h-[52dvh] w-full object-cover sm:aspect-video"
+            style={{ transform: `scale(${previewScale})`, transformOrigin: 'center center' }}
+            muted
+            playsInline
+            autoPlay
+          />
+        </div>
+
+        {!isStarting && (
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="size-11 shrink-0"
+                disabled={isSwitching || isFileScanning || (hasHardwareZoom ? zoom : previewScale) <= displayMin + 0.001}
+                aria-label="Diminuir zoom"
+                onClick={() => void applyZoom((hasHardwareZoom ? zoom : previewScale) - zoomStep)}
+              >
+                <MagnifyingGlassMinusIcon aria-hidden="true" />
+              </Button>
+              <input
+                type="range"
+                min={displayMin}
+                max={displayMax}
+                step={Math.max(0.05, zoomStep / 2)}
+                value={hasHardwareZoom ? zoom : previewScale}
+                disabled={isSwitching || isFileScanning}
+                aria-label="Zoom da câmera"
+                className="h-2 w-full accent-primary"
+                onChange={(event) => {
+                  void applyZoom(Number(event.target.value));
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="size-11 shrink-0"
+                disabled={isSwitching || isFileScanning || (hasHardwareZoom ? zoom : previewScale) >= displayMax - 0.001}
+                aria-label="Aumentar zoom"
+                onClick={() => void applyZoom((hasHardwareZoom ? zoom : previewScale) + zoomStep)}
+              >
+                <MagnifyingGlassPlusIcon aria-hidden="true" />
+              </Button>
+            </div>
+
+            {canSwitchCamera && (
+              <Button
+                type="button"
+                variant="outline"
+                className="h-auto min-h-11 w-full whitespace-normal"
+                disabled={isSwitching || isFileScanning}
+                onClick={() => void switchCamera()}
+              >
+                <SwitchCamera aria-hidden="true" />
+                {isSwitching ? 'Trocando câmera...' : 'Trocar câmera'}
+              </Button>
+            )}
+          </div>
+        )}
 
         {(isStarting || isSwitching) && (
           <div role="status" className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
@@ -323,15 +555,6 @@ export function QrCodeScanner({
         )}
         {error && <Alert variant="destructive">{error}</Alert>}
 
-        {showCameraHint && !isStarting && !error && (
-          hasOtherCamera ? (
-            <Button type="button" variant="outline" className="h-auto min-h-11 w-full whitespace-normal" disabled={isSwitching || isFileScanning} onClick={() => void switchCamera()}>
-              <SwitchCamera aria-hidden="true" /> O QR Code não está focando? Trocar câmera
-            </Button>
-          ) : (
-            <Alert>O QR Code não está focando? Tente trocar de câmera nas configurações do navegador. Apenas uma câmera foi detectada agora.</Alert>
-          )
-        )}
         {(showGalleryHint || error) && (
           <Alert>Não consegue escanear? Envie uma foto do QR Code da nota pela galeria.</Alert>
         )}
