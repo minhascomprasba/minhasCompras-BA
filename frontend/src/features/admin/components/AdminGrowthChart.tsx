@@ -1,3 +1,5 @@
+import { AdminChartTooltip } from './AdminChartTooltip';
+import { Card } from '../../../components/ui/card';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -23,52 +25,26 @@ interface AdminGrowthChartProps {
 }
 
 export function AdminGrowthChart({ pontos, bucketLabel }: AdminGrowthChartProps) {
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="chart-tooltip">
-          <p className="chart-tooltip-title" style={{ marginBottom: '0.25rem' }}>
-            {bucketLabel}: {label}
-          </p>
-          {payload.map((entry: any, index: number) => (
-            <p
-              key={index}
-              style={{
-                margin: 0,
-                fontSize: '0.8rem',
-                color: entry.color,
-                fontWeight: 500,
-              }}
-            >
-              {entry.name}: {entry.value.toLocaleString('pt-BR')}
-            </p>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
-    <div className="card admin-chart-card">
+    <Card className="min-w-0 gap-4 px-4">
       <MetricHead
         title="Crescimento de Usuários e Notas"
         tooltip={TOOLTIP_INFO}
       />
 
-      <div className="admin-chart-legend">
-        <span className="admin-chart-legend-item">
-          <span className="admin-chart-legend-dot" style={{ background: USUARIOS_COLOR }} />
+      <div className="flex flex-wrap gap-4">
+        <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="size-2.5 shrink-0 rounded-sm" style={{ background: USUARIOS_COLOR }} />
           Usuários
         </span>
-        <span className="admin-chart-legend-item">
-          <span className="admin-chart-legend-dot" style={{ background: NOTAS_COLOR }} />
+        <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="size-2.5 shrink-0 rounded-sm" style={{ background: NOTAS_COLOR }} />
           Notas Importadas
         </span>
       </div>
 
       {pontos.length === 0 ? (
-        <div className="admin-chart-placeholder">Sem histórico suficiente para o período.</div>
+        <div className="flex min-h-64 items-center justify-center text-center text-sm text-muted-foreground">Sem histórico suficiente para o período.</div>
       ) : (
         <div style={{ width: '100%', height: '270px', marginTop: 'auto' }}>
           <ResponsiveContainer width="100%" height="100%">
@@ -84,11 +60,11 @@ export function AdminGrowthChart({ pontos, bucketLabel }: AdminGrowthChartProps)
                 </linearGradient>
               </defs>
 
-              <CartesianGrid stroke="var(--border-color)" strokeDasharray="3 3" vertical={false} />
+              <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
 
               <XAxis
                 dataKey="semana"
-                stroke="var(--text-muted)"
+                stroke="var(--muted-foreground)"
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
@@ -97,13 +73,13 @@ export function AdminGrowthChart({ pontos, bucketLabel }: AdminGrowthChartProps)
                   value={bucketLabel}
                   position="insideBottom"
                   offset={-12}
-                  fill="var(--text-muted)"
+                  fill="var(--muted-foreground)"
                   fontSize={11}
                 />
               </XAxis>
 
               <YAxis
-                stroke="var(--text-muted)"
+                stroke="var(--muted-foreground)"
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
@@ -114,13 +90,13 @@ export function AdminGrowthChart({ pontos, bucketLabel }: AdminGrowthChartProps)
                   angle={-90}
                   position="insideLeft"
                   offset={-2}
-                  fill="var(--text-muted)"
+                  fill="var(--muted-foreground)"
                   fontSize={11}
                   style={{ textAnchor: 'middle' }}
                 />
               </YAxis>
 
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={props => <AdminChartTooltip {...props} bucketLabel={bucketLabel} />} />
 
               <Area
                 type="monotone"
@@ -129,7 +105,7 @@ export function AdminGrowthChart({ pontos, bucketLabel }: AdminGrowthChartProps)
                 stroke={USUARIOS_COLOR}
                 strokeWidth={2.5}
                 fill="url(#colorUsuarios)"
-                dot={{ r: 3, fill: USUARIOS_COLOR, stroke: 'var(--bg-main)', strokeWidth: 1 }}
+                dot={{ r: 3, fill: USUARIOS_COLOR, stroke: 'var(--background)', strokeWidth: 1 }}
                 activeDot={{ r: 5, fill: USUARIOS_COLOR }}
               />
               <Area
@@ -140,13 +116,13 @@ export function AdminGrowthChart({ pontos, bucketLabel }: AdminGrowthChartProps)
                 strokeWidth={2}
                 strokeDasharray="4 3"
                 fill="url(#colorNotas)"
-                dot={{ r: 3, fill: NOTAS_COLOR, stroke: 'var(--bg-main)', strokeWidth: 1 }}
+                dot={{ r: 3, fill: NOTAS_COLOR, stroke: 'var(--background)', strokeWidth: 1 }}
                 activeDot={{ r: 5, fill: NOTAS_COLOR }}
               />
             </AreaChart>
           </ResponsiveContainer>
         </div>
       )}
-    </div>
+    </Card>
   );
 }

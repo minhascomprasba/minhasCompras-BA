@@ -1,0 +1,20 @@
+@scope ([data-scope="auth"]) {
+  :scope.auth-page {
+    position: relative;
+    min-height: calc(100vh - 4rem);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 8rem 1rem 3rem;
+  }
+
+  .auth-forgot-password-wrap {
+    text-align: right;
+  }
+
+  .auth-forgot-password-link {
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+}

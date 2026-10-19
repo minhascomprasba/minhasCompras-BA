@@ -1,10 +1,17 @@
+import { AuthHeader } from '../../features/auth/components/AuthHeader';
+import { AuthCard, AuthCardFooter } from '../../features/auth/components/AuthCard';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Alert } from '../../components/ui/alert';
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { authService } from '../features/auth/authService';
-import { AppError } from '../shared/api/errors';
+import { authService } from '../../features/auth/authService';
+import { AppError } from '../../shared/api/errors';
+import './styles.css';
 
 const resetPasswordSchema = z.object({
   password: z.string()
@@ -59,57 +66,61 @@ export function ResetPasswordPage() {
   };
 
   return (
-    <div className="container auth-container-narrow">
-      <div className="card auth-card-inner">
-        <h1 className="auth-title-centered">Redefinir senha</h1>
+    <div data-scope="auth" className="auth-page">
+      <AuthHeader backTo="/login" backLabel="Voltar ao login" />
+      <AuthCard title="Redefinir senha" subtitle="Escolha uma nova senha para sua conta.">
 
         {!token && (
-          <div className="alert alert-error">
+          <Alert variant="destructive" className="mb-4">
             Link de redefinição inválido ou incompleto.{' '}
             <Link to="/esqueci-senha">Solicite um novo link</Link>.
-          </div>
+          </Alert>
         )}
 
         {error && (
-          <div className="alert alert-error">
+          <Alert variant="destructive" className="mb-4">
             {error}
-          </div>
+          </Alert>
         )}
 
         {token && (
           <form onSubmit={handleSubmit(onSubmit)}>
-            <div className="form-group">
-              <label className="form-label">Nova senha</label>
-              <input
+            <div className="mb-4 grid gap-2">
+              <Label htmlFor="password">Nova senha</Label>
+              <Input
                 type="password"
-                className={`form-input ${errors.password ? 'error' : ''}`}
+                aria-invalid={!!errors.password} aria-describedby={errors.password ? "password-error" : undefined}
                 placeholder="Digite uma senha"
+                id="password"
+                autoComplete="new-password"
                 {...register('password')}
               />
-              {errors.password && <span className="form-error-text">{errors.password.message}</span>}
+              {errors.password && <span id="password-error" className="text-sm text-destructive" role="alert">{errors.password.message}</span>}
             </div>
 
-            <div className="form-group auth-form-group-spaced">
-              <label className="form-label">Confirmar nova senha</label>
-              <input
+            <div className="mb-6 grid gap-2">
+              <Label htmlFor="password_confirm">Confirmar nova senha</Label>
+              <Input
                 type="password"
-                className={`form-input ${errors.password_confirm ? 'error' : ''}`}
+                aria-invalid={!!errors.password_confirm} aria-describedby={errors.password_confirm ? "password_confirm-error" : undefined}
                 placeholder="Repita a senha"
+                id="password_confirm"
+                autoComplete="new-password"
                 {...register('password_confirm')}
               />
-              {errors.password_confirm && <span className="form-error-text">{errors.password_confirm.message}</span>}
+              {errors.password_confirm && <span id="password_confirm-error" className="text-sm text-destructive" role="alert">{errors.password_confirm.message}</span>}
             </div>
 
-            <button type="submit" className="btn btn-primary btn-full" disabled={isLoading}>
+            <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
               {isLoading ? 'Salvando...' : 'Redefinir senha'}
-            </button>
+            </Button>
           </form>
         )}
 
-        <div className="auth-footer-centered">
+        <AuthCardFooter>
           <Link to="/login" className="font-semibold">Voltar ao login</Link>
-        </div>
-      </div>
+        </AuthCardFooter>
+      </AuthCard>
     </div>
   );
 }

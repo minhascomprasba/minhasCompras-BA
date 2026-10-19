@@ -1,11 +1,18 @@
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Alert } from '../../components/ui/alert';
 import { useEffect, useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useAuth } from '../features/auth/AuthContext';
-import { authService } from '../features/auth/authService';
-import { AppError } from '../shared/api/errors';
+import { useAuth } from '../../features/auth/AuthContext';
+import { authService } from '../../features/auth/authService';
+import { AppError } from '../../shared/api/errors';
+import { AuthHeader } from '../../features/auth/components/AuthHeader';
+import { AuthCard, AuthCardFooter } from '../../features/auth/components/AuthCard';
+import './styles.css';
 
 const confirmEmailSchema = z.object({
   code: z.string()
@@ -74,75 +81,58 @@ export function ConfirmEmailPage() {
   };
 
   return (
-    <div className="auth-page">
-      <header className="auth-header">
-        <Link to="/" className="auth-logo">
-          <img src="/icon.png" alt="" className="brand-icon" />
-          <span>MinhasCompras.app</span>
-        </Link>
-        <Link to="/register" className="auth-back-link">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="19" y1="12" x2="5" y2="12"></line>
-            <polyline points="12 19 5 12 12 5"></polyline>
-          </svg>
-          <span>Voltar</span>
-        </Link>
-      </header>
+    <div data-scope="auth" className="auth-page">
+      <AuthHeader backTo="/register" backLabel="Voltar" />
 
-      <div className="auth-card">
-        <div className="auth-card-icon">
-          <img src="/icon.png" alt="Minhas Compras BA" />
-        </div>
-        <h1 className="auth-title">Confirme seu e-mail</h1>
-        <p className="auth-subtitle">
-          Enviamos um código de confirmação para{' '}
-          <strong>{email || 'seu e-mail'}</strong>. Insira-o abaixo para concluir o cadastro.
-        </p>
+      <AuthCard title="Confirme seu e-mail" subtitle={<> Enviamos um código de confirmação para{' '}
+          <strong>{email || 'seu e-mail'}</strong>. Insira-o abaixo para concluir o cadastro. </>}>
 
         {error && (
-          <div className="alert alert-error">
+          <Alert variant="destructive" className="mb-4">
             {error}
-          </div>
+          </Alert>
         )}
 
         {success && (
-          <div className="alert alert-success">
+          <Alert className="mb-4">
             {success}
-          </div>
+          </Alert>
         )}
 
         <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="form-group auth-form-group-spaced">
-            <label className="form-label">Código de confirmação</label>
-            <input
+          <div className="mb-6 grid gap-2">
+            <Label htmlFor="code">Código de confirmação</Label>
+            <Input
               type="text"
               inputMode="numeric"
               autoComplete="one-time-code"
               maxLength={6}
-              className={`form-input ${errors.code ? 'error' : ''}`}
+              aria-invalid={!!errors.code} aria-describedby={errors.code ? "code-error" : undefined}
               placeholder="000000"
-              {...register('code')}
+              id="code"
+                
+                {...register('code')}
             />
-            {errors.code && <span className="form-error-text">{errors.code.message}</span>}
+            {errors.code && <span id="code-error" className="text-sm text-destructive" role="alert">{errors.code.message}</span>}
           </div>
 
-          <button type="submit" className="btn btn-primary btn-full" disabled={isLoading}>
+          <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
             {isLoading ? 'Confirmando...' : 'Confirmar e criar conta'}
-          </button>
+          </Button>
         </form>
 
-        <div className="auth-footer-link">
+        <AuthCardFooter>
           Não recebeu o código?{' '}
-          <button
+          <Button
             type="button"
-            className="link-button font-semibold"
+            variant="link" className="h-auto p-0 font-semibold"
             onClick={handleResend}
             disabled={isResending}
           >
             {isResending ? 'Reenviando...' : 'Reenviar código'}
-          </button>
-        </div>
-      </div>
+          </Button>
+        </AuthCardFooter>
+      </AuthCard>
     </div>
   );
 }

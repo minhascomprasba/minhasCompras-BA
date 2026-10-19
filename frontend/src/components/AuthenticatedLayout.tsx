@@ -1,24 +1,40 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
-import { ROLE_LABELS } from '../features/auth/authService';
+import { ProfileMenu } from './ProfileMenu';
 import { QuickScan } from './QuickScan';
+import { ListIcon as Menu, XIcon as X, ChartPieIcon as ChartPie, ReceiptIcon as Receipt, MapPinIcon as MapPin, UploadSimpleIcon as UploadSimple, ShieldCheckIcon as ShieldCheck, SignOutIcon as LogOut } from '@phosphor-icons/react';
+import { Button } from './ui/button';
+import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList } from './ui/navigation-menu';
+import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet';
+import './AppShell.css';
 
 export function AuthenticatedLayout() {
-  const { user, logout, role, isAdmin, isSuperAdmin } = useAuth();
+  const { logout, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [headerHidden, setHeaderHidden] = useState(false);
 
   const closeMenu = () => setMenuOpen(false);
 
   useEffect(() => {
-    if (menuOpen) {
-      document.body.classList.add('menu-open');
-    } else {
-      document.body.classList.remove('menu-open');
-    }
-    return () => document.body.classList.remove('menu-open');
-  }, [menuOpen]);
+    let previousScrollY = Math.max(0, window.scrollY);
+
+    const handleScroll = () => {
+      const scrollY = Math.max(0, window.scrollY);
+      if (scrollY <= 70) {
+        setHeaderHidden(false);
+      } else if (Math.abs(scrollY - previousScrollY) < 8) {
+        return;
+      } else {
+        setHeaderHidden(scrollY > previousScrollY);
+      }
+      previousScrollY = scrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleLogout = () => {
     closeMenu();
@@ -26,76 +42,77 @@ export function AuthenticatedLayout() {
     navigate('/');
   };
 
-  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `nav-link ${isActive ? 'nav-link--active' : ''}`;
+  const links = [
+    { to: '/dashboard', icon: ChartPie, label: 'Dashboard' },
+    { to: '/notas', icon: Receipt, label: 'Notas' },
+    { to: '/mapa', icon: MapPin, label: 'Mapa' },
+    { to: '/importar', icon: UploadSimple, label: 'Importar' },
+    ...(isAdmin ? [{ to: '/admin', icon: ShieldCheck, label: 'Gestão' }] : []),
+  ];
 
   return (
-    <div className="app-layout-wrapper">
-      <header className="app-navbar">
+    <div data-scope="app-shell" className="app-shell-theme app-layout-wrapper">
+      <header className={`app-navbar${headerHidden && !menuOpen ? ' app-navbar--hidden' : ''}`}>
         <div className="navbar-container">
-          <NavLink to="/dashboard" className="navbar-logo" onClick={closeMenu}>
+          <NavLink to="/dashboard" className="navbar-logo" aria-label="Minhas Compras BA — Dashboard" title="Minhas Compras BA">
             <img src="/icon.png" alt="" className="brand-icon" />
-            <span className="logo-text">MinhasCompras.app</span>
           </NavLink>
 
-          <button
-            type="button"
-            className="navbar-toggle"
-            aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'}
-            aria-expanded={menuOpen}
-            onClick={() => setMenuOpen((open) => !open)}
-          >
-            {menuOpen ? (
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            ) : (
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="18" x2="21" y2="18" />
-              </svg>
+          <NavigationMenu className="shell-desktop-nav" aria-label="Navegação principal">
+            <NavigationMenuList className="m-0 p-0 gap-1">
+              {links.filter(({ to }) => to !== '/admin').map(({ to, label, icon: Icon }) => (
+                <NavigationMenuItem key={to}>
+                  <NavigationMenuLink
+                    render={<NavLink to={to} />}
+                    className="h-11 flex-row items-center gap-2 px-3 text-muted-foreground hover:text-foreground aria-[current=page]:bg-accent aria-[current=page]:text-foreground"
+                  >
+                    <Icon className="size-4 shrink-0" aria-hidden="true" />
+                    {label}
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+              ))}
+            </NavigationMenuList>
+          </NavigationMenu>
+
+          <div className="ml-auto flex items-center gap-2">
+            {isAdmin && (
+              <Button variant="ghost" nativeButton={false} render={<NavLink to="/admin" />} className="shell-admin-link h-11 text-muted-foreground">
+                <ShieldCheck aria-hidden="true" /> Gestão
+              </Button>
             )}
-          </button>
-
-          <div className={`navbar-menu ${menuOpen ? 'navbar-menu--open' : ''}`}>
-            <nav className="navbar-nav">
-              <NavLink to="/dashboard" className={navLinkClass} onClick={closeMenu}>
-                Dashboard
-              </NavLink>
-              {isAdmin && (
-                <NavLink to="/admin" className={navLinkClass} onClick={closeMenu} end>
-                  Admin
-                </NavLink>
-              )}
-              {isSuperAdmin && (
-                <NavLink to="/admin/usuarios" className={navLinkClass} onClick={closeMenu}>
-                  Usuários
-                </NavLink>
-              )}
-              <NavLink to="/notas" className={navLinkClass} onClick={closeMenu}>
-                Notas
-              </NavLink>
-              <NavLink to="/mapa" className={navLinkClass} onClick={closeMenu}>
-                Mapa
-              </NavLink>
-              <NavLink to="/importar" className={navLinkClass} onClick={closeMenu}>
-                Importar
-              </NavLink>
-            </nav>
-
-            <div className="navbar-user">
-              <span className="user-email" title={user?.email || ''}>
-                {user?.email ? (user.email.length > 24 ? `${user.email.substring(0, 21)}...` : user.email) : ''}
-              </span>
-              {role && role !== 'USER' && (
-                <span className={`role-badge role-badge--${role.toLowerCase()}`}>{ROLE_LABELS[role]}</span>
-              )}
-              <button onClick={handleLogout} className="btn btn-secondary btn-sm btn-logout">
-                Sair
-              </button>
+            <div className="shell-desktop-profile">
+              <ProfileMenu onLogout={handleLogout} />
             </div>
+            <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+              <SheetTrigger render={<Button variant="secondary" size="icon" className="shell-mobile-toggle shell-menu-button size-11" />} aria-label="Abrir menu">
+                <Menu aria-hidden="true" />
+              </SheetTrigger>
+              <SheetContent className="app-shell-theme overflow-y-auto pt-[var(--safe-top)] pb-[var(--safe-bottom)]" showCloseButton={false}>
+                <SheetHeader className="pr-16">
+                  <SheetTitle>Minhas Compras BA</SheetTitle>
+                  <SheetDescription>Navegue pelas suas compras.</SheetDescription>
+                </SheetHeader>
+                <SheetClose render={<Button variant="secondary" size="icon" className="shell-menu-button absolute right-3 top-[calc(var(--safe-top)+0.75rem)] size-11" />} aria-label="Fechar menu">
+                  <X aria-hidden="true" />
+                </SheetClose>
+                <div className="border-b border-border mx-4 pb-4">
+                  <ProfileMenu inline onLogout={handleLogout} />
+                </div>
+                <nav aria-label="Navegação principal" className="flex flex-col gap-1 px-4">
+                  {links.map(({ to, label, icon: Icon }) => (
+                    <Button key={to} variant="ghost" nativeButton={false} render={<NavLink to={to} />} onClick={closeMenu} className="h-11 justify-start text-muted-foreground aria-[current=page]:bg-accent aria-[current=page]:text-foreground">
+                      <Icon className="size-4 shrink-0" aria-hidden="true" />
+                      {label}
+                    </Button>
+                  ))}
+                </nav>
+                <SheetFooter>
+                  <Button variant="destructive" onClick={handleLogout} className="min-h-11 justify-start px-3">
+                    <LogOut aria-hidden="true" /> Sair
+                  </Button>
+                </SheetFooter>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </header>

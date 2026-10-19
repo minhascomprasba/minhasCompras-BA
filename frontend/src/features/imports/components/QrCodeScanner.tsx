@@ -1,3 +1,8 @@
+import { CircleNotchIcon as LoaderCircle, CameraRotateIcon as SwitchCamera } from '@phosphor-icons/react';
+import { Alert } from '../../../components/ui/alert';
+import { Button } from '../../../components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../../../components/ui/sheet';
 import { useCallback, useEffect, useId, useRef, useState, type ChangeEvent } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { pickDefaultCameraId, rankBackCameras } from '../utils/pickBackCamera';
@@ -8,6 +13,7 @@ import { ImageUploadIcon } from '../../../components/ImportActionIcons';
 type ScanOutcome = void | string | null;
 
 type QrCodeScannerProps = {
+  presentation?: 'dialog' | 'drawer';
   isOpen: boolean;
   onClose: () => void;
   /**
@@ -26,6 +32,7 @@ const noopFrameError = () => undefined;
 const CAMERA_HINT_DELAY_MS = 5000;
 
 export function QrCodeScanner({
+  presentation = 'dialog',
   isOpen,
   onClose,
   onScan,
@@ -271,134 +278,73 @@ export function QrCodeScanner({
       }
     };
 
-    void startScanner();
+    const startFrame = window.requestAnimationFrame(() => void startScanner());
 
     return () => {
       cancelled = true;
+      window.cancelAnimationFrame(startFrame);
       window.clearTimeout(cameraHintTimer);
       window.clearTimeout(hintTimer);
       void stopScanner();
     };
   }, [isOpen, readerId, onScanSuccess, stopScanner, galleryHintDelayMs]);
 
-  if (!isOpen) {
-    return null;
-  }
+  const closeScanner = () => {
+    void stopScanner().then(onClose);
+  };
+
+  const isDrawer = presentation === 'drawer';
+  const Root = isDrawer ? Sheet : Dialog;
+  const Content = isDrawer ? SheetContent : DialogContent;
+  const Header = isDrawer ? SheetHeader : DialogHeader;
+  const Title = isDrawer ? SheetTitle : DialogTitle;
+  const Description = isDrawer ? SheetDescription : DialogDescription;
 
   return (
-    <div className="qr-scanner-overlay" role="dialog" aria-modal="true" aria-labelledby="qr-scanner-title">
-      <div className="qr-scanner-panel card">
-        <h2 id="qr-scanner-title" style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>
-          Escaneie o QR Code da nota
-        </h2>
-        <p style={{ marginBottom: '1rem' }}>
-          Aponte a câmera para o QR Code impresso na nota fiscal.
-        </p>
+    <Root open={isOpen} onOpenChange={(open) => { if (!open) closeScanner(); }}>
+      <Content
+        {...(isDrawer ? { side: 'bottom' as const, showCloseButton: false } : {})}
+        className={isDrawer
+          ? 'app-shell-theme mx-auto max-h-[90dvh] w-full max-w-lg gap-5 overflow-y-auto rounded-t-2xl p-5 pb-[calc(1.25rem+var(--safe-bottom))]'
+          : 'app-shell-theme space-y-5'}
+      >
+        <Header className="p-0">
+          <Title>Escaneie o QR Code da nota</Title>
+          <Description>Aponte a câmera para o QR Code impresso na nota fiscal.</Description>
+        </Header>
 
-        <div id={readerId} className="qr-scanner-viewport" />
+        <div id={readerId} className="min-h-48 w-full overflow-hidden rounded-lg border border-border bg-background [&_video]:rounded-lg" />
 
         {(isStarting || isSwitching) && (
-          <p style={{ textAlign: 'center', marginTop: '0.75rem', color: 'var(--text-muted)' }}>
+          <div role="status" className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
             {isSwitching ? 'Trocando câmera...' : 'Iniciando câmera...'}
-          </p>
-        )}
-
-        {error && (
-          <div className="alert alert-error" style={{ marginTop: '1rem', marginBottom: 0 }}>
-            <span style={{ fontSize: '1.2rem' }}>⚠️</span>
-            <span>{error}</span>
           </div>
         )}
+        {error && <Alert variant="destructive">{error}</Alert>}
 
         {showCameraHint && !isStarting && !error && (
           hasOtherCamera ? (
-            <button
-              type="button"
-              className="qr-scanner-gallery-hint"
-              disabled={isSwitching || isFileScanning}
-              onClick={() => void switchCamera()}
-            >
-              O QR Code não está focando? Trocar câmera
-            </button>
+            <Button type="button" variant="outline" className="h-auto min-h-11 w-full whitespace-normal" disabled={isSwitching || isFileScanning} onClick={() => void switchCamera()}>
+              <SwitchCamera aria-hidden="true" /> O QR Code não está focando? Trocar câmera
+            </Button>
           ) : (
-            <p className="qr-scanner-gallery-hint qr-scanner-camera-info" role="status">
-              O QR Code não está focando? Tente trocar de câmera nas configurações do navegador.
-              Apenas uma câmera foi detectada agora.
-            </p>
+            <Alert>O QR Code não está focando? Tente trocar de câmera nas configurações do navegador. Apenas uma câmera foi detectada agora.</Alert>
           )
         )}
-
         {(showGalleryHint || error) && (
-          <button
-            type="button"
-            className="qr-scanner-gallery-hint"
-            disabled={isFileScanning}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <span className="qr-scanner-gallery-hint-icon" aria-hidden="true">
-              {isFileScanning ? (
-                <span className="spinner btn-icon-only-spinner" />
-              ) : (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
-                  <circle cx="12" cy="13" r="3" />
-                </svg>
-              )}
-            </span>
-            <span>
-              {isFileScanning
-                ? 'Lendo imagem...'
-                : 'Não consegue escanear? Envie uma foto do QR Code da nota pela galeria.'}
-            </span>
-          </button>
+          <Alert>Não consegue escanear? Envie uma foto do QR Code da nota pela galeria.</Alert>
         )}
 
-        <div className="qr-scanner-actions">
-          <button
-            type="button"
-            className="btn btn-secondary"
-            disabled={isFileScanning}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            {isFileScanning ? (
-              <span className="spinner btn-icon-only-spinner" aria-hidden="true" />
-            ) : (
-              <ImageUploadIcon />
-            )}
-            Enviar imagem
-          </button>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            disabled={isFileScanning}
-            onClick={() => {
-              void stopScanner().then(onClose);
-            }}
-          >
-            Cancelar
-          </button>
+        <div className="flex flex-col gap-3">
+          <Button type="button" className="min-h-11 w-full text-white" disabled={isFileScanning || isSwitching} onClick={() => fileInputRef.current?.click()}>
+            {isFileScanning ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : <ImageUploadIcon />}
+            {isFileScanning ? 'Lendo imagem...' : 'Enviar imagem'}
+          </Button>
+          <Button type="button" variant="destructive" className="min-h-11 w-full" disabled={isFileScanning} onClick={closeScanner}>Cancelar</Button>
         </div>
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="sr-only"
-          aria-hidden="true"
-          tabIndex={-1}
-          onChange={handleFileSelected}
-        />
-      </div>
-    </div>
+        <input ref={fileInputRef} type="file" accept="image/*" className="sr-only" aria-hidden="true" tabIndex={-1} onChange={handleFileSelected} />
+      </Content>
+    </Root>
   );
 }

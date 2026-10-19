@@ -1,0 +1,30 @@
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-md);
+  transition: var(--transition);
+}
+
+.glass-panel {
+  background: rgba(21, 28, 44, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  box-shadow: var(--shadow-lg);
+}
+
+@media (max-width: 768px) {
+  .card {
+    padding: 1.25rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .glass-panel {
+    padding: 1.5rem;
+  }
+}

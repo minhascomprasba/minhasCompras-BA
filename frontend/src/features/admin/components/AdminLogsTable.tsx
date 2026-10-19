@@ -1,4 +1,6 @@
-import { Link } from 'react-router-dom';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/table';
+import { Badge } from '../../../components/ui/badge';
+import { Card } from '../../../components/ui/card';
 import type { AdminLog, LogStatus } from '../types';
 import { InfoTooltip } from './InfoTooltip';
 
@@ -10,70 +12,63 @@ interface AdminLogsTableProps {
 }
 
 const statusConfig: Record<LogStatus, { badgeClass: string; label: string }> = {
-  scraper_falha: { badgeClass: 'badge-error', label: 'Falha na Consulta' },
-  captcha_expirado: { badgeClass: 'badge-warning', label: 'Tempo Esgotado' },
-  limite_captcha: { badgeClass: 'badge-error', label: 'Tentativas Excedidas' },
-  timeout_sefaz: { badgeClass: 'badge-error', label: 'Sem Resposta SEFAZ' },
+  scraper_falha: { badgeClass: 'border-red-400/30 bg-red-400/10 text-red-300', label: 'Falha na Consulta' },
+  captcha_expirado: { badgeClass: 'border-amber-400/30 bg-amber-400/10 text-amber-300', label: 'Tempo Esgotado' },
+  limite_captcha: { badgeClass: 'border-red-400/30 bg-red-400/10 text-red-300', label: 'Tentativas Excedidas' },
+  timeout_sefaz: { badgeClass: 'border-red-400/30 bg-red-400/10 text-red-300', label: 'Sem Resposta SEFAZ' },
 };
 
-const fallbackStatus = { badgeClass: 'badge-outline', label: 'Indefinido' };
+const fallbackStatus = { badgeClass: '', label: 'Indefinido' };
 
 export function AdminLogsTable({ logs }: AdminLogsTableProps) {
   return (
-    <div className="card admin-logs-card">
-      <div className="admin-logs-header">
-        <div className="admin-logs-title-block">
-          <div className="admin-logs-title-row">
-            <h3 className="admin-logs-title">Registro de Ocorrências</h3>
+    <Card className="gap-4 px-4">
+      <div className="space-y-1">
+        <div className="space-y-1">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="m-0 text-base font-medium text-foreground">Registro de Ocorrências</h3>
             <InfoTooltip content={TOOLTIP} />
           </div>
-          <p className="admin-logs-subtitle">Últimas tentativas de importação que não puderam ser concluídas</p>
+          <div className="m-0 text-sm text-muted-foreground">Últimas tentativas de importação que não puderam ser concluídas</div>
         </div>
-        <Link to="/notas" className="admin-logs-link">
-          Ver todas as notas
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="5" y1="12" x2="19" y2="12" />
-            <polyline points="12 5 19 12 12 19" />
-          </svg>
-        </Link>
       </div>
-      <div className="table-container">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Data/Hora</th>
-              <th>Nota Fiscal</th>
-              <th>Tentativas</th>
-              <th>Motivo / Ocorrência</th>
-              <th>Situação</th>
-            </tr>
-          </thead>
-          <tbody>
+      <div className="min-w-0 overflow-x-auto">
+        <Table aria-label="Registro de ocorrências">
+          <TableHeader>
+            <TableRow>
+              <TableHead scope="col">Data/Hora</TableHead>
+              <TableHead scope="col">Nota Fiscal</TableHead>
+              <TableHead scope="col">Tentativas</TableHead>
+              <TableHead scope="col">Motivo / Ocorrência</TableHead>
+              <TableHead scope="col">Situação</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {logs.length === 0 ? (
-              <tr>
-                <td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
+              <TableRow>
+                <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
                   Nenhuma ocorrência registrada no período. Todas as importações foram concluídas com sucesso.
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ) : (
               logs.map((log) => {
                 const status = statusConfig[log.status] ?? fallbackStatus;
                 return (
-                  <tr key={log.importId}>
-                    <td className="admin-mono">{log.dataHora}</td>
-                    <td className="admin-mono">{log.idNota}</td>
-                    <td>{log.tentativas}</td>
-                    <td>{log.erro}</td>
-                    <td>
-                      <span className={`badge ${status.badgeClass}`}>{status.label}</span>
-                    </td>
-                  </tr>
+                  <TableRow key={log.importId}>
+                    <TableCell className="font-mono text-xs break-all text-foreground select-text">{log.dataHora}</TableCell>
+                    <TableCell className="font-mono text-xs break-all text-foreground select-text">{log.idNota}</TableCell>
+                    <TableCell>{log.tentativas}</TableCell>
+                    <TableCell>{log.erro}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={`h-auto whitespace-normal ${status.badgeClass}`}>{status.label}</Badge>
+                    </TableCell>
+                  </TableRow>
                 );
               })
             )}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
-    </div>
+    </Card>
   );
 }
