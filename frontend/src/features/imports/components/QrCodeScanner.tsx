@@ -226,7 +226,7 @@ export function QrCodeScanner({
 
     try {
       let nextStream: MediaStream | null = null;
-      let previous = streamRef.current;
+      let previous: MediaStream | null = streamRef.current;
 
       for (let offset = 1; offset <= cameraIds.length; offset += 1) {
         const nextId = cameraIds[(startIndex + offset) % cameraIds.length];
