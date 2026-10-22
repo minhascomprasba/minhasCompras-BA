@@ -1,4 +1,23 @@
 @scope ([data-scope="map"]) {
+  /* Isola e limita as camadas do Leaflet para nunca vazarem sobre menus ou navbar */
+  .leaflet-container {
+    isolation: isolate;
+    z-index: 0;
+  }
+
+  .leaflet-pane {
+    z-index: 1 !important;
+  }
+
+  .leaflet-top,
+  .leaflet-bottom {
+    z-index: 10 !important;
+  }
+
+  .leaflet-popup-pane {
+    z-index: 20 !important;
+  }
+
   /* Pin customizado (divIcon) sem fundo/borda padrão do Leaflet */
   .map-pin {
     background: transparent;
@@ -46,5 +65,4 @@
     color: var(--text-muted) !important;
   }
   .leaflet-control-attribution a { color: var(--brand-blue-light) !important; }
-
 }

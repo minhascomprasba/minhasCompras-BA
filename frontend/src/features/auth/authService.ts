@@ -5,7 +5,7 @@ export type UserRole = 'USER' | 'ADMIN' | 'SUPER_ADMIN';
 export const ROLE_LABELS: Record<UserRole, string> = {
   USER: 'Usuário',
   ADMIN: 'Gestor',
-  SUPER_ADMIN: 'Gestor principal',
+  SUPER_ADMIN: 'Administrador',
 };
 
 export interface User {

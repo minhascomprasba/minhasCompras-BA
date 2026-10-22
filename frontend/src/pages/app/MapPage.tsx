@@ -313,7 +313,7 @@ export function MapPage() {
           {failedCeps.length > 0 && <Alert className="border-amber-400/30 bg-amber-400/10 text-amber-300">Não localizados: {failedCeps.join(', ')}</Alert>}
         </aside>
 
-        <Card className="relative order-1 z-0 min-w-0 py-0 min-[861px]:order-2">
+        <Card className="relative order-1 z-0 min-w-0 overflow-hidden isolate py-0 min-[861px]:order-2">
           {mapError ? (
             <div className="flex min-h-[420px] items-center p-6">
               <Alert variant="destructive">Não foi possível carregar o mapa. Verifique sua conexão com a internet e tente novamente.</Alert>

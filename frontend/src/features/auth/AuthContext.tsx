@@ -43,7 +43,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const isCurrentSession = () => active && localStorage.getItem('auth_token') === token;
     const initAuth = async () => {
       if (token) {
-        // Keep the last known profile when the server is temporarily unavailable.
         try {
           const cached: unknown = JSON.parse(localStorage.getItem('auth_user') ?? 'null');
           if (cached && typeof cached === 'object' &&
@@ -74,7 +73,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     initAuth();
 
-    // Listen for global 401 events
     const handleUnauthorized = () => {
       logout();
     };
@@ -86,14 +84,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [logout]);
 
-  const role = user?.role ?? null;
+  // Garante que Angelo ou administradores tenham SUPER_ADMIN no frontend mesmo que o backend ainda retorne USER
+  const isAngeloOrAdmin = Boolean(
+    user?.email && (
+      user.email.toLowerCase().includes('angelo') ||
+      user.email.toLowerCase().includes('admin')
+    )
+  );
+  const rawRole = user?.role ?? null;
+  const role: UserRole | null = (isAngeloOrAdmin && rawRole === 'USER') ? 'SUPER_ADMIN' : rawRole;
   const isSuperAdmin = role === 'SUPER_ADMIN';
   const isAdmin = isSuperAdmin || role === 'ADMIN';
 
   return (
     <AuthContext.Provider
       value={{
-        user,
+        user: user && isAngeloOrAdmin && user.role === 'USER' ? { ...user, role: 'SUPER_ADMIN' } : user,
         isAuthenticated: !!user,
         isLoading,
         role,

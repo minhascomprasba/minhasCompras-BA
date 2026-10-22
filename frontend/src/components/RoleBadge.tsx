@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 const roleClasses: Record<UserRole, string> = {
   USER: 'bg-primary/10 text-primary',
   ADMIN: 'bg-[var(--brand-blue-light)]/15 text-[var(--brand-blue-light)]',
-  SUPER_ADMIN: 'bg-primary/15 text-primary',
+  SUPER_ADMIN: 'bg-amber-400/15 text-amber-300 border border-amber-400/30',
 };
 
 export function RoleBadge({ role }: { role: UserRole }) {
