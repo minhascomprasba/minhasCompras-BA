@@ -17,6 +17,7 @@ import { MapPage } from '../pages/app/MapPage';
 import { AuthenticatedLayout } from '../components/AuthenticatedLayout';
 import { useAuth } from '../features/auth/AuthContext';
 import { NotFoundPage } from '../pages/NotFoundPage';
+import { ProfilePage } from '../pages/app/ProfilePage';
 
 function RouteSpinner() {
   return (
@@ -93,6 +94,10 @@ const router = createBrowserRouter([
       {
         path: '/dashboard',
         element: <UserDashboardPage />,
+      },
+      {
+        path: '/perfil',
+        element: <ProfilePage />,
       },
       {
         path: '/importar',
