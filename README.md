@@ -270,3 +270,24 @@ O scraper foi construído utilizando Selenium e Beautiful Soup 4 devido à compl
 ### 2. Inicialização Automática e Updates de Esquema
 O projeto não utiliza migrations complexas (como Alembic) para simplificar a entrega acadêmica. A aplicação implementa um helper no arquivo `src/api/app.py` chamado `_ensure_schema_updates()` que roda em conjunto com o `create_all()` no startup da API. Esse helper faz checagens nativas de tabelas existentes no banco e executa comandos `ALTER TABLE` nativos se novas colunas (como `data_compra` ou `sem_gtin`) estiverem ausentes.
 
+
+### Perfis de acesso e primeiro administrador
+
+Os perfis retornados pelo backend no login e em `/api/v1/auth/me` determinam
+as permissões: `USER` (Usuário), `ADMIN` (Gestor, consulta indicadores) e
+`SUPER_ADMIN` (Administrador, também altera perfis e exclui contas).
+O nome ou e-mail da conta não concede permissões.
+
+Após iniciar a API e cadastrar e confirmar a conta desejada, execute no ambiente
+com o `DATABASE_URL` do banco correto:
+
+```bash
+python -m src.database.promote_admin 'email-exato@exemplo.com'
+```
+
+Entre novamente na aplicação para carregar o perfil atualizado. Outros perfis
+podem ser gerenciados em **Perfis de Acesso** pelo administrador. A API bloqueia
+alterar o próprio perfil, excluir a própria conta e remover o último administrador.
+A exclusão remove também notas, itens, importações e tokens de recuperação da
+conta, preservando o catálogo compartilhado. Importações ainda ativas precisam
+terminar ou expirar antes da exclusão.
