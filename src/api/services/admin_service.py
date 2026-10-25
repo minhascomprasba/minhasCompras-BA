@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from src.api.errors import ConflictError, NotFoundError, ValidationError
+from src.api.errors import ApiError, ConflictError, NotFoundError, ValidationError
 from src.api.services.dashboard_service import PORTUGUESE_MONTHS
 from src.database.connection import SessionLocal
 from src.database.models import (
@@ -1037,7 +1037,8 @@ def delete_usuario_admin(target_id: int, actor_id: int) -> dict[str, object]:
     try:
         ator = session.get(Usuario, actor_id)
         if ator is None or ator.role != UserRole.SUPER_ADMIN.value:
-            raise ForbiddenError(
+            raise ApiError(
+                status_code=403,
                 code="FORBIDDEN",
                 message="Apenas super admins podem excluir usuários.",
                 details={"usuario_id": str(actor_id)},
@@ -1068,6 +1069,19 @@ def delete_usuario_admin(target_id: int, actor_id: int) -> dict[str, object]:
                 )
 
         removido = {"id": alvo.id, "email": alvo.email, "role": alvo.role}
+
+        active_import = session.execute(
+            select(NfceImport.id).where(
+                NfceImport.usuario_id == target_id,
+                NfceImport.status.in_((ImportStatus.WAITING_CAPTCHA.value, ImportStatus.PROCESSING.value)),
+                NfceImport.expires_at > datetime.utcnow(),
+            ).limit(1)
+        ).scalar()
+        if active_import is not None:
+            raise ConflictError(
+                code="USER_HAS_ACTIVE_IMPORT",
+                message="Aguarde a conclusão ou expiração das importações antes de excluir o usuário.",
+            )
 
         session.delete(alvo)
         session.commit()

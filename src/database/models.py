@@ -29,9 +29,9 @@ class Usuario(Base):
     role: Mapped[str] = mapped_column(String(20), nullable=False, default=UserRole.USER.value, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
-    notas: Mapped[list[NotaFiscal]] = relationship(back_populates="usuario")
-    imports: Mapped[list[NfceImport]] = relationship(back_populates="usuario")
-    password_reset_tokens: Mapped[list[PasswordResetToken]] = relationship(back_populates="usuario")
+    notas: Mapped[list[NotaFiscal]] = relationship(back_populates="usuario", cascade="all, delete-orphan")
+    imports: Mapped[list[NfceImport]] = relationship(back_populates="usuario", cascade="all, delete-orphan")
+    password_reset_tokens: Mapped[list[PasswordResetToken]] = relationship(back_populates="usuario", cascade="all, delete-orphan")
 
 
 class EmailVerificationCode(Base):
