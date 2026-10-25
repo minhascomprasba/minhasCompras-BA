@@ -3,6 +3,7 @@ import { newPasswordSchema } from '../../features/auth/passwordPolicy';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
+  UserCircleIcon as UserCircle,
   EnvelopeIcon as Envelope,
   LockKeyIcon as LockKey,
   TrashIcon as Trash,
@@ -14,7 +15,6 @@ import {
   PencilSimpleIcon as PencilSimple,
   XIcon as X
 } from '@phosphor-icons/react';
-import BoringAvatar from 'boring-avatars';
 
 import { authService } from '../../features/auth/authService';
 import { parseApiError } from '../../shared/api/errors';
@@ -33,14 +33,6 @@ import {
   DialogHeader,
   DialogTitle
 } from '../../components/ui/dialog';
-
-const avatarColors = [
-  '#17c85f',
-  '#033876',
-  '#3a8fe0',
-  '#17233A',
-  '#F4F8FC',
-];
 
 type ActiveTab = 'none' | 'email' | 'password';
 
@@ -189,12 +181,7 @@ export function ProfilePage() {
           <Card className="h-fit">
             <CardHeader className="text-center">
               <div className="mx-auto mb-3 flex size-20 items-center justify-center overflow-hidden rounded-full ring-2 ring-border">
-                <BoringAvatar
-                  size={80}
-                  name={user ? String(user.id) : 'guest'}
-                  variant="beam"
-                  colors={avatarColors}
-                />
+                <UserCircle className="size-full text-muted-foreground" weight="duotone" aria-hidden="true" />
               </div>
               <CardTitle>{user?.email || 'Usuário'}</CardTitle>
               <CardDescription>Identificador #{user?.id ?? '—'}</CardDescription>

@@ -1,10 +1,8 @@
 import { Link } from 'react-router-dom';
 import { SignOutIcon as LogOut, UserCircleIcon as UserCircle } from '@phosphor-icons/react';
-import BoringAvatar from 'boring-avatars';
 
 import { useAuth } from '../features/auth/AuthContext';
 import { RoleBadge } from './RoleBadge';
-import { Avatar } from './ui/avatar';
 import { Button } from './ui/button';
 import { 
   DropdownMenu, 
@@ -16,16 +14,6 @@ import {
   DropdownMenuTrigger 
 } from './ui/dropdown-menu';
 
-const avatarColors = [
-  // Beam needs hex values to calculate contrasting eyes and mouth colors.
-  // These match the brand and supporting colors in styles/tokens.css.
-  '#17c85f',
-  '#033876',
-  '#3a8fe0',
-  '#17233A',
-  '#F4F8FC',
-];
-
 export function ProfileMenu({ onLogout, inline = false }: { onLogout: () => void; inline?: boolean }) {
   const { user, role } = useAuth();
 
@@ -33,15 +21,7 @@ export function ProfileMenu({ onLogout, inline = false }: { onLogout: () => void
     return (
       <section aria-label="Meu perfil" className="flex min-w-0 flex-col gap-4">
         <div className="flex items-center gap-3">
-          <Avatar className="size-11 shrink-0" aria-hidden="true">
-            <BoringAvatar 
-              className="block size-full" 
-              size={44} 
-              name={user ? String(user.id) : 'guest'} 
-              variant="beam" 
-              colors={avatarColors} 
-            />
-          </Avatar>
+          <UserCircle className="size-11 shrink-0 text-muted-foreground" weight="duotone" aria-hidden="true" />
           {role && <RoleBadge role={role} />}
         </div>
         <p className="text-sm text-muted-foreground break-words">{user?.email}</p>
@@ -67,15 +47,7 @@ export function ProfileMenu({ onLogout, inline = false }: { onLogout: () => void
         render={<Button variant="ghost" size="icon" className="profile-trigger size-11 rounded-full" />} 
         aria-label="Abrir perfil"
       >
-        <Avatar className="size-11" aria-hidden="true">
-          <BoringAvatar
-            className="block size-full"
-            size={44}
-            name={user ? String(user.id) : 'guest'}
-            variant="beam"
-            colors={avatarColors}
-          />
-        </Avatar>
+        <UserCircle className="size-11 shrink-0 text-muted-foreground" weight="duotone" aria-hidden="true" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={12} className="app-shell-theme profile-dropdown w-80 max-w-[calc(100vw-2rem)]" aria-label="Meu perfil">
         <DropdownMenuGroup>
