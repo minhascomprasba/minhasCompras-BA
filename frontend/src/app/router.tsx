@@ -17,6 +17,8 @@ import { MapPage } from '../pages/app/MapPage';
 import { AuthenticatedLayout } from '../components/AuthenticatedLayout';
 import { useAuth } from '../features/auth/AuthContext';
 import { NotFoundPage } from '../pages/NotFoundPage';
+import { CancelAccountDeletionPage } from '../pages/auth/CancelAccountDeletionPage';
+import { PrivacyPage } from '../pages/PrivacyPage';
 import { ProfilePage } from '../pages/app/ProfilePage';
 
 function RouteSpinner() {
@@ -54,6 +56,8 @@ function AdminRoute({ requireSuperAdmin = false }: { requireSuperAdmin?: boolean
 }
 
 const router = createBrowserRouter([
+  { path: '/cancelar-exclusao', element: <CancelAccountDeletionPage /> },
+  { path: '/privacidade', element: <PrivacyPage /> },
   {
     path: '/',
     element: <HomePage />,

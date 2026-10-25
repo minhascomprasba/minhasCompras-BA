@@ -11,15 +11,20 @@ from sqlalchemy.exc import IntegrityError
 
 from src.api.errors import ApiError, ConflictError, ValidationError
 from src.api.security import create_access_token, get_password_hash, verify_password
-from src.database.models import AccountChallenge, AccountRateLimit, PasswordResetToken, Usuario
+from src.database.models import (
+    AccountChallenge, AccountRateLimit, AccountDeletionEvent, EmailVerificationCode, ImportStatus,
+    NfceImport, PasswordResetToken, PendingAccountDeletion, Usuario,
+)
 
 
-def lock_user(db, user_id):
+def lock_user(db, user_id, allow_pending=False):
     # A write lock also serializes SQLite, where SELECT FOR UPDATE is ignored.
     result = db.execute(update(Usuario).where(Usuario.id == user_id).values(id=Usuario.id))
     if not result.rowcount:
         raise ApiError("USER_NOT_FOUND", "Conta não encontrada.", 404)
     user = db.get(Usuario, user_id, populate_existing=True)
+    if user.deletion_scheduled_at is not None and not allow_pending:
+        raise ConflictError("ACCOUNT_PENDING_DELETION", "A exclusão desta conta está agendada. Use o link enviado por e-mail para cancelar.")
     return user
 
 
@@ -138,3 +143,91 @@ def verify_change(db, user_id, operation, payload):
         db.rollback()
         raise ConflictError("EMAIL_IN_USE", "Este e-mail já está em uso.") from exc
     return token_response(user)
+
+
+def delete_account(db, user_id, now=None):
+    """Internal finalizer; never removes an account before its scheduled deadline."""
+    now = now or datetime.utcnow()
+    # Lock all administrators in a stable order to preserve the last-admin guard.
+    db.execute(update(Usuario).where(Usuario.role == "SUPER_ADMIN").values(id=Usuario.id))
+    user = lock_user(db, user_id, allow_pending=True)
+    pending = db.get(PendingAccountDeletion, user_id)
+    if not pending or pending.scheduled_at > now or user.deletion_scheduled_at is None or user.deletion_scheduled_at > now:
+        raise ConflictError("DELETION_NOT_DUE", "A exclusão ainda não pode ser efetivada.")
+    source = pending.source
+    if user.role == "SUPER_ADMIN" and db.scalar(select(func.count()).select_from(Usuario).where(Usuario.role == "SUPER_ADMIN", Usuario.deletion_scheduled_at.is_(None))) < 1:
+        raise ConflictError("LAST_SUPER_ADMIN", "O sistema precisa manter pelo menos um super admin.")
+    if db.scalar(select(NfceImport.id).where(NfceImport.usuario_id == user_id,
+            NfceImport.status.in_(["WAITING_CAPTCHA", "PROCESSING"])).limit(1)):
+        raise ConflictError("USER_HAS_ACTIVE_IMPORT", "Aguarde a conclusão ou expiração das importações e tente novamente.")
+    # Compatibility with databases that ran the earlier, uncommitted inbox prototype.
+    # No request tables are created now; remove owned legacy rows if they exist.
+    inspector = inspect(db.connection())
+    if inspector.has_table("privacy_requests"):
+        if inspector.has_table("privacy_messages"):
+            db.execute(text("DELETE FROM privacy_messages WHERE request_id IN (SELECT id FROM privacy_requests WHERE usuario_id = :user_id)"), {"user_id": user_id})
+        db.execute(text("DELETE FROM privacy_requests WHERE usuario_id = :user_id"), {"user_id": user_id})
+    db.execute(delete(AccountChallenge).where(AccountChallenge.usuario_id == user_id))
+    db.execute(delete(EmailVerificationCode).where(func.lower(EmailVerificationCode.email) == user.email.lower()))
+    from src.api import settings
+    event = AccountDeletionEvent(id=uuid4().hex, occurred_on=now.date(), source=source,
+        expires_at=now + timedelta(days=settings.ACCOUNT_DELETION_AUDIT_DAYS))
+    db.add(event)
+    resources = [(record.id, record.captcha_image_path) for record in user.imports]
+    db.delete(pending)
+    db.delete(user)
+    db.commit()
+    from src.api.services.import_service import release_import_resources
+    for import_id, path in resources:
+        release_import_resources(import_id, path)
+
+
+DELETION_GRACE_DAYS = 7
+
+
+def schedule_account_deletion(db, user_id, password=None, source="SELF_SERVICE"):
+    from src.api.services.email_service import send_account_deletion_scheduled
+    from src.api.security import generate_reset_token
+    db.execute(update(Usuario).where(Usuario.role == "SUPER_ADMIN").values(id=Usuario.id))
+    user = lock_user(db, user_id)
+    if password is not None:
+        confirm_password(user, password)
+    if user.role == "SUPER_ADMIN" and db.scalar(select(func.count()).select_from(Usuario).where(
+            Usuario.role == "SUPER_ADMIN", Usuario.deletion_scheduled_at.is_(None))) <= 1:
+        raise ConflictError("LAST_SUPER_ADMIN", "O sistema precisa manter pelo menos um super admin ativo.")
+    if db.scalar(select(NfceImport.id).where(NfceImport.usuario_id == user_id,
+            NfceImport.status.in_(["WAITING_CAPTCHA", "PROCESSING"])).limit(1)):
+        raise ConflictError("USER_HAS_ACTIVE_IMPORT", "Aguarde a conclusão ou expiração das importações e tente novamente.")
+    now = datetime.utcnow()
+    scheduled = now + timedelta(days=DELETION_GRACE_DAYS)
+    raw_token, token_hash = generate_reset_token()
+    pending = PendingAccountDeletion(usuario_id=user_id, token_hash=token_hash,
+        requested_at=now, scheduled_at=scheduled, source=source)
+    db.add(pending)
+    user.deletion_scheduled_at = scheduled
+    invalidate_credentials(db, user)
+    try:
+        send_account_deletion_scheduled(user.email, raw_token, scheduled)
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        raise ApiError("EMAIL_DELIVERY_FAILED", "Não foi possível enviar o aviso de exclusão. A exclusão não foi agendada. Tente novamente.", 503) from exc
+    return {"message": "Exclusão agendada para daqui a 7 dias. Enviamos um link por e-mail para cancelar.",
+        "status": "PENDING_DELETION", "scheduled_at": scheduled}
+
+
+def cancel_account_deletion(db, raw_token):
+    from src.api.security import hash_reset_token
+    token_hash = hash_reset_token(raw_token)
+    owner_id = db.scalar(select(PendingAccountDeletion.usuario_id).where(PendingAccountDeletion.token_hash == token_hash))
+    if owner_id is None:
+        raise ValidationError("INVALID_DELETION_TOKEN", "Link de cancelamento inválido ou expirado.")
+    user = lock_user(db, owner_id, allow_pending=True)
+    pending = db.get(PendingAccountDeletion, owner_id, populate_existing=True)
+    if not pending or not hmac.compare_digest(pending.token_hash, token_hash) or pending.scheduled_at <= datetime.utcnow():
+        raise ValidationError("INVALID_DELETION_TOKEN", "Link de cancelamento inválido ou expirado.")
+    user.deletion_scheduled_at = None
+    invalidate_credentials(db, user)
+    db.delete(pending)
+    db.commit()
+    return {"message": "Exclusão cancelada. Seus dados foram preservados. Entre novamente e revise a segurança da sua conta."}

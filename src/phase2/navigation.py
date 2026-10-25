@@ -38,20 +38,17 @@ def _raise_tabs_button_diagnostics(driver: WebDriver) -> None:
         raise RuntimeError(
             "Botao de visualizacao em abas nao encontrado. A pagina aparenta ter retornado para a tela de autenticacao. "
             "Verifique se houve erro residual de captcha/autenticacao. "
-            f"URL atual: {current_url}"
         )
 
     if PHASE1_PAGE_PATH in current_url:
         raise RuntimeError(
             "Botao de visualizacao em abas nao encontrado na pagina da Fase 1. "
             "Possivel queda parcial da pagina ou autenticacao incompleta. "
-            f"URL atual: {current_url}"
         )
 
     raise RuntimeError(
         "Botao de visualizacao em abas nao encontrado dentro do timeout. "
         "Verifique instabilidade do portal ou mudanca de DOM. "
-        f"URL atual: {current_url}"
     )
 
 
@@ -207,7 +204,7 @@ def Maps_to_products_tab(driver: WebDriver, timeout: int) -> dict[str, Any]:
         logger.error("Nao houve mudanca de URL apos clique em '%s'.", VISUALIZAR_ABAS_BUTTON_ID)
         raise RuntimeError("Falha ao carregar pagina de visualizacao em abas.") from exc
 
-    logger.info("Pagina de abas carregada: %s", driver.current_url)
+    logger.info("Pagina de abas carregada.")
     aba_ids = _list_aba_button_ids(driver)
     if aba_ids:
         logger.info("Fase 2: abas disponiveis: %s", ", ".join(aba_ids))
@@ -305,8 +302,7 @@ def wait_for_products_content(driver: WebDriver, timeout: int) -> int:
         )
     except TimeoutException as exc:
         logger.error(
-            "Timeout aguardando renderizacao dos produtos apos abrir a aba. URL atual: %s",
-            driver.current_url,
+            "Timeout aguardando renderizacao dos produtos apos abrir a aba.",
         )
         raise RuntimeError(
             "Produtos nao foram renderizados a tempo apos clique na aba de produtos. "

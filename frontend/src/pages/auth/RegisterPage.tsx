@@ -164,6 +164,7 @@ export function RegisterPage() {
         <AuthCardFooter>
           Já tem conta? <Link to="/login" className="font-semibold">Fazer login</Link>
         </AuthCardFooter>
+      <p className="text-sm"><Link to="/privacidade" className="underline">Leia o aviso de privacidade</Link></p>
       </AuthCard>
     </div>
   );

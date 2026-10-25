@@ -291,6 +291,9 @@ def login(payload: UserLoginRequest, db: Session = Depends(get_db)):
     if not is_valid_password:
         raise ApiError("INVALID_CREDENTIALS", "E-mail ou senha inválidos.", status_code=401)
 
+    if user.deletion_scheduled_at is not None:
+        raise ApiError("ACCOUNT_PENDING_DELETION", "Sua conta tem exclusão agendada. Use o link enviado por e-mail para cancelar em até 7 dias.", 409,
+            {"scheduled_at": user.deletion_scheduled_at.isoformat()})
     token = create_access_token(user.id, user.credential_version)
     return TokenResponse(
         access_token=token,
@@ -324,7 +327,9 @@ def forgot_password(
     user = db.query(Usuario).filter(func.lower(Usuario.email) == payload.email.strip().lower()).first()
     if user:
         from src.api.services.account_service import lock_user
-        user = lock_user(db, user.id)
+        user = lock_user(db, user.id, allow_pending=True)
+        if user.deletion_scheduled_at is not None:
+            return MessageResponse(message=FORGOT_PASSWORD_SUCCESS_MESSAGE)
         if user.email.lower() != payload.email.strip().lower():
             return MessageResponse(message=FORGOT_PASSWORD_SUCCESS_MESSAGE)
         now = datetime.utcnow()

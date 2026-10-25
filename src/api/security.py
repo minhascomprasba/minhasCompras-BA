@@ -55,7 +55,7 @@ def get_current_user_id(request: Request) -> int:
         user_id = int(user_id_str)
         with SessionLocal() as session:
             user = session.get(Usuario, user_id)
-            if user is None or payload.get("cv", 0) != user.credential_version:
+            if user is None or user.deletion_scheduled_at is not None or payload.get("cv", 0) != user.credential_version:
                 raise ApiError("UNAUTHORIZED", "Sessão revogada. Entre novamente.", 401)
         return user_id
     except jwt.ExpiredSignatureError:

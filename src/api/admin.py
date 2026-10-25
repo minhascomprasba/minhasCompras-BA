@@ -58,6 +58,7 @@ def admin_update_usuario_role(
 @admin_router.delete(
     "/usuarios/{usuario_id}",
     response_model=DeleteUsuarioResponse,
+    status_code=202,
 )
 def admin_delete_usuario(
     usuario_id: int,

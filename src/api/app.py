@@ -96,6 +96,8 @@ def _ensure_schema_updates() -> None:
         if inspector.has_table("usuarios"):
             usuario_columns = {column["name"] for column in inspector.get_columns("usuarios")}
             connection.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_usuarios_email_normalized ON usuarios (lower(email))"))
+            if "deletion_scheduled_at" not in usuario_columns:
+                connection.execute(text(f"ALTER TABLE usuarios ADD COLUMN deletion_scheduled_at {column_type}"))
             if "credential_version" not in usuario_columns:
                 connection.execute(text("ALTER TABLE usuarios ADD COLUMN credential_version INTEGER NOT NULL DEFAULT 0"))
             if "role" not in usuario_columns:
@@ -123,6 +125,8 @@ def _ensure_schema_updates() -> None:
 def on_startup() -> None:
     Base.metadata.create_all(bind=engine)
     _ensure_schema_updates()
+    from src.api.services.retention_service import cleanup
+    cleanup()
     driver_pool.start()
 
 

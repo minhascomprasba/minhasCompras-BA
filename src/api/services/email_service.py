@@ -35,3 +35,13 @@ def send_account_change_code(to_email: str, code: str, operation: str) -> None:
     purpose = "alterar seu e-mail" if operation == "email" else "alterar sua senha"
     send_message(to_email, f"Código para {purpose} — Minhas Compras BA",
         f"Use {code} para {purpose}. Válido por 15 minutos. Se não solicitou, ignore e revise a segurança da conta.")
+
+
+def send_account_deletion_scheduled(to_email, raw_token, scheduled_at):
+    # URL fragment keeps the cancellation secret out of HTTP request URLs/access logs.
+    cancel_url = f"{settings.FRONTEND_URL}/cancelar-exclusao#token={raw_token}"
+    send_message(to_email, "Exclusão da conta agendada — Minhas Compras BA",
+        f"A exclusão da sua conta foi solicitada. Sua conta está bloqueada para uso, mas os dados serão preservados durante 7 dias.\n"
+        f"A exclusão definitiva poderá ocorrer a partir de {scheduled_at.strftime('%d/%m/%Y %H:%M')} UTC.\n"
+        f"Se você não solicitou ou mudou de ideia, abra o link e confirme o cancelamento antes do prazo:\n{cancel_url}\n"
+        "Cancelar não conecta automaticamente sua conta. Depois, entre novamente e altere a senha se suspeitar de acesso indevido.")

@@ -124,6 +124,31 @@ class APISMTPTests(unittest.TestCase):
         status, data, _ = self.request('POST', '/auth/password-change/verify', {'challenge_id': data['challenge_id'], 'code': self.code()}, token)
         self.assertEqual(200, status)
         token = data['access_token']
+        status, export, headers = self.request('POST', '/auth/me/export', {'password': 'ChangedPass2!'}, token)
+        self.assertEqual(200, status)
+        self.assertEqual(b'no-store', headers[b'cache-control'])
+        self.assertEqual('changed@example.com', export['account']['email'])
+        self.assertEqual(422, self.request('DELETE', '/auth/me', {'password': 'wrong'}, token)[0])
+        self.assertEqual(200, self.request('GET', '/auth/me', token=token)[0])
+        status, scheduled, _ = self.request('DELETE', '/auth/me', {'password': 'ChangedPass2!'}, token)
+        self.assertEqual(202, status)
+        cancel_token = re.search(r'#token=([A-Za-z0-9_-]+)', self.smtp.messages[-1].get_body().get_content()).group(1)
+        self.assertEqual(409, self.request('POST', '/auth/login', {'email': 'changed@example.com', 'password': 'ChangedPass2!'})[0])
+        self.assertEqual(200, self.request('POST', '/auth/account-deletion/cancel', {'token': cancel_token})[0])
+        self.assertEqual(422, self.request('POST', '/auth/account-deletion/cancel', {'token': cancel_token})[0])
+        status, login, _ = self.request('POST', '/auth/login', {'email': 'changed@example.com', 'password': 'ChangedPass2!'})
+        self.assertEqual(200, status)
+        token = login['access_token']
+        status, scheduled, _ = self.request('DELETE', '/auth/me', {'password': 'ChangedPass2!'}, token)
+        self.assertEqual(202, status)
+        status, listed, _ = self.request('GET', '/admin/usuarios', token=admin)
+        self.assertEqual(200, status)
+        self.assertEqual('PENDING_DELETION', next(u for u in listed['data'] if u['id'] == 1)['status'])
+        from src.api.services import retention_service
+        with patch.object(retention_service, 'SessionLocal', self.sessions):
+            retention_service.cleanup(datetime.fromisoformat(scheduled['scheduled_at']) + timedelta(seconds=1))
+        self.assertEqual(401, self.request('GET', '/auth/me', token=token)[0])
+        self.assertEqual(200, self.request('GET', '/auth/me', token=admin)[0])
 
     def test_password_recovery_delivers_link_and_revokes_old_session(self):
         old = security.create_access_token(1)

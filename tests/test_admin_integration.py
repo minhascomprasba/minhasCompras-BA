@@ -10,8 +10,8 @@ from src.api.errors import ApiError
 from src.api.security import require_admin, require_super_admin
 from src.api.services import admin_service
 from src.database.models import (
-    Base, Estabelecimento, ItemNotaFiscal, NfceImport, NotaFiscal,
-    PasswordResetToken, Produto, Usuario,
+    AccountDeletionEvent, Base, Estabelecimento, ItemNotaFiscal, NfceImport, NotaFiscal,
+    PasswordResetToken, PendingAccountDeletion, Produto, Usuario,
 )
 from src.database.promote_admin import promote_admin
 
@@ -26,6 +26,8 @@ class AdminIntegrationTests(unittest.TestCase):
         self.sessions = sessionmaker(self.engine, expire_on_commit=False)
         self.patch = patch.object(admin_service, 'SessionLocal', self.sessions)
         self.patch.start()
+        self.mail_patch = patch('src.api.services.email_service.send_account_deletion_scheduled')
+        self.mail_patch.start()
 
         with self.sessions() as session:
             session.add_all([
@@ -37,6 +39,7 @@ class AdminIntegrationTests(unittest.TestCase):
 
     def tearDown(self):
         self.patch.stop()
+        self.mail_patch.stop()
         self.engine.dispose()
 
     def assert_api_error(self, code, action):
@@ -88,13 +91,20 @@ class AdminIntegrationTests(unittest.TestCase):
 
         result = admin_service.delete_usuario_admin(3, 1)
 
-        self.assertTrue(result['deleted'])
-        self.assertEqual(0, result['resumo_perfis']['USER'])
+        self.assertFalse(result['deleted'])
+        self.assertEqual('PENDING_DELETION', result['status'])
+        with self.sessions() as session:
+            self.assertIsNotNone(session.get(Usuario, 3))
+            self.assertEqual(1, len(session.scalars(select(NotaFiscal)).all()))
+            due = session.get(PendingAccountDeletion, 3).scheduled_at
+            from src.api.services.account_service import delete_account
+            delete_account(session, 3, now=due)
 
         with self.sessions() as session:
             for model in (NotaFiscal, ItemNotaFiscal, PasswordResetToken, NfceImport):
                 self.assertEqual([], session.scalars(select(model)).all())
 
+            self.assertEqual('ADMIN', session.scalar(select(AccountDeletionEvent)).source)
             self.assertIsNotNone(session.get(Produto, 1))
             self.assertIsNotNone(session.get(Estabelecimento, 1))
 

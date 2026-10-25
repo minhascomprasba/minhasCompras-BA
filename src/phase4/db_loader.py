@@ -141,11 +141,13 @@ def bulk_insert_produtos_with_nota_id(
         raise ValueError("codigo_nota_fiscal invalido: informe exatamente 44 digitos numericos.")
 
     if not produtos:
-        logger.warning("Fase 4: lista de produtos vazia para a nota %s.", codigo_nota_fiscal)
+        logger.warning("Fase 4: lista de produtos vazia.")
         return 0, 0
 
     session = SessionLocal()
     try:
+        from src.api.services.account_service import lock_user
+        lock_user(session, usuario_id)
         nota_fiscal = session.execute(
             select(NotaFiscal).where(
                 NotaFiscal.codigo_acesso == codigo_nota_fiscal,
@@ -247,15 +249,14 @@ def bulk_insert_produtos_with_nota_id(
         session.commit()
 
         logger.info(
-            "Fase 4: %s itens vinculados com sucesso para a nota fiscal %s.",
+            "Fase 4: %s itens vinculados com sucesso.",
             len(records_itens),
-            codigo_nota_fiscal,
         )
         return len(records_itens), nota_fiscal.id
 
     except SQLAlchemyError:
         session.rollback()
-        logger.exception("Fase 4: erro transacional ao processar a nota.")
+        logger.error("Fase 4: erro transacional ao processar a nota.")
         raise
     finally:
         session.close()

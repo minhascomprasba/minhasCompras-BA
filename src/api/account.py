@@ -52,3 +52,25 @@ def verify_email(payload: ChallengeVerification, user_id: int = Depends(get_curr
 @account_router.post("/password-change/verify", response_model=TokenResponse)
 def verify_password(payload: ChallengeVerification, user_id: int = Depends(get_current_user_id), db: Session = Depends(get_db)):
     return service.verify_change(db, user_id, "password", payload)
+
+
+@account_router.delete("/me", status_code=202)
+def delete_me(payload: PasswordConfirmation, user_id: int = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    return service.schedule_account_deletion(db, user_id, password=payload.password)
+
+
+@account_router.post("/me/export")
+def export_me(payload: PasswordConfirmation, user_id: int = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    from src.api.services.export_service import export_account
+    user = service.lock_user(db, user_id)
+    service.confirm_password(user, payload.password)
+    return export_account(db, user)
+
+
+class CancelDeletionRequest(BaseModel):
+    token: str = Field(min_length=20, max_length=200)
+
+
+@account_router.post("/account-deletion/cancel")
+def cancel_deletion(payload: CancelDeletionRequest, db: Session = Depends(get_db)):
+    return service.cancel_account_deletion(db, payload.token)

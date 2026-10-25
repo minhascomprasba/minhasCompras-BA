@@ -83,15 +83,13 @@ export function UsersPage() {
   const handleDeleteConfirm = () => {
     if (!usuarioParaExcluir) return;
     const alvo = usuarioParaExcluir;
-    const eraUltimoDaPagina = (data?.data.length ?? 0) === 1 && page > 1;
 
     deleteUsuario.mutate(
       { usuarioId: alvo.id },
       {
         onSuccess: () => {
-          setFeedback({ type: 'success', message: `${alvo.email} foi excluído.` });
+          setFeedback({ type: 'success', message: `${alvo.email}: exclusão agendada para daqui a 7 dias. O titular receberá um link para cancelar.` });
           setUsuarioParaExcluir(null);
-          if (eraUltimoDaPagina) setPage((current) => current - 1);
         },
         onError: (mutationError) => {
           setFeedback({ type: 'error', message: mutationError.message });
@@ -155,14 +153,14 @@ export function UsersPage() {
       <Dialog open={!!usuarioParaExcluir} onOpenChange={(open: boolean) => { if (!open && !deleteUsuario.isPending) setUsuarioParaExcluir(null); }}>
         <DialogContent className="app-shell-theme space-y-5">
           <DialogHeader>
-            <DialogTitle>Excluir usuário</DialogTitle>
+            <DialogTitle>Agendar exclusão do usuário</DialogTitle>
             <DialogDescription>
-              {usuarioParaExcluir && <>Tem certeza que deseja excluir <strong>{usuarioParaExcluir.email}</strong> ({ROLE_LABELS[usuarioParaExcluir.role]})? Essa ação não pode ser desfeita.</>}
+              {usuarioParaExcluir && <>Tem certeza que deseja excluir <strong>{usuarioParaExcluir.email}</strong> ({ROLE_LABELS[usuarioParaExcluir.role]})? A conta ficará bloqueada e os dados serão preservados por 7 dias. O titular receberá um link para cancelar. Após o prazo, a exclusão será definitiva.</>}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
             <Button type="button" variant="outline" disabled={deleteUsuario.isPending} onClick={() => setUsuarioParaExcluir(null)}>Cancelar</Button>
-            <Button type="button" variant="destructive" disabled={deleteUsuario.isPending} onClick={handleDeleteConfirm}><Trash aria-hidden="true" /> {deleteUsuario.isPending ? 'Excluindo...' : 'Excluir'}</Button>
+            <Button type="button" variant="destructive" disabled={deleteUsuario.isPending} onClick={handleDeleteConfirm}><Trash aria-hidden="true" /> {deleteUsuario.isPending ? 'Agendando...' : 'Agendar exclusão'}</Button>
           </div>
         </DialogContent>
       </Dialog>

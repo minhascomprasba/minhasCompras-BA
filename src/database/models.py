@@ -29,6 +29,7 @@ class Usuario(Base):
     role: Mapped[str] = mapped_column(String(20), nullable=False, default=UserRole.USER.value, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
+    deletion_scheduled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     credential_version: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
 
     notas: Mapped[list[NotaFiscal]] = relationship(back_populates="usuario", cascade="all, delete-orphan")
@@ -202,3 +203,21 @@ class AccountRateLimit(Base):
     key: Mapped[str] = mapped_column(String(100), primary_key=True)
     window: Mapped[datetime] = mapped_column(DateTime)
     count: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class AccountDeletionEvent(Base):
+    """Minimal operational evidence with no account or actor identifier."""
+    __tablename__ = "account_deletion_events"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    occurred_on: Mapped[date] = mapped_column(Date, nullable=False)
+    source: Mapped[str] = mapped_column(String(20), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, index=True)
+
+
+class PendingAccountDeletion(Base):
+    __tablename__ = "pending_account_deletions"
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), primary_key=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    requested_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    scheduled_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, index=True)
+    source: Mapped[str] = mapped_column(String(20), nullable=False)

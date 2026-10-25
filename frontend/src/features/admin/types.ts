@@ -106,6 +106,8 @@ export interface AdminDashboardData {
 }
 
 export interface AdminUsuario {
+  status: 'ACTIVE' | 'PENDING_DELETION';
+  deletion_scheduled_at: string | null;
   id: number;
   email: string;
   role: UserRole;
@@ -123,6 +125,8 @@ export interface PaginatedAdminUsuarios {
   resumo_perfis: Record<string, number>;
 }
 export interface DeleteUsuarioResponse {
+  status: 'PENDING_DELETION';
+  scheduled_at: string;
   id: number;
   email: string;
   role: UserRole;

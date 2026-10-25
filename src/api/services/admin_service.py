@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import update, func, select
 from sqlalchemy.orm import Session
 
 from src.api.errors import ApiError, ConflictError, NotFoundError, ValidationError
@@ -900,6 +900,8 @@ def _serialize_usuario(
         "notas_count": notas_count,
         "itens_count": itens_count,
         "ultima_atividade": ultima_atividade,
+        "status": "PENDING_DELETION" if usuario.deletion_scheduled_at else "ACTIVE",
+        "deletion_scheduled_at": usuario.deletion_scheduled_at,
     }
 
 
@@ -979,7 +981,11 @@ def update_usuario_role(target_id: int, new_role: str, actor_id: int) -> dict[st
 
     session = SessionLocal()
     try:
+        session.execute(update(Usuario).where(Usuario.role == UserRole.SUPER_ADMIN.value).values(id=Usuario.id))
+        from src.api.services.account_service import lock_user
         usuario = session.get(Usuario, target_id)
+        if usuario is not None:
+            usuario = lock_user(session, target_id)
         if usuario is None:
             raise NotFoundError(
                 code="USER_NOT_FOUND",
@@ -992,7 +998,7 @@ def update_usuario_role(target_id: int, new_role: str, actor_id: int) -> dict[st
                 session.execute(
                     select(func.count())
                     .select_from(Usuario)
-                    .where(Usuario.role == UserRole.SUPER_ADMIN.value)
+                    .where(Usuario.role == UserRole.SUPER_ADMIN.value, Usuario.deletion_scheduled_at.is_(None))
                 ).scalar()
                 or 0
             )
@@ -1036,7 +1042,7 @@ def delete_usuario_admin(target_id: int, actor_id: int) -> dict[str, object]:
     session = SessionLocal()
     try:
         ator = session.get(Usuario, actor_id)
-        if ator is None or ator.role != UserRole.SUPER_ADMIN.value:
+        if ator is None or ator.role != UserRole.SUPER_ADMIN.value or ator.deletion_scheduled_at is not None:
             raise ApiError(
                 status_code=403,
                 code="FORBIDDEN",
@@ -1052,43 +1058,26 @@ def delete_usuario_admin(target_id: int, actor_id: int) -> dict[str, object]:
                 details={"usuario_id": str(target_id)},
             )
 
-        if alvo.role == UserRole.SUPER_ADMIN.value:
-            total = int(
-                session.execute(
-                    select(func.count())
-                    .select_from(Usuario)
-                    .where(Usuario.role == UserRole.SUPER_ADMIN.value)
-                ).scalar()
-                or 0
-            )
-            if total <= 1:
-                raise ConflictError(
-                    code="LAST_SUPER_ADMIN",
-                    message="O sistema precisa manter pelo menos um super admin.",
-                    details={"usuario_id": str(target_id)},
-                )
-
         removido = {"id": alvo.id, "email": alvo.email, "role": alvo.role}
-
-        active_import = session.execute(
-            select(NfceImport.id).where(
-                NfceImport.usuario_id == target_id,
-                NfceImport.status.in_((ImportStatus.WAITING_CAPTCHA.value, ImportStatus.PROCESSING.value)),
-                NfceImport.expires_at > datetime.utcnow(),
-            ).limit(1)
-        ).scalar()
-        if active_import is not None:
-            raise ConflictError(
-                code="USER_HAS_ACTIVE_IMPORT",
-                message="Aguarde a conclusão ou expiração das importações antes de excluir o usuário.",
-            )
-
-        session.delete(alvo)
-        session.commit()
+        from src.api.services.account_service import schedule_account_deletion
+        scheduled = schedule_account_deletion(session, target_id, source="ADMIN")
     except Exception:
         session.rollback()
         raise
     finally:
         session.close()
 
-    return {**removido, "deleted": True, "resumo_perfis": get_role_summary()}
+    return {**removido, "deleted": False, "status": scheduled["status"], "scheduled_at": scheduled["scheduled_at"], "resumo_perfis": get_role_summary()}
+
+def list_account_deletions(page: int, page_size: int) -> dict[str, object]:
+    from src.database.models import AccountDeletionEvent
+    from src.api import settings
+    with SessionLocal() as session:
+        active = AccountDeletionEvent.expires_at > datetime.utcnow()
+        total = session.scalar(select(func.count()).select_from(AccountDeletionEvent).where(active)) or 0
+        events = session.scalars(select(AccountDeletionEvent).where(active)
+            .order_by(AccountDeletionEvent.occurred_on.desc(), AccountDeletionEvent.id)
+            .offset((page - 1) * page_size).limit(page_size))
+        return {"data": [{"id": e.id, "occurred_on": e.occurred_on, "source": e.source, "status": "ERASED"} for e in events],
+            "total": total, "page": page, "page_size": page_size,
+            "retention_days": settings.ACCOUNT_DELETION_AUDIT_DAYS}

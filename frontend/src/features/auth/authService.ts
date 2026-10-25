@@ -30,6 +30,12 @@ export const authService = {
   async verifyChange(operation: 'email' | 'password', challenge_id: string, code: string) {
     return (await apiClient.post<AuthResponse>(`/auth/${operation}-change/verify`, { challenge_id, code })).data;
   },
+  async deleteAccount(password: string) {
+    return apiClient.delete('/auth/me', { data: { password } });
+  },
+  async exportAccount(password: string) {
+    return (await apiClient.post('/auth/me/export', { password }, { responseType: 'blob' })).data as Blob;
+  },
   async register(data: { email: string; password: string }): Promise<{ message: string }> {
     const response = await apiClient.post<{ message: string }>('/auth/register', data);
     return response.data;
