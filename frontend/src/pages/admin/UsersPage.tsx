@@ -1,3 +1,4 @@
+import { AccountDeletionHistory } from '../../features/admin/components/AccountDeletionHistory';
 import { ArrowLeftIcon as ArrowLeft, CaretLeftIcon as CaretLeft, CaretRightIcon as CaretRight, TrashIcon as Trash } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -150,6 +151,7 @@ export function UsersPage() {
           )}
         </CardContent>
       </Card>
+      <AccountDeletionHistory />
       <Dialog open={!!usuarioParaExcluir} onOpenChange={(open: boolean) => { if (!open && !deleteUsuario.isPending) setUsuarioParaExcluir(null); }}>
         <DialogContent className="app-shell-theme space-y-5">
           <DialogHeader>

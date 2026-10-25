@@ -110,6 +110,7 @@ class APISMTPTests(unittest.TestCase):
         status, data, _ = self.request('POST', '/auth/login', {'email': 'user@example.com', 'password': 'StrongPass1!'})
         self.assertEqual(200, status)
         original = token = data['access_token']
+        self.assertEqual(403, self.request('GET', '/admin/account-deletions', token=token)[0])
         admin = security.create_access_token(2)
         status, data, _ = self.request('POST', '/auth/email-change/request', {'current_password': 'StrongPass1!', 'new_email': 'changed@example.com'}, token)
         self.assertEqual(202, status)
@@ -149,6 +150,11 @@ class APISMTPTests(unittest.TestCase):
             retention_service.cleanup(datetime.fromisoformat(scheduled['scheduled_at']) + timedelta(seconds=1))
         self.assertEqual(401, self.request('GET', '/auth/me', token=token)[0])
         self.assertEqual(200, self.request('GET', '/auth/me', token=admin)[0])
+        status, history, _ = self.request('GET', '/admin/account-deletions', token=admin)
+        self.assertEqual(200, status)
+        self.assertEqual(1, history['total'])
+        self.assertEqual('SELF_SERVICE', history['data'][0]['source'])
+        self.assertNotIn('changed@example.com', json.dumps(history))
 
     def test_password_recovery_delivers_link_and_revokes_old_session(self):
         old = security.create_access_token(1)

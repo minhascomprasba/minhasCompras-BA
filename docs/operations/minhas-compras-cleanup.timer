@@ -1,0 +1,10 @@
+[Unit]
+Description=Hourly Minhas Compras privacy cleanup
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+Unit=minhas-compras-cleanup.service
+
+[Install]
+WantedBy=timers.target

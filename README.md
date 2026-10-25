@@ -291,3 +291,7 @@ alterar o próprio perfil, excluir a própria conta e remover o último administ
 A exclusão remove também notas, itens, importações e tokens de recuperação da
 conta, preservando o catálogo compartilhado. Importações ainda ativas precisam
 terminar ou expirar antes da exclusão.
+
+### Account and privacy operations
+
+Credential changes, data export and account deletion with a seven-day cancellation period are available in the profile. See [privacy operations and release requirements](docs/privacy-operations.md) for the data inventory, hourly cleanup, session revocation and mandatory operator/backup decisions before deployment. The public `/privacidade` text is preliminary until those inputs are reviewed.
