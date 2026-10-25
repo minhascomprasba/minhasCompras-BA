@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from enum import Enum
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Integer, String, UniqueConstraint, Index, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -29,9 +29,14 @@ class Usuario(Base):
     role: Mapped[str] = mapped_column(String(20), nullable=False, default=UserRole.USER.value, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
+    credential_version: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+
     notas: Mapped[list[NotaFiscal]] = relationship(back_populates="usuario", cascade="all, delete-orphan")
     imports: Mapped[list[NfceImport]] = relationship(back_populates="usuario", cascade="all, delete-orphan")
     password_reset_tokens: Mapped[list[PasswordResetToken]] = relationship(back_populates="usuario", cascade="all, delete-orphan")
+
+
+Index("uq_usuarios_email_normalized", func.lower(Usuario.email), unique=True)
 
 
 class EmailVerificationCode(Base):
@@ -176,3 +181,24 @@ class Produto(Base):
 #     codigo_ean_comercial: Mapped[str | None] = mapped_column(String, nullable=True)
 
 #     nota_fiscal: Mapped[NotaFiscal] = relationship(back_populates="produtos")
+
+
+class AccountChallenge(Base):
+    __tablename__ = "account_challenges"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), index=True)
+    operation: Mapped[str] = mapped_column(String(20))
+    credential_version: Mapped[int] = mapped_column(Integer)
+    proposed_value: Mapped[str] = mapped_column(String)
+    code_hash: Mapped[str] = mapped_column(String)
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class AccountRateLimit(Base):
+    __tablename__ = "account_rate_limits"
+    key: Mapped[str] = mapped_column(String(100), primary_key=True)
+    window: Mapped[datetime] = mapped_column(DateTime)
+    count: Mapped[int] = mapped_column(Integer, default=0)

@@ -12,6 +12,7 @@ interface AuthContextType {
   role: UserRole | null;
   isAdmin: boolean;
   isSuperAdmin: boolean;
+  replaceCredentials: (token: string, user: User) => void;
   login: (token: string, user: User) => void;
   logout: () => void;
 }
@@ -98,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAdmin,
         isSuperAdmin,
         login,
+        replaceCredentials: login,
         logout,
       }}
     >

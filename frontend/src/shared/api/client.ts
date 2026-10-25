@@ -23,8 +23,13 @@ apiClient.interceptors.request.use((config) => {
 // Interceptor to transform errors into our standardized AppError
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
+  async (error) => {
+    if (error.response?.data instanceof Blob) {
+      try { error.response.data = JSON.parse(await error.response.data.text()); } catch { /* Keep the generic error if the payload is not JSON. */ }
+    }
+    const rejectedToken = error.config?.headers?.Authorization;
+    const currentToken = localStorage.getItem('auth_token');
+    if (error.response?.status === 401 && currentToken && rejectedToken === `Bearer ${currentToken}`) {
       // Trigger a global event so the AuthContext can log the user out
       window.dispatchEvent(new Event('auth_unauthorized'));
     }
