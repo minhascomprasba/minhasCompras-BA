@@ -1,3 +1,4 @@
+import { newPasswordSchema } from '../../features/auth/passwordPolicy';
 import { EnvelopeIcon as Envelope, LockIcon as Lock, EyeSlashIcon as EyeSlash, EyeIcon as Eye } from '@phosphor-icons/react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -5,7 +6,7 @@ import { Label } from '../../components/ui/label';
 import { Alert } from '../../components/ui/alert';
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { authService } from '../../features/auth/authService';
@@ -18,13 +19,7 @@ import './styles.css';
 
 const registerSchema = z.object({
   email: z.string().email('E-mail inválido'),
-  password: z.string()
-    .min(8, 'A senha deve ter no mínimo 8 caracteres')
-    .max(128, 'A senha deve ter no máximo 128 caracteres')
-    .regex(/[A-Z]/, 'A senha deve conter ao menos uma letra maiúscula')
-    .regex(/[a-z]/, 'A senha deve conter ao menos uma letra minúscula')
-    .regex(/\d/, 'A senha deve conter ao menos um número')
-    .regex(/[^A-Za-z0-9]/, 'A senha deve conter ao menos um caractere especial'),
+  password: newPasswordSchema,
   password_confirm: z.string()
 }).refine((data) => data.password === data.password_confirm, {
   message: "As senhas não coincidem",
@@ -40,11 +35,11 @@ export function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<RegisterFormData>({
+  const { register, handleSubmit, control, formState: { errors } } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
   });
 
-  const passwordValue = watch('password') ?? '';
+  const passwordValue = useWatch({ control, name: 'password', defaultValue: '' });
 
   const onSubmit = async (data: RegisterFormData) => {
     setIsLoading(true);
@@ -169,6 +164,7 @@ export function RegisterPage() {
         <AuthCardFooter>
           Já tem conta? <Link to="/login" className="font-semibold">Fazer login</Link>
         </AuthCardFooter>
+      <p className="text-sm"><Link to="/privacidade" className="underline">Leia o aviso de privacidade</Link></p>
       </AuthCard>
     </div>
   );

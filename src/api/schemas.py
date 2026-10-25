@@ -321,6 +321,8 @@ class AdminDashboardResponse(BaseModel):
 
 
 class AdminUsuarioResponse(BaseModel):
+    status: str = "ACTIVE"
+    deletion_scheduled_at: datetime | None = None
     id: int
     email: str
     role: str
@@ -342,8 +344,10 @@ class UpdateUsuarioRoleRequest(BaseModel):
     role: str = Field(..., max_length=20)
 
 class DeleteUsuarioResponse(BaseModel):
+    status: str = "PENDING_DELETION"
+    scheduled_at: datetime | None = None
     id: int
     email: str
     role: str
-    deleted: bool = True
+    deleted: bool = False
     resumo_perfis: dict[str, int] = Field(default_factory=dict)

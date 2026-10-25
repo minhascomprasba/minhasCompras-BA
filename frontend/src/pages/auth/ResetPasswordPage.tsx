@@ -1,3 +1,5 @@
+import { PasswordChecklist } from '../../features/auth/components/PasswordChecklist';
+import { newPasswordSchema } from '../../features/auth/passwordPolicy';
 import { AuthHeader } from '../../features/auth/components/AuthHeader';
 import { AuthCard, AuthCardFooter } from '../../features/auth/components/AuthCard';
 import { Button } from '../../components/ui/button';
@@ -6,7 +8,7 @@ import { Label } from '../../components/ui/label';
 import { Alert } from '../../components/ui/alert';
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { authService } from '../../features/auth/authService';
@@ -14,9 +16,7 @@ import { AppError } from '../../shared/api/errors';
 import './styles.css';
 
 const resetPasswordSchema = z.object({
-  password: z.string()
-    .min(8, 'A senha deve ter no mínimo 8 caracteres')
-    .max(128, 'A senha deve ter no máximo 128 caracteres'),
+  password: newPasswordSchema,
   password_confirm: z.string(),
 }).refine((data) => data.password === data.password_confirm, {
   message: 'As senhas não coincidem',
@@ -33,9 +33,11 @@ export function ResetPasswordPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<ResetPasswordFormData>({
+  const { register, handleSubmit, control, formState: { errors } } = useForm<ResetPasswordFormData>({
     resolver: zodResolver(resetPasswordSchema),
   });
+
+  const passwordValue = useWatch({ control, name: 'password', defaultValue: '' });
 
   const onSubmit = async (data: ResetPasswordFormData) => {
     if (!token) {
@@ -96,6 +98,7 @@ export function ResetPasswordPage() {
                 {...register('password')}
               />
               {errors.password && <span id="password-error" className="text-sm text-destructive" role="alert">{errors.password.message}</span>}
+              <PasswordChecklist password={passwordValue} />
             </div>
 
             <div className="mb-6 grid gap-2">

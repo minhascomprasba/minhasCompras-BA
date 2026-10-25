@@ -1,13 +1,7 @@
 import { CheckIcon as Check, CircleIcon as Circle } from '@phosphor-icons/react';
 import './PasswordChecklist.css';
 
-const passwordRules = [
-  { key: 'length', label: 'Mínimo de 8 caracteres', test: (v: string) => v.length >= 8 },
-  { key: 'uppercase', label: 'Uma letra maiúscula', test: (v: string) => /[A-Z]/.test(v) },
-  { key: 'lowercase', label: 'Uma letra minúscula', test: (v: string) => /[a-z]/.test(v) },
-  { key: 'digit', label: 'Um número', test: (v: string) => /\d/.test(v) },
-  { key: 'special', label: 'Um caractere especial', test: (v: string) => /[^A-Za-z0-9]/.test(v) },
-] as const;
+import { passwordRules } from '../passwordPolicy';
 
 export function PasswordChecklist({ password }: { password: string }) {
   if (!password) return null;

@@ -58,6 +58,7 @@ def admin_update_usuario_role(
 @admin_router.delete(
     "/usuarios/{usuario_id}",
     response_model=DeleteUsuarioResponse,
+    status_code=202,
 )
 def admin_delete_usuario(
     usuario_id: int,
@@ -65,3 +66,12 @@ def admin_delete_usuario(
 ) -> DeleteUsuarioResponse:
     resultado = delete_usuario_admin(target_id=usuario_id, actor_id=actor.id)
     return DeleteUsuarioResponse(**resultado)
+
+@admin_router.get("/account-deletions")
+def admin_account_deletions(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    _: Usuario = Depends(require_super_admin),
+):
+    from src.api.services.admin_service import list_account_deletions
+    return list_account_deletions(page, page_size)

@@ -12,6 +12,7 @@ interface AuthContextType {
   role: UserRole | null;
   isAdmin: boolean;
   isSuperAdmin: boolean;
+  replaceCredentials: (token: string, user: User) => void;
   login: (token: string, user: User) => void;
   logout: () => void;
 }
@@ -84,28 +85,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [logout]);
 
-  // Garante que Angelo ou administradores tenham SUPER_ADMIN no frontend mesmo que o backend ainda retorne USER
-  const isAngeloOrAdmin = Boolean(
-    user?.email && (
-      user.email.toLowerCase().includes('angelo') ||
-      user.email.toLowerCase().includes('admin')
-    )
-  );
-  const rawRole = user?.role ?? null;
-  const role: UserRole | null = (isAngeloOrAdmin && rawRole === 'USER') ? 'SUPER_ADMIN' : rawRole;
+  const role = user?.role ?? null;
   const isSuperAdmin = role === 'SUPER_ADMIN';
   const isAdmin = isSuperAdmin || role === 'ADMIN';
 
   return (
     <AuthContext.Provider
       value={{
-        user: user && isAngeloOrAdmin && user.role === 'USER' ? { ...user, role: 'SUPER_ADMIN' } : user,
+        user,
         isAuthenticated: !!user,
         isLoading,
         role,
         isAdmin,
         isSuperAdmin,
         login,
+        replaceCredentials: login,
         logout,
       }}
     >
