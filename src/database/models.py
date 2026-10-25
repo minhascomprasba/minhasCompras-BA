@@ -68,6 +68,7 @@ class NotaFiscal(Base):
     usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), nullable=False, index=True)
     estabelecimento_id: Mapped[int] = mapped_column(ForeignKey("estabelecimento.id"), nullable=False, index=True)
     codigo_acesso: Mapped[str] = mapped_column(String(44), nullable=False, index=True)
+
     # valor_total_nota e o valor PAGO (liquido, ja descontado). O valor bruto,
     # se precisar, e valor_total_nota + valor_desconto_nota.
     valor_total_nota: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
