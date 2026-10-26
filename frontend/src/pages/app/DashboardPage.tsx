@@ -1,5 +1,5 @@
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../features/auth/AuthContext';
 import { useDashboard } from '../../features/dashboard/hooks/useDashboard';
@@ -12,12 +12,30 @@ import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, WarningCi
 import { DashboardMetrics } from '@/features/dashboard/components/DashboardMetrics';
 import { formatCurrency } from '@/features/dashboard/format';
 
+const MONTHS_PT = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+];
+
+function currentMesAno(): string {
+  const now = new Date();
+  return `${MONTHS_PT[now.getMonth()]} ${now.getFullYear()}`;
+}
+
 export function DashboardPage() {
   const { user } = useAuth();
   const { data: dashboardData, isLoading, isError } = useDashboard(user?.id || null);
 
   const [monthIndex, setMonthIndex] = useState(0);
+  const [monthInitialized, setMonthInitialized] = useState(false);
   const [selectedProductName, setSelectedProductName] = useState('');
+
+  useEffect(() => {
+    if (!dashboardData?.length || monthInitialized) return;
+    const idx = dashboardData.findIndex((entry) => entry.mesAno === currentMesAno());
+    if (idx >= 0) setMonthIndex(idx);
+    setMonthInitialized(true);
+  }, [dashboardData, monthInitialized]);
 
   if (isLoading) {
     return (
