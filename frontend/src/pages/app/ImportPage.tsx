@@ -218,10 +218,17 @@ export function ImportPage() {
 
   const onCaptchaSubmit = (data: CaptchaFormData) => {
     if (!importId) return;
+    const activeImportId = importId;
 
     submitCaptchaMutation.mutate(data, {
-      onSuccess: () => navigate(`/importacoes/${importId}`),
+      // API responde 202 assim que o captcha é aceito; a leitura segue em background.
+      onSuccess: () => navigate(`/importacoes/${activeImportId}`),
       onError: (error) => {
+        // Timeout/rede: o backend pode já estar processando — acompanhar pelo status.
+        if (error.code === 'NETWORK_ERROR' || error.code === 'UNKNOWN_ERROR') {
+          navigate(`/importacoes/${activeImportId}`);
+          return;
+        }
         if (error.code === 'INVALID_CAPTCHA') {
           setIsCaptchaLoading(true);
           setCaptchaImageError('');
@@ -358,12 +365,16 @@ export function ImportPage() {
                     <span id="captcha-code-error" role="alert" className="text-sm text-destructive">{captchaForm.formState.errors.captcha_code.message}</span>
                   )}
                 </div>
-                {submitCaptchaMutation.isError && <Alert variant="destructive">{submitCaptchaMutation.error.message}</Alert>}
+                {submitCaptchaMutation.isError &&
+                  submitCaptchaMutation.error.code !== 'NETWORK_ERROR' &&
+                  submitCaptchaMutation.error.code !== 'UNKNOWN_ERROR' && (
+                    <Alert variant="destructive">{submitCaptchaMutation.error.message}</Alert>
+                  )}
                 <div className="flex flex-col-reverse gap-3 sm:flex-row">
                   <Button type="button" variant="outline" className="min-h-11 sm:flex-1" onClick={resetImport} disabled={submitCaptchaMutation.isPending}>Voltar</Button>
                   <Button type="submit" className="min-h-11 text-white sm:flex-2" disabled={submitCaptchaMutation.isPending}>
                     {submitCaptchaMutation.isPending && <LoaderCircle className="animate-spin" aria-hidden="true" />}
-                    {submitCaptchaMutation.isPending ? 'Enviando...' : 'Confirmar Captcha'}
+                    {submitCaptchaMutation.isPending ? 'Validando captcha...' : 'Confirmar Captcha'}
                   </Button>
                 </div>
               </form>
