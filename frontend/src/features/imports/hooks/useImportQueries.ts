@@ -3,28 +3,30 @@ import { importsService } from '../services/importsService';
 import type { GetImportStatusResponse } from '../types';
 import type { AppError } from '../../../shared/api/errors';
 
+const TERMINAL_STATUSES = ['COMPLETED', 'FAILED', 'EXPIRED'] as const;
+
 export function useImportStatusPolling(importId: string, userId: number | null) {
   return useQuery<GetImportStatusResponse, AppError>({
     queryKey: ['importStatus', userId, importId],
     queryFn: () => importsService.getImportStatus(importId),
-    // Polling logic:
-    // refetchInterval receives the current data (or undefined initially)
-    // If the status is not terminal, we return an interval in ms (e.g., 3000ms).
-    // If it is terminal (COMPLETED, FAILED, EXPIRED) or if there's no importId, we return false to stop polling.
+    // Continua polling enquanto não houver status terminal da API.
     refetchInterval: (query) => {
       if (!importId) return false;
       const data = query.state.data;
-      if (!data) return 3000; // Keep polling if we don't have data yet
-
-      const terminalStatuses = ['COMPLETED', 'FAILED', 'EXPIRED'];
-      if (terminalStatuses.includes(data.status)) {
-        return false; // Stop polling
+      if (data && TERMINAL_STATUSES.includes(data.status as (typeof TERMINAL_STATUSES)[number])) {
+        return false;
       }
-      
-      return 3000; // Poll every 3 seconds while in PROCESSING or WAITING_CAPTCHA
+      return 3000;
     },
-    // Don't retry automatically on error during polling to avoid spam, or retry once.
-    retry: 1,
-    enabled: !!importId && !!userId, // Only run if we have ID and authenticated user
+    // Em VM lenta/rede instável, falhas transitórias não devem parar a espera.
+    retry: (failureCount, error) => {
+      if (error.code === 'NETWORK_ERROR' || error.code === 'UNKNOWN_ERROR') {
+        return failureCount < 30;
+      }
+      return failureCount < 2;
+    },
+    retryDelay: 3000,
+    refetchOnWindowFocus: true,
+    enabled: !!importId && !!userId,
   });
 }
