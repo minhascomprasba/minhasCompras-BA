@@ -174,7 +174,6 @@ export function ProfilePage() {
       )}
 
       {pending && <p role="status">Processando…</p>}
-      <Link to="/privacidade" className="underline">Aviso de privacidade</Link>
       <div className="grid gap-6 lg:grid-cols-[1fr_2fr]">
         {/* Painel Esquerdo: Resumo do Usuário */}
         <div className="space-y-4">
@@ -200,7 +199,15 @@ export function ProfilePage() {
               </div>
               <div className="rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground flex items-start gap-2">
                 <ShieldCheck className="size-4 shrink-0 text-primary mt-0.5" />
-                <span>Consulte os controles disponíveis e o aviso de privacidade.</span>
+                <div className="space-y-2">
+                  <p>Saiba como seus dados são utilizados e conheça os controles disponíveis.</p>
+                  <Link
+                    to="/privacidade"
+                    className="inline-block font-medium text-primary underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4"
+                  >
+                    Política de privacidade
+                  </Link>
+                </div>
               </div>
             </CardContent>
           </Card>
