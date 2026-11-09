@@ -54,12 +54,12 @@ def _get_client_ip(request: Request) -> str:
     return request.client.host
 
 
-@router.get("/health", response_model=HealthResponse)
+@router.get("/health", response_model=HealthResponse, tags=["health"], summary="Liveness da aplicacao")
 def health() -> HealthResponse:
     return HealthResponse(status="ok")
 
 
-@router.get("/ready", response_model=ReadyResponse)
+@router.get("/ready", response_model=ReadyResponse, tags=["health"], summary="Readiness (checa conexao com o banco)")
 def ready(response: Response) -> ReadyResponse:
     session = SessionLocal()
     try:
@@ -72,7 +72,7 @@ def ready(response: Response) -> ReadyResponse:
         session.close()
 
 
-@router.get("/stats", response_model=SystemStatsResponse)
+@router.get("/stats", response_model=SystemStatsResponse, tags=["health"], summary="Estatisticas publicas agregadas")
 def get_system_stats() -> SystemStatsResponse:
     session = SessionLocal()
     try:
@@ -95,7 +95,7 @@ def get_system_stats() -> SystemStatsResponse:
         session.close()
 
 
-@router.post("/imports/nfce", response_model=ImportCreateResponse, status_code=202)
+@router.post("/imports/nfce", response_model=ImportCreateResponse, status_code=202, tags=["imports"], summary="Inicia a importacao e devolve o captcha a resolver")
 def create_import(payload: ImportCreateRequest, request: Request, user_id: int = Depends(get_current_user_id)) -> ImportCreateResponse:
     client_ip = _get_client_ip(request)
     if not import_rate_limiter.allow(client_ip):
@@ -109,25 +109,25 @@ def create_import(payload: ImportCreateRequest, request: Request, user_id: int =
     return ImportCreateResponse(**created)
 
 
-@router.get("/imports/nfce/{import_id}/captcha-image")
+@router.get("/imports/nfce/{import_id}/captcha-image", tags=["imports"], summary="Imagem PNG do captcha da importacao", response_class=FileResponse)
 def captcha_image(import_id: str, user_id: int = Depends(get_current_user_id)) -> FileResponse:
     path = get_captcha_image_path(import_id, user_id)
     return FileResponse(path=path, media_type="image/png")
 
 
-@router.post("/imports/nfce/{import_id}/captcha", response_model=CaptchaSubmitResponse, status_code=202)
+@router.post("/imports/nfce/{import_id}/captcha", response_model=CaptchaSubmitResponse, status_code=202, tags=["imports"], summary="Envia o captcha resolvido e processa a nota")
 def send_captcha(import_id: str, payload: CaptchaSubmitRequest, user_id: int = Depends(get_current_user_id)) -> CaptchaSubmitResponse:
     result = submit_captcha(import_id, payload.captcha_code, user_id)
     return CaptchaSubmitResponse(**result)
 
 
-@router.get("/imports/nfce/{import_id}", response_model=ImportStatusResponse)
+@router.get("/imports/nfce/{import_id}", response_model=ImportStatusResponse, tags=["imports"], summary="Situacao atual de uma importacao")
 def import_status(import_id: str, user_id: int = Depends(get_current_user_id)) -> ImportStatusResponse:
     result = get_import_status(import_id, user_id)
     return ImportStatusResponse(**result)
 
 
-@router.get("/imports/nfce", response_model=PaginatedImportsResponse)
+@router.get("/imports/nfce", response_model=PaginatedImportsResponse, tags=["imports"], summary="Historico paginado de importacoes do usuario")
 def import_list(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
@@ -138,7 +138,7 @@ def import_list(
     return PaginatedImportsResponse(**data)
 
 
-@router.get("/notas", response_model=PaginatedNotasResponse)
+@router.get("/notas", response_model=PaginatedNotasResponse, tags=["notas"], summary="Lista notas fiscais do usuario com filtro por periodo")
 def notas(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
@@ -179,19 +179,19 @@ def notas(
     return PaginatedNotasResponse(**data)
 
 
-@router.get("/mapa", response_model=list[MapaPontoResponse])
+@router.get("/mapa", response_model=list[MapaPontoResponse], tags=["dashboard"], summary="Estabelecimentos com CEP e notas associadas")
 def mapa(user_id: int = Depends(get_current_user_id)) -> list[MapaPontoResponse]:
     data = list_estabelecimentos_mapa(user_id)
     return [MapaPontoResponse(**item) for item in data]
 
 
-@router.get("/notas/{nota_id}", response_model=NotaDetailResponse)
+@router.get("/notas/{nota_id}", response_model=NotaDetailResponse, tags=["notas"], summary="Detalhe de uma nota fiscal")
 def nota_detail(nota_id: int, user_id: int = Depends(get_current_user_id)) -> NotaDetailResponse:
     data = get_nota(nota_id, user_id)
     return NotaDetailResponse(**data)
 
 
-@router.get("/notas/{nota_id}/itens", response_model=PaginatedItemsResponse)
+@router.get("/notas/{nota_id}/itens", response_model=PaginatedItemsResponse, tags=["notas"], summary="Itens paginados de uma nota fiscal")
 def nota_items(
     nota_id: int,
     page: int = Query(default=1, ge=1),
@@ -202,7 +202,7 @@ def nota_items(
     return PaginatedItemsResponse(**data)
 
 
-@router.get("/dashboard", response_model=list[DashboardDataResponse])
+@router.get("/dashboard", response_model=list[DashboardDataResponse], tags=["dashboard"], summary="Indicadores de gastos agregados por mes")
 def dashboard(user_id: int = Depends(get_current_user_id)) -> list[DashboardDataResponse]:
     data = get_dashboard_data(user_id)
     return [DashboardDataResponse(**item) for item in data]
