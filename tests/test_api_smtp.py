@@ -77,12 +77,14 @@ class APISMTPTests(unittest.TestCase):
         self.engine.dispose()
         self.temp.cleanup()
 
-    def request(self, method, path, payload=None, token=None):
+    def request(self, method, path, payload=None, token=None, headers_extra=None):
         async def invoke():
             body = json.dumps(payload).encode() if payload is not None else b''
             headers = [(b'content-type', b'application/json')]
             if token:
                 headers.append((b'authorization', f'Bearer {token}'.encode()))
+            for name, value in (headers_extra or {}).items():
+                headers.append((name.lower().encode(), value.encode()))
             scope = {'type': 'http', 'asgi': {'version': '3.0'}, 'http_version': '1.1',
                      'method': method, 'scheme': 'http', 'path': '/api/v1' + path,
                      'raw_path': ('/api/v1' + path).encode(), 'query_string': b'',
@@ -155,6 +157,49 @@ class APISMTPTests(unittest.TestCase):
         self.assertEqual(1, history['total'])
         self.assertEqual('SELF_SERVICE', history['data'][0]['source'])
         self.assertNotIn('changed@example.com', json.dumps(history))
+
+    def test_owner_reactivates_with_password_and_admin_reactivates_any_account(self):
+        token = self.request('POST', '/auth/login', {'email': 'user@example.com', 'password': 'StrongPass1!'})[1]['access_token']
+        self.assertEqual(202, self.request('DELETE', '/auth/me', {'password': 'StrongPass1!'}, token)[0])
+        self.assertIn('entre no aplicativo', self.smtp.messages[-1].get_body().get_content())
+        status, data, _ = self.request('POST', '/auth/login', {'email': 'user@example.com', 'password': 'StrongPass1!'})
+        self.assertEqual((409, 'ACCOUNT_PENDING_DELETION', 'true'), (status, data['code'], data['details']['can_reactivate']))
+        self.assertEqual(401, self.request('POST', '/auth/account/reactivate', {'email': 'user@example.com', 'password': 'WrongPass1!'})[0])
+        status, data, _ = self.request('POST', '/auth/account/reactivate', {'email': ' USER@example.com ', 'password': 'StrongPass1!'})
+        self.assertEqual(200, status)
+        self.assertEqual(200, self.request('GET', '/auth/me', token=data['access_token'])[0])
+        self.assertEqual(401, self.request('GET', '/auth/me', token=token)[0])
+        self.assertEqual(409, self.request('POST', '/auth/account/reactivate', {'email': 'user@example.com', 'password': 'StrongPass1!'})[0])
+
+        admin = security.create_access_token(2)
+        self.assertEqual(202, self.request('DELETE', '/admin/usuarios/1', token=admin)[0])
+        user_token = self.request('POST', '/auth/login', {'email': 'user@example.com', 'password': 'StrongPass1!'})
+        self.assertEqual(409, user_token[0])
+        status, data, _ = self.request('POST', '/admin/usuarios/1/reactivate', token=admin)
+        self.assertEqual((200, 'ACTIVE', None), (status, data['status'], data['deletion_scheduled_at']))
+        status, login, _ = self.request('POST', '/auth/login', {'email': 'user@example.com', 'password': 'StrongPass1!'})
+        self.assertEqual(200, status)
+        self.assertEqual(403, self.request('POST', '/admin/usuarios/2/reactivate', token=login['access_token'])[0])
+        self.assertEqual(404, self.request('POST', '/admin/usuarios/999/reactivate', token=admin)[0])
+
+    def test_retention_job_requires_configured_secret(self):
+        from src.api.services import retention_service
+        path = '/internal/jobs/retention'
+        with patch.object(settings, 'JOB_SECRET', ''):
+            self.assertEqual(503, self.request('POST', path, headers_extra={'X-Job-Secret': 'anything'})[0])
+        with patch.object(settings, 'JOB_SECRET', 'job-secret-value'), patch.object(retention_service, 'SessionLocal', self.sessions):
+            self.assertEqual(401, self.request('POST', path)[0])
+            self.assertEqual(401, self.request('POST', path, headers_extra={'X-Job-Secret': 'wrong'})[0])
+            with self.sessions() as db:
+                user = db.get(Usuario, 1)
+                user.status = 'PENDING_DELETION'
+                user.deletion_requested_at = datetime.utcnow() - timedelta(days=settings.ACCOUNT_DELETION_GRACE_DAYS, minutes=1)
+                db.commit()
+            status, data, _ = self.request('POST', path, headers_extra={'X-Job-Secret': 'job-secret-value'})
+            self.assertEqual((200, 1, 0), (status, data['purged'], data['skipped']))
+        with self.sessions() as db:
+            self.assertIsNone(db.get(Usuario, 1))
+            self.assertIsNotNone(db.get(Usuario, 2))
 
     def test_password_recovery_delivers_link_and_revokes_old_session(self):
         old = security.create_access_token(1)

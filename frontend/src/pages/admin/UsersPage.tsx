@@ -2,7 +2,7 @@ import { AccountDeletionHistory } from '../../features/admin/components/AccountD
 import { ArrowLeftIcon as ArrowLeft, CaretLeftIcon as CaretLeft, CaretRightIcon as CaretRight, TrashIcon as Trash } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAdminUsuarios, useDeleteUsuario, useUpdateUsuarioRole } from '../../features/admin/hooks/useAdminData';
+import { useAdminUsuarios, useDeleteUsuario, useReactivateUsuario, useUpdateUsuarioRole } from '../../features/admin/hooks/useAdminData';
 import { AdminUsersTable } from '../../features/admin/components/AdminUsersTable';
 import { InfoTooltip } from '../../features/admin/components/InfoTooltip';
 import type { AdminUsuario } from '../../features/admin/types';
@@ -39,6 +39,7 @@ export function UsersPage() {
   const [page, setPage] = useState(1);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const deleteUsuario = useDeleteUsuario();
+  const reactivateUsuario = useReactivateUsuario();
   const [usuarioParaExcluir, setUsuarioParaExcluir] = useState<AdminUsuario | null>(null);
 
   useEffect(() => {
@@ -68,6 +69,21 @@ export function UsersPage() {
             type: 'success',
             message: `${atualizado.email} agora tem perfil ${ROLE_LABELS[atualizado.role]}.`,
           });
+        },
+        onError: (mutationError) => {
+          setFeedback({ type: 'error', message: mutationError.message });
+        },
+      }
+    );
+  };
+
+  const handleReactivate = (usuario: AdminUsuario) => {
+    setFeedback(null);
+    reactivateUsuario.mutate(
+      { usuarioId: usuario.id },
+      {
+        onSuccess: () => {
+          setFeedback({ type: 'success', message: `${usuario.email}: exclusão cancelada e conta reativada. O titular deve entrar novamente.` });
         },
         onError: (mutationError) => {
           setFeedback({ type: 'error', message: mutationError.message });
@@ -141,7 +157,7 @@ export function UsersPage() {
             <Alert variant="destructive">{error?.message || 'Não foi possível carregar os usuários.'}</Alert>
           ) : (
             <>
-              <AdminUsersTable usuarios={data?.data ?? []} currentUserId={user?.id} pendingUsuarioId={updateRole.isPending ? updateRole.variables?.usuarioId ?? null : null} onRoleChange={handleRoleChange} onDelete={handleDeleteRequest} />
+              <AdminUsersTable usuarios={data?.data ?? []} currentUserId={user?.id} pendingUsuarioId={updateRole.isPending ? updateRole.variables?.usuarioId ?? null : reactivateUsuario.isPending ? reactivateUsuario.variables?.usuarioId ?? null : null} onRoleChange={handleRoleChange} onDelete={handleDeleteRequest} onReactivate={handleReactivate} />
               {totalPages > 1 && <nav aria-label="Paginação de usuários" className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
                 <Button type="button" variant="outline" disabled={page <= 1} onClick={() => setPage(current => Math.max(1, current - 1))}><CaretLeft aria-hidden="true" /> Anterior</Button>
                 <span className="text-sm text-muted-foreground">Página {page} de {totalPages} • {total} usuários</span>
@@ -157,7 +173,7 @@ export function UsersPage() {
           <DialogHeader>
             <DialogTitle>Agendar exclusão do usuário</DialogTitle>
             <DialogDescription>
-              {usuarioParaExcluir && <>Tem certeza que deseja excluir <strong>{usuarioParaExcluir.email}</strong> ({ROLE_LABELS[usuarioParaExcluir.role]})? A conta ficará bloqueada e os dados serão preservados por 7 dias. O titular receberá um link para cancelar. Após o prazo, a exclusão será definitiva.</>}
+              {usuarioParaExcluir && <>Tem certeza que deseja excluir <strong>{usuarioParaExcluir.email}</strong> ({ROLE_LABELS[usuarioParaExcluir.role]})? A conta ficará bloqueada e os dados serão preservados por 7 dias. O titular poderá reativá-la entrando com a senha ou pelo link enviado por e-mail, e você também pode reativá-la nesta tela. Após o prazo, a exclusão será definitiva.</>}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">

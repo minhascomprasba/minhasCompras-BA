@@ -322,6 +322,8 @@ class AdminDashboardResponse(BaseModel):
 
 class AdminUsuarioResponse(BaseModel):
     status: str = "ACTIVE"
+    deletion_requested_at: datetime | None = None
+    # Prazo final da carencia (deletion_requested_at + ACCOUNT_DELETION_GRACE_DAYS).
     deletion_scheduled_at: datetime | None = None
     id: int
     email: str

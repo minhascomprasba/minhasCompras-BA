@@ -222,7 +222,7 @@ export function ProfilePage() {
                 <div>
                   <h3 className="text-base font-semibold text-destructive">Excluir conta</h3>
                   <p className="text-sm text-muted-foreground">
-                    Agende a exclusão para daqui a 7 dias. Você poderá cancelar por e-mail.
+                    Agende a exclusão para daqui a 7 dias. Até lá, você pode reativar a conta entrando com sua senha.
                   </p>
                 </div>
               </div>
@@ -512,7 +512,8 @@ export function ProfilePage() {
             </DialogTitle>
             <DialogDescription className="space-y-2 text-left pt-2">
               Sua conta ficará bloqueada e as sessões serão encerradas. Seus dados serão preservados
-              por 7 dias e enviaremos um link por e-mail para cancelar nesse prazo. Se o aviso não
+              por 7 dias. Nesse prazo, você pode reativá-la entrando novamente com seu e-mail e senha ou
+              pelo link que enviaremos por e-mail. Se o aviso não
               puder ser enviado, a exclusão não será agendada. Após o prazo, a limpeza definitiva
               removerá sua conta, notas, itens e importações. Produtos e estabelecimentos compartilhados
               permanecem, assim como um registro operacional temporário sem vínculo com sua conta.

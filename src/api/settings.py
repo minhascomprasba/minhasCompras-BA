@@ -57,3 +57,8 @@ EMAIL_VERIFICATION_MAX_ATTEMPTS = _get_env_int("EMAIL_VERIFICATION_MAX_ATTEMPTS"
 
 # Operational policy, subject to owner review before production deployment.
 ACCOUNT_DELETION_AUDIT_DAYS = max(1, _get_env_int("ACCOUNT_DELETION_AUDIT_DAYS", 90))
+# Carencia entre o pedido de exclusao e a exclusao definitiva (reativacao possivel ate o prazo).
+ACCOUNT_DELETION_GRACE_DAYS = max(1, _get_env_int("ACCOUNT_DELETION_GRACE_DAYS", 7))
+ACCOUNT_REACTIVATION_RATE_LIMIT_PER_MIN = _get_env_int("ACCOUNT_REACTIVATION_RATE_LIMIT_PER_MIN", 5)
+# Segredo do header X-Job-Secret exigido pelos endpoints /internal/jobs/*. Vazio desativa os endpoints.
+JOB_SECRET = os.getenv("JOB_SECRET", "").strip()

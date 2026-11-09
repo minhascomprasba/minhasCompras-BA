@@ -35,7 +35,7 @@ from src.api.services.email_service import (
     send_password_reset_email,
 )
 from src.database.connection import SessionLocal
-from src.database.models import EmailVerificationCode, PasswordResetToken, Usuario, UserRole
+from src.database.models import AccountStatus, EmailVerificationCode, PasswordResetToken, Usuario, UserRole
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 PASSWORD_MIN_LENGTH = 8
@@ -291,9 +291,12 @@ def login(payload: UserLoginRequest, db: Session = Depends(get_db)):
     if not is_valid_password:
         raise ApiError("INVALID_CREDENTIALS", "E-mail ou senha inválidos.", status_code=401)
 
-    if user.deletion_scheduled_at is not None:
-        raise ApiError("ACCOUNT_PENDING_DELETION", "Sua conta tem exclusão agendada. Use o link enviado por e-mail para cancelar em até 7 dias.", 409,
-            {"scheduled_at": user.deletion_scheduled_at.isoformat()})
+    from src.api.services.account_service import deletion_deadline, is_pending_deletion
+    if is_pending_deletion(user):
+        deadline = deletion_deadline(user)
+        # A senha ja foi validada: o titular pode reativar via POST /auth/account/reactivate.
+        raise ApiError("ACCOUNT_PENDING_DELETION", "Sua conta tem exclusão agendada. Você pode reativá-la até o prazo final.", 409,
+            {"scheduled_at": deadline.isoformat() if deadline else "", "can_reactivate": "true" if deadline and deadline > datetime.utcnow() else "false"})
     token = create_access_token(user.id, user.credential_version)
     return TokenResponse(
         access_token=token,
@@ -328,7 +331,7 @@ def forgot_password(
     if user:
         from src.api.services.account_service import lock_user
         user = lock_user(db, user.id, allow_pending=True)
-        if user.deletion_scheduled_at is not None:
+        if user.status != AccountStatus.ACTIVE.value:
             return MessageResponse(message=FORGOT_PASSWORD_SUCCESS_MESSAGE)
         if user.email.lower() != payload.email.strip().lower():
             return MessageResponse(message=FORGOT_PASSWORD_SUCCESS_MESSAGE)

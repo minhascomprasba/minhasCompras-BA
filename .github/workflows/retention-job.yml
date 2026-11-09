@@ -1,0 +1,44 @@
+# Job diario de retencao (LGPD): exclui definitivamente as contas com status
+# PENDING_DELETION cuja carencia (ACCOUNT_DELETION_GRACE_DAYS, padrao 7 dias) venceu
+# e limpa registros temporarios de autenticacao e captchas.
+#
+# Secrets do repositorio (Settings > Secrets and variables > Actions):
+#   API_BASE_URL  URL da API com o prefixo, ex.: https://minhascompras-api.onrender.com/api/v1
+#   JOB_SECRET    mesmo valor da variavel JOB_SECRET configurada na API
+#
+# Observacoes:
+# - O agendamento so roda a partir da branch padrao (main).
+# - O GitHub desativa workflows agendados apos 60 dias sem atividade no repositorio.
+# - Execucoes perdidas apenas atrasam a exclusao; nunca a antecipam.
+name: Job diário de retenção (LGPD)
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # 06:00 UTC = 03:00 em Salvador
+  workflow_dispatch:
+
+concurrency:
+  group: retention-job
+  cancel-in-progress: false
+
+jobs:
+  retention:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Executar limpeza e exclusão de contas vencidas
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          JOB_SECRET: ${{ secrets.JOB_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${API_BASE_URL}" ] || [ -z "${JOB_SECRET}" ]; then
+            echo "::error::Configure os secrets API_BASE_URL e JOB_SECRET."
+            exit 1
+          fi
+          # Retries cobrem o cold start do Render (instancia hibernada).
+          curl --silent --show-error --fail-with-body \
+            --retry 6 --retry-delay 30 --retry-all-errors --max-time 180 \
+            -X POST "${API_BASE_URL%/}/internal/jobs/retention" \
+            -H "X-Job-Secret: ${JOB_SECRET}"
+          echo

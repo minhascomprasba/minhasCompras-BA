@@ -463,10 +463,24 @@ terminar ou expirar antes da exclusão.
 
 ### 3.8 Conta e privacidade
 
-Alteração de credenciais, exportação de dados e exclusão de conta com período de
-cancelamento de sete dias ficam disponíveis no perfil. Veja
+Alteração de credenciais, exportação de dados e exclusão de conta ficam disponíveis no
+perfil. O estado da conta fica em `usuarios.status` (`ACTIVE` ou `PENDING_DELETION`):
+
+| Ação | Quem | Endpoint |
+| :--- | :--- | :--- |
+| Solicitar exclusão | Titular (senha) | `DELETE /auth/me` |
+| Agendar exclusão de outra conta | SUPER_ADMIN | `DELETE /admin/usuarios/{id}` |
+| Reativar pelo login | Titular (e-mail + senha) | `POST /auth/account/reactivate` |
+| Reativar pelo link do e-mail | Titular | `POST /auth/account-deletion/cancel` |
+| Reativar qualquer conta | SUPER_ADMIN | `POST /admin/usuarios/{id}/reactivate` |
+| Excluir contas com carência vencida | GitHub Actions (diário) | `POST /internal/jobs/retention` + `X-Job-Secret` |
+
+A carência é de `ACCOUNT_DELETION_GRACE_DAYS` (7 dias), contada a partir de
+`deletion_requested_at`; até o prazo final a conta fica bloqueada e pode ser reativada.
+A exclusão definitiva é feita apenas pelo job diário (`.github/workflows/retention-job.yml`),
+nunca pelo tráfego da API. Veja
 [operações de privacidade e requisitos de publicação](docs/privacy-operations.md)
-para o inventário de dados, a limpeza horária, a revogação de sessões e as decisões
+para o inventário de dados, a configuração do job, a revogação de sessões e as decisões
 de operação/backup obrigatórias antes do deploy. O texto público de `/privacidade`
 é preliminar até essas definições serem revisadas.
 
@@ -1000,6 +1014,15 @@ marcadas como obrigatórias em produção.
 | `EMAIL_VERIFICATION_MAX_ATTEMPTS`            | `5`     | Tentativas de digitar o código            |
 | `PASSWORD_RESET_TOKEN_EXPIRATION_MINUTES`    | `60`    | Validade do link de redefinição           |
 | `PASSWORD_RESET_RATE_LIMIT_PER_MIN`          | `3`     | Limite de `forgot-password` por IP        |
+
+### Conta e privacidade (LGPD)
+
+| Variável                                  | Default | Descrição                                                                 |
+| :---------------------------------------- | :------ | :------------------------------------------------------------------------ |
+| `ACCOUNT_DELETION_GRACE_DAYS`             | `7`     | Carência entre o pedido de exclusão e a exclusão definitiva               |
+| `ACCOUNT_REACTIVATION_RATE_LIMIT_PER_MIN` | `5`     | Limite de `POST /auth/account/reactivate` por IP                          |
+| `ACCOUNT_DELETION_AUDIT_DAYS`             | `90`    | Retenção dos eventos anônimos de exclusão                                 |
+| `JOB_SECRET`                              | vazio   | Segredo do header `X-Job-Secret` do job diário; vazio desativa o endpoint |
 
 ### Infraestrutura
 

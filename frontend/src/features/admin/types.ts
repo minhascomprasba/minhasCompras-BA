@@ -107,6 +107,8 @@ export interface AdminDashboardData {
 
 export interface AdminUsuario {
   status: 'ACTIVE' | 'PENDING_DELETION';
+  deletion_requested_at: string | null;
+  /** Prazo final da carência; após ele a conta é excluída pelo job diário. */
   deletion_scheduled_at: string | null;
   id: number;
   email: string;

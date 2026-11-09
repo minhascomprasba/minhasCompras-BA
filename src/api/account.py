@@ -2,7 +2,10 @@ from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from src.api import settings
 from src.api.auth import get_db
+from src.api.errors import RateLimitError
+from src.api.rate_limit import InMemoryRateLimiter
 from src.api.schemas import TokenResponse
 from src.api.security import get_current_user_id
 from src.api.services import account_service as service
@@ -74,3 +77,22 @@ class CancelDeletionRequest(BaseModel):
 @account_router.post("/account-deletion/cancel")
 def cancel_deletion(payload: CancelDeletionRequest, db: Session = Depends(get_db)):
     return service.cancel_account_deletion(db, payload.token)
+
+
+class ReactivateAccountRequest(BaseModel):
+    email: str = Field(max_length=255)
+    password: str = Field(max_length=128)
+
+
+reactivation_rate_limiter = InMemoryRateLimiter(settings.ACCOUNT_REACTIVATION_RATE_LIMIT_PER_MIN)
+
+
+@account_router.post("/account/reactivate", response_model=TokenResponse)
+def reactivate_account(payload: ReactivateAccountRequest, request: Request, db: Session = Depends(get_db)):
+    """O titular reativa a propria conta durante a carencia, autenticando com e-mail e senha.
+
+    Nao exige token: as sessoes foram revogadas quando a exclusao foi solicitada.
+    """
+    if not reactivation_rate_limiter.allow(client_ip(request)):
+        raise RateLimitError("RATE_LIMIT_EXCEEDED", "Limite de requisicoes excedido. Tente novamente em instantes.")
+    return service.reactivate_with_password(db, payload.email, payload.password)
