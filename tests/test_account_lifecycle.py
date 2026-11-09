@@ -7,13 +7,13 @@ from unittest.mock import patch
 from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.orm import sessionmaker
 
-from src.api import security, settings
+from src.api import security
 from src.api.errors import ApiError
 from src.api.services import account_service as accounts, admin_service, retention_service
-from src.database.models import Base, PendingAccountDeletion, Usuario
+from src.database.models import ACCOUNT_DELETION_GRACE_DAYS, Base, PendingAccountDeletion, Usuario
 
 PASSWORD = 'StrongPass1!'
-GRACE = timedelta(days=settings.ACCOUNT_DELETION_GRACE_DAYS)
+GRACE = timedelta(days=ACCOUNT_DELETION_GRACE_DAYS)
 
 
 class AccountLifecycleTests(unittest.TestCase):

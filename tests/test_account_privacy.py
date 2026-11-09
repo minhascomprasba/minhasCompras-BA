@@ -18,7 +18,7 @@ from src.api.errors import ApiError
 from src.api.services import account_service as accounts, retention_service
 from src.api.services.export_service import export_account
 from src.database.models import (
-    AccountChallenge, AccountDeletionEvent, Base, EmailVerificationCode, Estabelecimento, ItemNotaFiscal,
+    ACCOUNT_DELETION_GRACE_DAYS, AccountChallenge, AccountDeletionEvent, Base, EmailVerificationCode, Estabelecimento, ItemNotaFiscal,
     NfceImport, NotaFiscal, PasswordResetToken, PendingAccountDeletion, Produto, Usuario,
 )
 
@@ -59,7 +59,7 @@ class AccountTests(unittest.TestCase):
         with patch('src.api.services.email_service.send_account_deletion_scheduled'):
             accounts.schedule_account_deletion(db, user_id)
         # Retroage o pedido para que a carencia ja tenha vencido.
-        db.get(Usuario, user_id).deletion_requested_at = datetime.utcnow() - timedelta(days=settings.ACCOUNT_DELETION_GRACE_DAYS, seconds=1)
+        db.get(Usuario, user_id).deletion_requested_at = datetime.utcnow() - timedelta(days=ACCOUNT_DELETION_GRACE_DAYS, seconds=1)
         db.commit()
         accounts.delete_account(db, user_id)
 

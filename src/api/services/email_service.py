@@ -3,6 +3,7 @@ import smtplib
 from email.message import EmailMessage
 
 from src.api import settings
+from src.database.models import ACCOUNT_DELETION_GRACE_DAYS
 
 
 def send_message(to_email: str, subject: str, body: str) -> None:
@@ -40,9 +41,8 @@ def send_account_change_code(to_email: str, code: str, operation: str) -> None:
 def send_account_deletion_scheduled(to_email, raw_token, scheduled_at):
     # URL fragment keeps the cancellation secret out of HTTP request URLs/access logs.
     cancel_url = f"{settings.FRONTEND_URL}/cancelar-exclusao#token={raw_token}"
-    days = settings.ACCOUNT_DELETION_GRACE_DAYS
     send_message(to_email, "Exclusão da conta agendada — Minhas Compras BA",
-        f"A exclusão da sua conta foi solicitada. Sua conta está bloqueada para uso, mas os dados serão preservados durante {days} dias.\n"
+        f"A exclusão da sua conta foi solicitada. Sua conta está bloqueada para uso, mas os dados serão preservados durante {ACCOUNT_DELETION_GRACE_DAYS} dias.\n"
         f"A exclusão definitiva poderá ocorrer a partir de {scheduled_at.strftime('%d/%m/%Y %H:%M')} UTC.\n"
         "Se você não solicitou ou mudou de ideia, reative a conta antes do prazo de uma destas formas:\n"
         f"- entre no aplicativo com seu e-mail e senha e confirme a reativação; ou\n"

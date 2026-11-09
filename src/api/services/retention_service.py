@@ -3,7 +3,7 @@
 - ``cleanup_import_sessions``: expira importacoes e libera captchas/navegadores. Barata;
   roda no startup e nas rotas de importacao.
 - ``cleanup_auth_records`` e ``purge_expired_accounts``: rodam apenas pelo job diario
-  (``POST /internal/jobs/retention``, disparado pelo GitHub Actions) ou via
+  (APScheduler, ver ``src/api/scheduler.py``) ou manualmente via
   ``python -m src.api.services.retention_service``.
 """
 import logging
@@ -12,11 +12,10 @@ from pathlib import Path
 
 from sqlalchemy import delete, or_, select
 
-from src.api import settings
 from src.api.errors import ApiError
 from src.database.connection import SessionLocal
 from src.database.models import (
-    AccountChallenge, AccountRateLimit, AccountDeletionEvent, AccountStatus, EmailVerificationCode,
+    ACCOUNT_DELETION_GRACE_DAYS, AccountChallenge, AccountRateLimit, AccountDeletionEvent, AccountStatus, EmailVerificationCode,
     NfceImport, PasswordResetToken, Usuario,
 )
 
@@ -77,7 +76,7 @@ def purge_expired_accounts(now=None):
     """
     from src.api.services.account_service import delete_account
     now = now or datetime.utcnow()
-    cutoff = now - timedelta(days=settings.ACCOUNT_DELETION_GRACE_DAYS)
+    cutoff = now - timedelta(days=ACCOUNT_DELETION_GRACE_DAYS)
     purged, skipped = 0, 0
     with SessionLocal() as db:
         due_ids = list(db.scalars(select(Usuario.id).where(

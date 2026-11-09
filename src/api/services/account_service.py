@@ -13,7 +13,7 @@ from src.api import settings
 from src.api.errors import ApiError, ConflictError, ValidationError
 from src.api.security import create_access_token, get_password_hash, verify_password
 from src.database.models import (
-    AccountChallenge, AccountRateLimit, AccountDeletionEvent, AccountStatus, EmailVerificationCode, ImportStatus,
+    ACCOUNT_DELETION_GRACE_DAYS, AccountChallenge, AccountRateLimit, AccountDeletionEvent, AccountStatus, EmailVerificationCode, ImportStatus,
     NfceImport, PasswordResetToken, PendingAccountDeletion, Usuario,
 )
 
@@ -29,7 +29,7 @@ def deletion_deadline(user):
     """Prazo final da carencia; None quando a conta nao tem exclusao solicitada."""
     if not is_pending_deletion(user) or user.deletion_requested_at is None:
         return None
-    return user.deletion_requested_at + timedelta(days=settings.ACCOUNT_DELETION_GRACE_DAYS)
+    return user.deletion_requested_at + timedelta(days=ACCOUNT_DELETION_GRACE_DAYS)
 
 
 def lock_user(db, user_id, allow_pending=False):
@@ -231,8 +231,7 @@ def schedule_account_deletion(db, user_id, password=None, source="SELF_SERVICE")
     except Exception as exc:
         db.rollback()
         raise ApiError("EMAIL_DELIVERY_FAILED", "Não foi possível enviar o aviso de exclusão. A exclusão não foi agendada. Tente novamente.", 503) from exc
-    days = settings.ACCOUNT_DELETION_GRACE_DAYS
-    return {"message": f"Exclusão agendada para daqui a {days} dias. Para reativar, entre novamente com sua senha ou use o link enviado por e-mail.",
+    return {"message": f"Exclusão agendada para daqui a {ACCOUNT_DELETION_GRACE_DAYS} dias. Para reativar, entre novamente com sua senha ou use o link enviado por e-mail.",
         "status": PENDING_DELETION, "requested_at": now, "scheduled_at": scheduled}
 
 

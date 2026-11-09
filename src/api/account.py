@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from src.api import settings
 from src.api.auth import get_db
 from src.api.errors import RateLimitError
 from src.api.rate_limit import InMemoryRateLimiter
@@ -84,7 +83,8 @@ class ReactivateAccountRequest(BaseModel):
     password: str = Field(max_length=128)
 
 
-reactivation_rate_limiter = InMemoryRateLimiter(settings.ACCOUNT_REACTIVATION_RATE_LIMIT_PER_MIN)
+REACTIVATION_RATE_LIMIT_PER_MIN = 5
+reactivation_rate_limiter = InMemoryRateLimiter(REACTIVATION_RATE_LIMIT_PER_MIN)
 
 
 @account_router.post("/account/reactivate", response_model=TokenResponse)

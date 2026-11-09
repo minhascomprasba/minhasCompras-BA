@@ -51,13 +51,7 @@ A limpeza é dividida em duas rotinas idempotentes (`src/api/services/retention_
 
 ### Job diário (APScheduler)
 
-O job roda **dentro do processo da API**, com o APScheduler (`src/api/scheduler.py`). Ele é iniciado no startup e encerrado no shutdown do FastAPI. Por padrão dispara todo dia às 03:00 no fuso `America/Bahia`. As variáveis que controlam o job:
-
-| Variável | Padrão | Descrição |
-| --- | --- | --- |
-| `RETENTION_JOB_ENABLED` | `true` | Liga/desliga o agendador |
-| `RETENTION_JOB_CRON` | `0 3 * * *` | Expressão crontab. Para dia da semana use nomes (`mon`, `tue`…): no APScheduler 3 o número 0 é segunda-feira |
-| `RETENTION_JOB_TIMEZONE` | `America/Bahia` | Fuso da expressão |
+O job roda **dentro do processo da API**, com o APScheduler (`src/api/scheduler.py`). Ele é iniciado no startup e encerrado no shutdown do FastAPI e dispara todo dia às 03:00 no fuso `America/Bahia`. Horário, fuso e carência são constantes no código; não há variáveis de ambiente para configurar.
 
 O job usa `coalesce` e `max_instances=1` (nunca roda em paralelo consigo mesmo) e registra no log quantas contas excluiu e quantas adiou. Falhas são logadas e não derrubam o agendador; a próxima execução tenta de novo.
 
@@ -66,7 +60,7 @@ O job usa `coalesce` e `max_instances=1` (nunca roda em paralelo consigo mesmo) 
 - O job só dispara enquanto a API está no ar. Se a instância estiver parada ou hibernada no horário (por exemplo, no plano gratuito do Render), a execução daquele dia é perdida. A execução seguinte processa todas as contas vencidas: a exclusão atrasa, nunca é antecipada. Por isso o serviço da API deve ficar sempre ligado.
 - Cada processo da API tem o seu agendador. Use um único worker e uma única réplica, o que já é exigido pelas importações em memória. Execuções duplicadas não causam dano, porque a rotina é idempotente e roda sob bloqueio, mas fazem trabalho repetido.
 
-**Disparo manual.** Para rodar fora do horário, use `POST /api/v1/internal/jobs/retention` com o header `X-Job-Secret: <JOB_SECRET>`. A resposta traz `purged`, `skipped` e `ran_at`. O endpoint não aparece no Swagger e responde 503 enquanto `JOB_SECRET` não estiver configurado. Também é possível rodar pela linha de comando, com o mesmo `DATABASE_URL` e o mesmo volume da API:
+**Execução manual.** Para rodar fora do horário (por exemplo, pelo shell do Render), use o mesmo `DATABASE_URL` e o mesmo volume da API:
 
 ```sh
 .venv/bin/python -m src.api.services.retention_service
@@ -76,13 +70,13 @@ Os recursos de navegadores em execução são locais ao processo; o processo da 
 
 ## Exclusão e reativação de conta
 
-O estado da conta fica em `usuarios.status`: `ACTIVE` ou `PENDING_DELETION`. `usuarios.deletion_requested_at` marca o início da carência. O prazo final é `deletion_requested_at + ACCOUNT_DELETION_GRACE_DAYS` (padrão de 7 dias) e não é armazenado: é sempre calculado, o que evita duas fontes de verdade. A tabela `pending_account_deletions` guarda apenas o hash do token do link de cancelamento e a origem do pedido.
+O estado da conta fica em `usuarios.status`: `ACTIVE` ou `PENDING_DELETION`. `usuarios.deletion_requested_at` marca o início da carência. O prazo final é `deletion_requested_at` + 7 dias (constante `ACCOUNT_DELETION_GRACE_DAYS` em `src/database/models.py`, fixa porque os textos da interface informam esse prazo) e não é armazenado: é sempre calculado, o que evita duas fontes de verdade. A tabela `pending_account_deletions` guarda apenas o hash do token do link de cancelamento e a origem do pedido.
 
 **Solicitação.** O titular solicita a exclusão em `DELETE /auth/me` (senha atual e confirmação EXCLUIR na interface). O SUPER_ADMIN pode agendar a exclusão de outra conta em `DELETE /admin/usuarios/{id}`. A solicitação muda o status para PENDING_DELETION, revoga sessões, tokens de recuperação e desafios e bloqueia o acesso protegido e novas importações. O SMTP deve aceitar o aviso antes da confirmação da transação; uma falha no envio mantém a conta inalterada. Contas pendentes não podem usar a recuperação de senha. O único SUPER_ADMIN ativo não pode ter a exclusão agendada, e administradores com exclusão agendada não contam para a proteção do último administrador ativo.
 
 **Reativação.** Até o prazo final, a conta volta para ACTIVE por um destes caminhos:
 
-- **Titular, pelo login:** com a senha correta, `POST /auth/login` responde 409 `ACCOUNT_PENDING_DELETION` com `can_reactivate`, e a tela de login oferece a reativação, que chama `POST /auth/account/reactivate` com e-mail e senha. O endpoint não exige token, pois as sessões foram revogadas; ele tem limite por IP (`ACCOUNT_REACTIVATION_RATE_LIMIT_PER_MIN`, padrão 5/min), responde 401 genérico para credenciais inválidas e devolve uma nova sessão.
+- **Titular, pelo login:** com a senha correta, `POST /auth/login` responde 409 `ACCOUNT_PENDING_DELETION` com `can_reactivate`, e a tela de login oferece a reativação, que chama `POST /auth/account/reactivate` com e-mail e senha. O endpoint não exige token, pois as sessões foram revogadas; ele tem limite de 5 requisições por minuto por IP, responde 401 genérico para credenciais inválidas e devolve uma nova sessão.
 - **Titular, pelo link do e-mail:** o segredo de cancelamento vai em um fragmento da URL (não na URL enviada por HTTP) e só o hash é armazenado. Abrir a página não reativa a conta: o usuário precisa confirmar, o que consome o token sem emitir sessão.
 - **SUPER_ADMIN:** `POST /admin/usuarios/{id}/reactivate`, pelo botão "Reativar" em Perfis de Acesso.
 
@@ -102,6 +96,6 @@ Restaure em um ambiente isolado, com o envio de e-mails e os workers de importa�
 
 ## Validação
 
-Execute `python -m unittest discover -s tests -v`, `npm run build --prefix frontend` e `npm run lint --prefix frontend`. O lint geral do repositório atualmente apresenta erros preexistentes em AuthContext (exportações de hooks e componentes no mesmo arquivo), ImportPage (estado em um efeito), MapPage e shared/api/errors (uso explícito de any). O lint direcionado ao novo código de perfil, serviços e roteamento não apresenta erros. A suíte de contas cobre substituição de credenciais, sessões antigas, expiração, reutilização, tentativas, titularidade e isolamento de operações dos desafios, limites de requisições e falhas de envio; confirmações simultâneas; exclusão em cascata dos dados da conta e exclusões de campos na exportação; limites de prazo e idempotência da limpeza; carência de sete dias, reativação pelo titular (login e link) e pelo administrador, rejeição após o prazo, purge por status, agendamento do job (cron, fuso, flag e falhas), autenticação do disparo manual, migração do modelo anterior, cancelamento e reutilização de tokens, bloqueio de acesso a contas pendentes, reversão da transação em caso de falha de SMTP e finalização.
+Execute `python -m unittest discover -s tests -v`, `npm run build --prefix frontend` e `npm run lint --prefix frontend`. O lint geral do repositório atualmente apresenta erros preexistentes em AuthContext (exportações de hooks e componentes no mesmo arquivo), ImportPage (estado em um efeito), MapPage e shared/api/errors (uso explícito de any). O lint direcionado ao novo código de perfil, serviços e roteamento não apresenta erros. A suíte de contas cobre substituição de credenciais, sessões antigas, expiração, reutilização, tentativas, titularidade e isolamento de operações dos desafios, limites de requisições e falhas de envio; confirmações simultâneas; exclusão em cascata dos dados da conta e exclusões de campos na exportação; limites de prazo e idempotência da limpeza; carência de sete dias, reativação pelo titular (login e link) e pelo administrador, rejeição após o prazo, purge por status, agendamento do job (horário, fuso e falhas), migração do modelo anterior, cancelamento e reutilização de tokens, bloqueio de acesso a contas pendentes, reversão da transação em caso de falha de SMTP e finalização.
 
-Antes da publicação, use um serviço SMTP de teste e duas sessões separadas de navegador: altere o e-mail e a senha, verifique se a sessão antiga é rejeitada, teste a recuperação, baixe o JSON, agende a exclusão e reative pelo login, agende de novo e cancele pelo link do e-mail, agende pelo painel de administração e reative por lá. Depois, agende novamente e valide a finalização pelo disparo manual do job no prazo final em um banco de testes isolado; nunca altere datas e horários de produção para simular a expiração. Confirme que uma falha de SMTP exibe um erro em vez de informar que o PIN foi enviado. Teste separadamente o ciclo de vida do CAPTCHA com a SEFAZ e repita os testes de concorrência no PostgreSQL. A implementação não configura automaticamente o SMTP, o `JOB_SECRET` do disparo manual ou os backups de produção.
+Antes da publicação, use um serviço SMTP de teste e duas sessões separadas de navegador: altere o e-mail e a senha, verifique se a sessão antiga é rejeitada, teste a recuperação, baixe o JSON, agende a exclusão e reative pelo login, agende de novo e cancele pelo link do e-mail, agende pelo painel de administração e reative por lá. Depois, agende novamente e valide a finalização pela execução manual do job no prazo final em um banco de testes isolado; nunca altere datas e horários de produção para simular a expiração. Confirme que uma falha de SMTP exibe um erro em vez de informar que o PIN foi enviado. Teste separadamente o ciclo de vida do CAPTCHA com a SEFAZ e repita os testes de concorrência no PostgreSQL. A implementação não configura automaticamente o SMTP ou os backups de produção.

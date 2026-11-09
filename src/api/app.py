@@ -11,7 +11,6 @@ from src.api.routers import router
 from src.api.admin import admin_router
 from src.api.auth import auth_router
 from src.api.account import account_router
-from src.api.jobs import jobs_router
 from src.api.schemas import ErrorResponse
 from src.api.services.import_service import driver_pool
 from src.database.connection import engine
@@ -60,7 +59,6 @@ app.include_router(router)
 app.include_router(auth_router, prefix=settings.API_PREFIX)
 app.include_router(account_router, prefix=settings.API_PREFIX)
 app.include_router(admin_router, prefix=settings.API_PREFIX)
-app.include_router(jobs_router, prefix=settings.API_PREFIX)
 
 
 def _ensure_schema_updates() -> None:

@@ -3,32 +3,21 @@ from datetime import datetime
 from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
-from src.api import scheduler, settings
+from src.api import scheduler
 
 
 class RetentionSchedulerTests(unittest.TestCase):
     def tearDown(self):
         scheduler.shutdown_scheduler()
 
-    def test_daily_job_runs_at_3am_salvador_by_default(self):
-        built = scheduler.build_scheduler()
-        job = built.get_job(scheduler.RETENTION_JOB_ID)
+    def test_daily_job_runs_at_3am_salvador(self):
+        job = scheduler.build_scheduler().get_job(scheduler.RETENTION_JOB_ID)
         tz = ZoneInfo('America/Bahia')
         fire = job.trigger.get_next_fire_time(None, datetime(2026, 11, 10, 3, 0, 1, tzinfo=tz))
         self.assertEqual(datetime(2026, 11, 11, 3, 0, tzinfo=tz), fire)
         self.assertEqual((1, True), (job.max_instances, job.coalesce))
 
-    def test_cron_expression_and_timezone_are_configurable(self):
-        # Dia da semana por nome: no APScheduler 3 o numero 0 e segunda (difere do cron padrao).
-        with patch.multiple(settings, RETENTION_JOB_CRON='30 1 * * mon', RETENTION_JOB_TIMEZONE='UTC'):
-            job = scheduler.build_scheduler().get_job(scheduler.RETENTION_JOB_ID)
-        fire = job.trigger.get_next_fire_time(None, datetime(2026, 11, 10, tzinfo=ZoneInfo('UTC')))  # terça
-        self.assertEqual(datetime(2026, 11, 16, 1, 30, tzinfo=ZoneInfo('UTC')), fire)                 # segunda
-
-    def test_start_respects_flag_and_is_idempotent(self):
-        with patch.object(settings, 'RETENTION_JOB_ENABLED', False):
-            scheduler.start_scheduler()
-            self.assertIsNone(scheduler._scheduler)
+    def test_start_is_idempotent_and_shutdown_releases(self):
         scheduler.start_scheduler()
         first = scheduler._scheduler
         scheduler.start_scheduler()

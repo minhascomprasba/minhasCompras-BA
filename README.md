@@ -473,9 +473,9 @@ perfil. O estado da conta fica em `usuarios.status` (`ACTIVE` ou `PENDING_DELETI
 | Reativar pelo login | Titular (e-mail + senha) | `POST /auth/account/reactivate` |
 | Reativar pelo link do e-mail | Titular | `POST /auth/account-deletion/cancel` |
 | Reativar qualquer conta | SUPER_ADMIN | `POST /admin/usuarios/{id}/reactivate` |
-| Excluir contas com carência vencida | APScheduler na API (diário, 03:00) | Disparo manual: `POST /internal/jobs/retention` + `X-Job-Secret` |
+| Excluir contas com carência vencida | APScheduler na API (diário, 03:00 America/Bahia) | — (manual: `python -m src.api.services.retention_service`) |
 
-A carência é de `ACCOUNT_DELETION_GRACE_DAYS` (7 dias), contada a partir de
+A carência é de 7 dias (constante `ACCOUNT_DELETION_GRACE_DAYS` em `src/database/models.py`), contada a partir de
 `deletion_requested_at`; até o prazo final a conta fica bloqueada e pode ser reativada.
 A exclusão definitiva é feita apenas pelo job diário, agendado com APScheduler dentro da
 API (`src/api/scheduler.py`), nunca pelo tráfego das requisições. O job só roda com a API
@@ -1020,13 +1020,10 @@ marcadas como obrigatórias em produção.
 
 | Variável                                  | Default | Descrição                                                                 |
 | :---------------------------------------- | :------ | :------------------------------------------------------------------------ |
-| `ACCOUNT_DELETION_GRACE_DAYS`             | `7`     | Carência entre o pedido de exclusão e a exclusão definitiva               |
-| `ACCOUNT_REACTIVATION_RATE_LIMIT_PER_MIN` | `5`     | Limite de `POST /auth/account/reactivate` por IP                          |
 | `ACCOUNT_DELETION_AUDIT_DAYS`             | `90`    | Retenção dos eventos anônimos de exclusão                                 |
-| `RETENTION_JOB_ENABLED`                   | `true`  | Liga o job diário de retenção (APScheduler)                               |
-| `RETENTION_JOB_CRON`                      | `0 3 * * *` | Horário do job (crontab; dia da semana por nome, ex.: `mon`)          |
-| `RETENTION_JOB_TIMEZONE`                  | `America/Bahia` | Fuso do horário do job                                            |
-| `JOB_SECRET`                              | vazio   | Segredo do disparo manual (`X-Job-Secret`); vazio desativa o endpoint     |
+
+A carência de exclusão (7 dias), o horário do job diário (03:00 America/Bahia) e o limite de
+reativação (5/min por IP) são constantes no código, não variáveis de ambiente.
 
 ### Infraestrutura
 

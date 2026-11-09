@@ -4,18 +4,22 @@ O job diario de retencao exclui as contas com carencia vencida e limpa registros
 temporarios. So dispara enquanto o processo da API esta no ar: se a instancia estiver
 parada no horario, a execucao daquele dia e perdida, mas a seguinte processa todas
 as contas vencidas (a exclusao atrasa, nunca e antecipada).
+
+Execucao manual: ``python -m src.api.services.retention_service``.
 """
 import logging
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from src.api import settings
 from src.api.services.retention_service import run_retention_jobs
 
 logger = logging.getLogger(__name__)
 
 RETENTION_JOB_ID = "retention-daily"
+RETENTION_JOB_TIMEZONE = "America/Bahia"
+RETENTION_JOB_HOUR = 3
+RETENTION_JOB_MINUTE = 0
 
 _scheduler: BackgroundScheduler | None = None
 
@@ -30,10 +34,10 @@ def _run_retention_job() -> None:
 
 
 def build_scheduler() -> BackgroundScheduler:
-    scheduler = BackgroundScheduler(timezone=settings.RETENTION_JOB_TIMEZONE)
+    scheduler = BackgroundScheduler(timezone=RETENTION_JOB_TIMEZONE)
     scheduler.add_job(
         _run_retention_job,
-        CronTrigger.from_crontab(settings.RETENTION_JOB_CRON, timezone=settings.RETENTION_JOB_TIMEZONE),
+        CronTrigger(hour=RETENTION_JOB_HOUR, minute=RETENTION_JOB_MINUTE, timezone=RETENTION_JOB_TIMEZONE),
         id=RETENTION_JOB_ID,
         replace_existing=True,
         coalesce=True,           # varias execucoes atrasadas viram uma so
@@ -45,13 +49,11 @@ def build_scheduler() -> BackgroundScheduler:
 
 def start_scheduler() -> None:
     global _scheduler
-    if not settings.RETENTION_JOB_ENABLED or _scheduler is not None:
+    if _scheduler is not None:
         return
     _scheduler = build_scheduler()
     _scheduler.start()
-    job = _scheduler.get_job(RETENTION_JOB_ID)
-    logger.info("Job de retenção agendado (%s %s); próxima execução: %s",
-                settings.RETENTION_JOB_CRON, settings.RETENTION_JOB_TIMEZONE, job.next_run_time)
+    logger.info("Job de retenção agendado; próxima execução: %s", _scheduler.get_job(RETENTION_JOB_ID).next_run_time)
 
 
 def shutdown_scheduler() -> None:

@@ -26,6 +26,11 @@ class AccountStatus(str, Enum):
     PENDING_DELETION = "PENDING_DELETION"
 
 
+# Carencia (dias) entre o pedido de exclusao e a exclusao definitiva. Fixa de proposito:
+# os textos do frontend (perfil e /privacidade) informam "7 dias" ao titular.
+ACCOUNT_DELETION_GRACE_DAYS = 7
+
+
 class Usuario(Base):
     __tablename__ = "usuarios"
 
