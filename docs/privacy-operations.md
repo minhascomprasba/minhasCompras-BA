@@ -1,6 +1,6 @@
 # Controles de conta e privacidade
 
-Implementação na branch `feature/user-profile-lgpd`; este documento não constitui uma declaração de conformidade integral com a LGPD.
+Implementação nas branches `feature/user-profile-lgpd` e `feat/lgpd-status-exclusao`; este documento não constitui uma declaração de conformidade integral com a LGPD.
 
 ## Requisitos para publicação
 
@@ -17,14 +17,14 @@ Substitua o parágrafo que explicita as informações pendentes em `/privacidade
 
 | Registros | Conteúdo e finalidade | Prazo de retenção implementado |
 | --- | --- | --- |
-| Usuários | E-mail, hash da senha, perfil, versão das credenciais, data de criação; acesso à conta | Até a exclusão definitiva após o prazo de cancelamento de sete dias |
-| Notas fiscais/itens | Chave da nota, datas, forma de pagamento, preços, quantidades, referências ao catálogo; histórico e análise de compras | Até a exclusão definitiva após o prazo de cancelamento de sete dias |
+| Usuários | E-mail, hash da senha, perfil, versão das credenciais, data de criação; acesso à conta | Até a exclusão definitiva pelo job diário, após a carência de sete dias |
+| Notas fiscais/itens | Chave da nota, datas, forma de pagamento, preços, quantidades, referências ao catálogo; histórico e análise de compras | Até a exclusão definitiva pelo job diário, após a carência de sete dias |
 | Produtos/estabelecimentos | Descrições compartilhadas, identificadores comerciais, endereços, coordenadas | Catálogo compartilhado; preservado na exclusão da conta |
 | Importações | Chave da nota, status/origem, tentativas/datas, referência à nota, caminho temporário do CAPTCHA | Metadados até a exclusão da conta; imagem removida na conclusão ou expiração |
-| Desafios de cadastro/recuperação/alteração | Hash do PIN/token, hash da senha quando aplicável, operação, versão, expiração, tentativas | Mantidos por 24 horas após o uso ou a expiração e, depois, removidos pela limpeza horária |
+| Desafios de cadastro/recuperação/alteração | Hash do PIN/token, hash da senha quando aplicável, operação, versão, expiração, tentativas | Mantidos por 24 horas após o uso ou a expiração e, depois, removidos pelo job diário |
 | Limites de requisições | Hashes das chaves dos agrupamentos por usuário/IP e contadores | Removidos após 24 horas |
 | Eventos de exclusão | Protocolo aleatório, dia em UTC e origem (autoatendimento/administração); sem vínculo com conta, autor ou e-mail | `ACCOUNT_DELETION_AUDIT_DAYS`, padrão de 90 dias, sujeito à revisão do responsável |
-| Exclusão pendente | Vínculo com a conta, hash do token de cancelamento, datas de solicitação e prazo, origem | Sete dias, seguidos da finalização; removida imediatamente em caso de cancelamento |
+| Exclusão pendente | `usuarios.status`/`deletion_requested_at`; em `pending_account_deletions`, hash do token de cancelamento e origem | Sete dias, seguidos da finalização pelo job diário; removida imediatamente na reativação |
 | Exportações | JSON versionado com campos explicitamente permitidos, gerado em memória | Sem arquivo de exportação persistente; `Cache-Control: no-store` |
 | Backups | Cópias específicas de cada implantação | Definido pelo responsável antes da publicação |
 
@@ -40,27 +40,53 @@ Bloqueios de escrita no SQLite e atualizações de linhas no PostgreSQL serializ
 
 As adições ao esquema usam o `create_all` existente e atualizações ALTER na inicialização. Os registros existentes são preservados; as versões de credenciais são preenchidas com zero. Um índice único em `lower(email)` impede duplicatas que diferem apenas entre maiúsculas e minúsculas, inclusive em cadastros ou alterações simultâneos. Se houver duplicatas históricas desse tipo, a inicialização falha de forma segura ao criar o índice: resolva a titularidade dessas contas antes da migração; a migração nunca descarta nem mescla contas automaticamente. Faça um backup antes de aplicar atualizações de esquema. Há suporte às sintaxes de SQLite e PostgreSQL; o SQLite é coberto pela suíte automatizada. Antes da publicação, valide em homologação com a versão de PostgreSQL usada na implantação.
 
-## Limpeza agendada
+## Rotinas de retenção
 
-Execute a partir do diretório de trabalho do repositório, com o mesmo DATABASE_URL, ambiente e volume de armazenamento da API:
+A limpeza é dividida em duas rotinas idempotentes (`src/api/services/retention_service.py`):
+
+| Rotina | O que faz | Quando roda |
+| --- | --- | --- |
+| `cleanup_import_sessions` | Expira importações em WAITING_CAPTCHA vencidas, libera navegadores locais e remove imagens de CAPTCHA (encerradas, expiradas ou sem referência há mais de 24 horas) | Na inicialização da API e nas rotas de importação |
+| `cleanup_auth_records` + `purge_expired_accounts` | Remove desafios, tokens, códigos e limites de requisição com mais de 24 horas, eventos de exclusão expirados e **exclui definitivamente as contas com carência vencida** | Somente no job diário (APScheduler) |
+
+### Job diário (APScheduler)
+
+O job roda **dentro do processo da API**, com o APScheduler (`src/api/scheduler.py`). Ele é iniciado no startup e encerrado no shutdown do FastAPI e dispara todo dia às 03:00 no fuso `America/Bahia`. Horário, fuso e carência são constantes no código; não há variáveis de ambiente para configurar.
+
+O job usa `coalesce` e `max_instances=1` (nunca roda em paralelo consigo mesmo) e registra no log quantas contas excluiu e quantas adiou. Falhas são logadas e não derrubam o agendador; a próxima execução tenta de novo.
+
+**Limitações:**
+
+- O job só dispara enquanto a API está no ar. Se a instância estiver parada ou hibernada no horário (por exemplo, no plano gratuito do Render), a execução daquele dia é perdida. A execução seguinte processa todas as contas vencidas: a exclusão atrasa, nunca é antecipada. Por isso o serviço da API deve ficar sempre ligado.
+- Cada processo da API tem o seu agendador. Use um único worker e uma única réplica, o que já é exigido pelas importações em memória. Execuções duplicadas não causam dano, porque a rotina é idempotente e roda sob bloqueio, mas fazem trabalho repetido.
+
+**Execução manual.** Para rodar fora do horário (por exemplo, pelo shell do Render), use o mesmo `DATABASE_URL` e o mesmo volume da API:
 
 ```sh
 .venv/bin/python -m src.api.services.retention_service
 ```
 
-O comando é idempotente. Instale os exemplos de serviço e temporizador do systemd em `docs/operations/` após substituir os caminhos e escolher um usuário de serviço adequado. Como alternativa, agende a execução a cada hora, direcionando stdout/stderr para logs operacionais com acesso restrito:
+Os recursos de navegadores em execução são locais ao processo; o processo da API gerencia seu ciclo de vida. Use um único worker responsável pelas importações ou adicione roteamento entre workers antes de escalar o processamento de importações em memória.
 
-```cron
-0 * * * * cd /srv/minhas-compras && /srv/minhas-compras/.venv/bin/python -m src.api.services.retention_service
-```
+## Exclusão e reativação de conta
 
-Não copie credenciais de desenvolvimento para o agendador. Monitore falhas do comando e o uso de disco; garanta que o agendador tenha acesso ao volume de CAPTCHA de cada instância da API. A limpeza na inicialização é uma alternativa de contingência; o agendamento horário continua obrigatório mesmo quando a API não recebe requisições. Imagens de importações encerradas ou expiradas e sessões locais do navegador são liberadas; arquivos de CAPTCHA sem referência com mais de 24 horas são removidos. Os recursos de navegadores em execução são locais ao processo; o processo da API gerencia seu ciclo de vida. Use um único worker responsável pelas importações ou adicione roteamento entre workers antes de escalar o processamento de importações existente em memória.
+O estado da conta fica em `usuarios.status`: `ACTIVE` ou `PENDING_DELETION`. `usuarios.deletion_requested_at` marca o início da carência. O prazo final é `deletion_requested_at` + 7 dias (constante `ACCOUNT_DELETION_GRACE_DAYS` em `src/database/models.py`, fixa porque os textos da interface informam esse prazo) e não é armazenado: é sempre calculado, o que evita duas fontes de verdade. A tabela `pending_account_deletions` guarda apenas o hash do token do link de cancelamento e a origem do pedido.
 
-## Exclusão de conta
+**Solicitação.** O titular solicita a exclusão em `DELETE /auth/me` (senha atual e confirmação EXCLUIR na interface). O SUPER_ADMIN pode agendar a exclusão de outra conta em `DELETE /admin/usuarios/{id}`. A solicitação muda o status para PENDING_DELETION, revoga sessões, tokens de recuperação e desafios e bloqueia o acesso protegido e novas importações. O SMTP deve aceitar o aviso antes da confirmação da transação; uma falha no envio mantém a conta inalterada. Contas pendentes não podem usar a recuperação de senha. O único SUPER_ADMIN ativo não pode ter a exclusão agendada, e administradores com exclusão agendada não contam para a proteção do último administrador ativo.
 
-A exclusão exige a senha atual e a confirmação EXCLUIR na interface. Primeiro, agenda um prazo de exatamente sete dias, revoga sessões, tokens de recuperação e desafios e bloqueia o acesso protegido e novas importações. O SMTP deve aceitar o aviso de cancelamento antes da confirmação da transação; uma falha no envio mantém a conta inalterada. Contas com exclusão pendente não podem entrar nem usar a recuperação de senha até o cancelamento. O e-mail contém um segredo aleatório de cancelamento em um fragmento da URL (não na URL enviada por HTTP); somente seu hash é armazenado. Abrir a página de cancelamento não restaura a conta automaticamente: o usuário deve enviar a confirmação, que consome o token, restaura o acesso sem emitir uma sessão de login e revoga novamente as credenciais anteriores. Uma tentativa de cancelamento no prazo final ou após ele é rejeitada. Nenhuma ação do responsável ou administrador ignora o período de carência. O único SUPER_ADMIN ativo não pode agendar a exclusão; administradores com exclusão agendada não satisfazem a proteção do último administrador ativo.
+**Reativação.** Até o prazo final, a conta volta para ACTIVE por um destes caminhos:
 
-A limpeza horária finaliza as contas cujo prazo venceu (a limpeza na inicialização é uma alternativa de contingência); execuções não realizadas atrasam a exclusão, nunca a antecipam. A finalização e o cancelamento usam os mesmos bloqueios de banco de dados para evitar condições de corrida. Até a finalização, os dados da conta permanecem identificáveis e a tabela administrativa de usuários mostra explicitamente PENDING_DELETION e o prazo final. Não há anonimização imediata durante o período de espera. Na finalização, são removidos o usuário, suas notas fiscais e itens, importações, tokens de recuperação, registros de verificação do e-mail da conta e desafios de alteração da conta. Produtos e estabelecimentos compartilhados permanecem. O único SUPER_ADMIN não pode excluir a própria conta. Uma caixa de entrada para solicitações de privacidade não faz parte deste escopo. A página de gestão de usuários do superadministrador mostra eventos mínimos de exclusão, sem registros identificáveis das contas excluídas. Os eventos são inseridos na mesma transação da exclusão da conta, nunca são reconstruídos retroativamente e expiram após `ACCOUNT_DELETION_AUDIT_DAYS` (padrão de 90 dias). Trata-se de uma proposta de política operacional, não de uma exigência legal de retenção. Revise a finalidade e a duração antes da publicação e mantenha `/privacidade` consistente com a configuração. Os metadados de dia, origem e protocolo ainda podem ser correlacionados com logs externos; a ausência de identificadores diretos não garante anonimização irreversível. A revogação de credenciais ou sessões não equivale à suspensão da conta, e a interface não identifica contas ativas como revogadas. Se um banco de desenvolvimento contiver tabelas do protótipo anterior de caixa de entrada, a exclusão também remove os casos e as mensagens legados dessa conta, sem criar essas tabelas em bancos novos.
+- **Titular, pelo login:** com a senha correta, `POST /auth/login` responde 409 `ACCOUNT_PENDING_DELETION` com `can_reactivate`, e a tela de login oferece a reativação, que chama `POST /auth/account/reactivate` com e-mail e senha. O endpoint não exige token, pois as sessões foram revogadas; ele tem limite de 5 requisições por minuto por IP, responde 401 genérico para credenciais inválidas e devolve uma nova sessão.
+- **Titular, pelo link do e-mail:** o segredo de cancelamento vai em um fragmento da URL (não na URL enviada por HTTP) e só o hash é armazenado. Abrir a página não reativa a conta: o usuário precisa confirmar, o que consome o token sem emitir sessão.
+- **SUPER_ADMIN:** `POST /admin/usuarios/{id}/reactivate`, pelo botão "Reativar" em Perfis de Acesso.
+
+Toda reativação incrementa a versão das credenciais (as sessões anteriores continuam inválidas) e remove o registro pendente. Reativar no prazo final ou depois dele é rejeitado (`DELETION_DEADLINE_PASSED`).
+
+**Exclusão definitiva.** O job diário seleciona as contas com `status = 'PENDING_DELETION' AND deletion_requested_at <= agora - carência` (coluna `status` indexada) e as exclui uma a uma, sob os mesmos bloqueios usados pela reativação, para evitar condições de corrida. Importações em WAITING_CAPTCHA/PROCESSING adiam a exclusão para a próxima execução. Até a finalização, os dados permanecem identificáveis e a tabela administrativa de usuários mostra PENDING_DELETION e o prazo final; não há anonimização durante a carência. Na finalização, são removidos o usuário, suas notas fiscais e itens, importações, tokens de recuperação, registros de verificação do e-mail e desafios de alteração. Produtos e estabelecimentos compartilhados permanecem.
+
+**Eventos de exclusão.** A página de gestão de usuários mostra eventos mínimos de exclusão, sem registros identificáveis das contas excluídas. Os eventos são inseridos na mesma transação da exclusão, nunca são reconstruídos retroativamente e expiram após `ACCOUNT_DELETION_AUDIT_DAYS` (padrão de 90 dias). Trata-se de uma proposta de política operacional, não de uma exigência legal de retenção: revise a finalidade e a duração antes da publicação e mantenha `/privacidade` consistente com a configuração. Os metadados de dia, origem e protocolo ainda podem ser correlacionados com logs externos, então a ausência de identificadores diretos não garante anonimização irreversível. Se um banco de desenvolvimento contiver tabelas do protótipo anterior de caixa de entrada, a exclusão também remove os casos e as mensagens legados da conta.
+
+**Migração.** Na inicialização, `_ensure_schema_updates()` cria `status` (padrão ACTIVE, com índice) e `deletion_requested_at` e converte exclusões agendadas no modelo anterior, usando o `requested_at` de `pending_account_deletions`. A coluna legada `usuarios.deletion_scheduled_at` deixa de ser usada e é mantida apenas para permitir rollback; remova-a depois que a versão estiver estável.
 
 ## Expiração de backups e procedimento de restauração
 
@@ -70,6 +96,6 @@ Restaure em um ambiente isolado, com o envio de e-mails e os workers de importa�
 
 ## Validação
 
-Execute `python -m unittest discover -s tests -v`, `npm run build --prefix frontend` e `npm run lint --prefix frontend`. O lint geral do repositório atualmente apresenta erros preexistentes em AuthContext (exportações de hooks e componentes no mesmo arquivo), ImportPage (estado em um efeito), MapPage e shared/api/errors (uso explícito de any). O lint direcionado ao novo código de perfil, serviços e roteamento não apresenta erros. A suíte de contas cobre substituição de credenciais, sessões antigas, expiração, reutilização, tentativas, titularidade e isolamento de operações dos desafios, limites de requisições e falhas de envio; confirmações simultâneas; exclusão em cascata dos dados da conta e exclusões de campos na exportação; limites de prazo e idempotência da limpeza; carência de sete dias, cancelamento e reutilização de tokens, bloqueio de acesso a contas pendentes, reversão da transação em caso de falha de SMTP e finalização.
+Execute `python -m unittest discover -s tests -v`, `npm run build --prefix frontend` e `npm run lint --prefix frontend`. O lint geral do repositório atualmente apresenta erros preexistentes em AuthContext (exportações de hooks e componentes no mesmo arquivo), ImportPage (estado em um efeito), MapPage e shared/api/errors (uso explícito de any). O lint direcionado ao novo código de perfil, serviços e roteamento não apresenta erros. A suíte de contas cobre substituição de credenciais, sessões antigas, expiração, reutilização, tentativas, titularidade e isolamento de operações dos desafios, limites de requisições e falhas de envio; confirmações simultâneas; exclusão em cascata dos dados da conta e exclusões de campos na exportação; limites de prazo e idempotência da limpeza; carência de sete dias, reativação pelo titular (login e link) e pelo administrador, rejeição após o prazo, purge por status, agendamento do job (horário, fuso e falhas), migração do modelo anterior, cancelamento e reutilização de tokens, bloqueio de acesso a contas pendentes, reversão da transação em caso de falha de SMTP e finalização.
 
-Antes da publicação, use um serviço SMTP de teste e duas sessões separadas de navegador: altere o e-mail e a senha, verifique se a sessão antiga é rejeitada, teste a recuperação, baixe o JSON, agende a exclusão e cancele pelo link do e-mail. Depois, agende novamente e valide a finalização no prazo final em um banco de testes isolado; nunca altere datas e horários de produção para simular a expiração. Confirme que uma falha de SMTP exibe um erro em vez de informar que o PIN foi enviado. Teste separadamente o ciclo de vida do CAPTCHA com a SEFAZ e repita os testes de concorrência no PostgreSQL. A implementação não configura automaticamente o agendamento, o SMTP ou os backups de produção.
+Antes da publicação, use um serviço SMTP de teste e duas sessões separadas de navegador: altere o e-mail e a senha, verifique se a sessão antiga é rejeitada, teste a recuperação, baixe o JSON, agende a exclusão e reative pelo login, agende de novo e cancele pelo link do e-mail, agende pelo painel de administração e reative por lá. Depois, agende novamente e valide a finalização pela execução manual do job no prazo final em um banco de testes isolado; nunca altere datas e horários de produção para simular a expiração. Confirme que uma falha de SMTP exibe um erro em vez de informar que o PIN foi enviado. Teste separadamente o ciclo de vida do CAPTCHA com a SEFAZ e repita os testes de concorrência no PostgreSQL. A implementação não configura automaticamente o SMTP ou os backups de produção.

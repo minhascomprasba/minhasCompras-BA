@@ -33,21 +33,43 @@ export function LoginPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  // Conta com exclusão agendada: guarda as credenciais já validadas para oferecer a reativação.
+  const [pendingDeletion, setPendingDeletion] = useState<{ credentials: LoginFormData; deadline: string } | null>(null);
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
 
+  const handleReactivate = async () => {
+    if (!pendingDeletion) return;
+    setIsLoading(true);
+    setError('');
+    try {
+      const response = await authService.reactivateAccount(pendingDeletion.credentials);
+      setPendingDeletion(null);
+      login(response.access_token, response.user);
+      navigate('/dashboard');
+    } catch (err: unknown) {
+      setPendingDeletion(null);
+      setError(err instanceof AppError ? err.message : 'Não foi possível reativar a conta. Tente novamente.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     setError('');
+    setPendingDeletion(null);
     try {
       const response = await authService.login(data);
       login(response.access_token, response.user);
       navigate('/dashboard');
     } catch (err: unknown) {
       if (err instanceof AppError) {
-        if (err.code === 'INVALID_PASSWORD' && err.details?.rule === 'min_length') {
+        if (err.code === 'ACCOUNT_PENDING_DELETION' && err.details?.can_reactivate === 'true') {
+          setPendingDeletion({ credentials: data, deadline: String(err.details?.scheduled_at ?? '') });
+        } else if (err.code === 'INVALID_PASSWORD' && err.details?.rule === 'min_length') {
           setError('A senha deve ter no mínimo 8 caracteres.');
         } else if (err.code === 'INVALID_PASSWORD' && err.details?.rule === 'max_length') {
           setError('A senha deve ter no máximo 128 caracteres.');
@@ -77,6 +99,24 @@ export function LoginPage() {
         {error && (
           <Alert variant="destructive" className="mb-4">
             {error}
+          </Alert>
+        )}
+
+        {pendingDeletion && (
+          <Alert className="mb-4">
+            <p className="mb-3">
+              A exclusão desta conta está agendada
+              {pendingDeletion.deadline && <> para {new Date(pendingDeletion.deadline + 'Z').toLocaleString('pt-BR')}</>}.
+              Enquanto isso, ela fica bloqueada. Deseja reativá-la e manter seus dados?
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" size="sm" disabled={isLoading} onClick={() => void handleReactivate()}>
+                {isLoading ? 'Reativando...' : 'Reativar minha conta'}
+              </Button>
+              <Button type="button" size="sm" variant="outline" disabled={isLoading} onClick={() => setPendingDeletion(null)}>
+                Agora não
+              </Button>
+            </div>
           </Alert>
         )}
 

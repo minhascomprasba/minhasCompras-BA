@@ -15,6 +15,7 @@ from src.api.services.admin_service import (
     get_admin_dashboard,
     get_role_summary,
     list_usuarios,
+    reactivate_usuario_admin,
     update_usuario_role,
 )
 from src.database.models import Usuario
@@ -66,6 +67,14 @@ def admin_delete_usuario(
 ) -> DeleteUsuarioResponse:
     resultado = delete_usuario_admin(target_id=usuario_id, actor_id=actor.id)
     return DeleteUsuarioResponse(**resultado)
+
+
+@admin_router.post("/usuarios/{usuario_id}/reactivate", response_model=AdminUsuarioResponse)
+def admin_reactivate_usuario(
+    usuario_id: int,
+    _: Usuario = Depends(require_super_admin),
+) -> AdminUsuarioResponse:
+    return AdminUsuarioResponse(**reactivate_usuario_admin(target_id=usuario_id))
 
 @admin_router.get("/account-deletions")
 def admin_account_deletions(

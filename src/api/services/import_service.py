@@ -91,8 +91,9 @@ def _mask_access_key(access_key: str) -> str:
 
 
 def cleanup_expired_import_sessions() -> None:
-    from src.api.services.retention_service import cleanup
-    cleanup()
+    # Apenas a limpeza de importacoes; a exclusao de contas roda no job diario.
+    from src.api.services.retention_service import cleanup_import_sessions
+    cleanup_import_sessions()
 
 
 def _normalize_source(source: str | None) -> str:

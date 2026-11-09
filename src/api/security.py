@@ -12,7 +12,7 @@ from pwdlib import PasswordHash
 from src.api import settings
 from src.api.errors import ApiError
 from src.database.connection import SessionLocal
-from src.database.models import ADMIN_ROLES, Usuario, UserRole
+from src.database.models import ADMIN_ROLES, AccountStatus, Usuario, UserRole
 
 password_hash = PasswordHash.recommended()
 
@@ -67,7 +67,7 @@ def get_current_user_id(
         user_id = int(user_id_str)
         with SessionLocal() as session:
             user = session.get(Usuario, user_id)
-            if user is None or user.deletion_scheduled_at is not None or payload.get("cv", 0) != user.credential_version:
+            if user is None or user.status != AccountStatus.ACTIVE.value or payload.get("cv", 0) != user.credential_version:
                 raise ApiError("UNAUTHORIZED", "Sessão revogada. Entre novamente.", 401)
         return user_id
     except jwt.ExpiredSignatureError:
