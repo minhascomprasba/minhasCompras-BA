@@ -47,28 +47,26 @@ A limpeza é dividida em duas rotinas idempotentes (`src/api/services/retention_
 | Rotina | O que faz | Quando roda |
 | --- | --- | --- |
 | `cleanup_import_sessions` | Expira importações em WAITING_CAPTCHA vencidas, libera navegadores locais e remove imagens de CAPTCHA (encerradas, expiradas ou sem referência há mais de 24 horas) | Na inicialização da API e nas rotas de importação |
-| `cleanup_auth_records` + `purge_expired_accounts` | Remove desafios, tokens, códigos e limites de requisição com mais de 24 horas, eventos de exclusão expirados e **exclui definitivamente as contas com carência vencida** | Somente no job diário |
+| `cleanup_auth_records` + `purge_expired_accounts` | Remove desafios, tokens, códigos e limites de requisição com mais de 24 horas, eventos de exclusão expirados e **exclui definitivamente as contas com carência vencida** | Somente no job diário (APScheduler) |
 
-### Job diário (GitHub Actions)
+### Job diário (APScheduler)
 
-O workflow `.github/workflows/retention-job.yml` roda todo dia às 06:00 UTC (03:00 em Salvador) e também pode ser disparado manualmente (*Actions → Job diário de retenção → Run workflow*). Ele chama:
+O job roda **dentro do processo da API**, com o APScheduler (`src/api/scheduler.py`). Ele é iniciado no startup e encerrado no shutdown do FastAPI. Por padrão dispara todo dia às 03:00 no fuso `America/Bahia`. As variáveis que controlam o job:
 
-```http
-POST {API_BASE_URL}/internal/jobs/retention
-X-Job-Secret: <JOB_SECRET>
-```
+| Variável | Padrão | Descrição |
+| --- | --- | --- |
+| `RETENTION_JOB_ENABLED` | `true` | Liga/desliga o agendador |
+| `RETENTION_JOB_CRON` | `0 3 * * *` | Expressão crontab. Para dia da semana use nomes (`mon`, `tue`…): no APScheduler 3 o número 0 é segunda-feira |
+| `RETENTION_JOB_TIMEZONE` | `America/Bahia` | Fuso da expressão |
 
-A resposta informa `purged` (contas excluídas), `skipped` (contas adiadas por impedimento operacional, como importação ativa) e `ran_at`. O endpoint não aparece no Swagger, compara o segredo em tempo constante e responde 503 quando `JOB_SECRET` não está configurado na API, ou seja, nunca fica aberto por omissão.
+O job usa `coalesce` e `max_instances=1` (nunca roda em paralelo consigo mesmo) e registra no log quantas contas excluiu e quantas adiou. Falhas são logadas e não derrubam o agendador; a próxima execução tenta de novo.
 
-Configuração obrigatória:
+**Limitações:**
 
-1. Na API (Render/VM), defina `JOB_SECRET` com um valor aleatório longo (por exemplo, `openssl rand -hex 32`).
-2. No GitHub (*Settings → Secrets and variables → Actions*), crie os secrets `JOB_SECRET` (mesmo valor) e `API_BASE_URL` (URL da API com o prefixo `/api/v1`).
-3. O agendamento só roda a partir da branch padrão (`main`), e o GitHub desativa workflows agendados após 60 dias sem atividade no repositório. Monitore as execuções e reative o workflow quando necessário.
+- O job só dispara enquanto a API está no ar. Se a instância estiver parada ou hibernada no horário (por exemplo, no plano gratuito do Render), a execução daquele dia é perdida. A execução seguinte processa todas as contas vencidas: a exclusão atrasa, nunca é antecipada. Por isso o serviço da API deve ficar sempre ligado.
+- Cada processo da API tem o seu agendador. Use um único worker e uma única réplica, o que já é exigido pelas importações em memória. Execuções duplicadas não causam dano, porque a rotina é idempotente e roda sob bloqueio, mas fazem trabalho repetido.
 
-O `curl` do workflow faz novas tentativas por alguns minutos para cobrir o *cold start* do Render. Execuções perdidas atrasam a exclusão, nunca a antecipam: a exclusão revalida o prazo sob bloqueio.
-
-Como alternativa, a mesma rotina pode ser executada pela linha de comando, com o mesmo `DATABASE_URL` e o mesmo volume de armazenamento da API:
+**Disparo manual.** Para rodar fora do horário, use `POST /api/v1/internal/jobs/retention` com o header `X-Job-Secret: <JOB_SECRET>`. A resposta traz `purged`, `skipped` e `ran_at`. O endpoint não aparece no Swagger e responde 503 enquanto `JOB_SECRET` não estiver configurado. Também é possível rodar pela linha de comando, com o mesmo `DATABASE_URL` e o mesmo volume da API:
 
 ```sh
 .venv/bin/python -m src.api.services.retention_service
@@ -104,6 +102,6 @@ Restaure em um ambiente isolado, com o envio de e-mails e os workers de importa�
 
 ## Validação
 
-Execute `python -m unittest discover -s tests -v`, `npm run build --prefix frontend` e `npm run lint --prefix frontend`. O lint geral do repositório atualmente apresenta erros preexistentes em AuthContext (exportações de hooks e componentes no mesmo arquivo), ImportPage (estado em um efeito), MapPage e shared/api/errors (uso explícito de any). O lint direcionado ao novo código de perfil, serviços e roteamento não apresenta erros. A suíte de contas cobre substituição de credenciais, sessões antigas, expiração, reutilização, tentativas, titularidade e isolamento de operações dos desafios, limites de requisições e falhas de envio; confirmações simultâneas; exclusão em cascata dos dados da conta e exclusões de campos na exportação; limites de prazo e idempotência da limpeza; carência de sete dias, reativação pelo titular (login e link) e pelo administrador, rejeição após o prazo, purge por status, autenticação do job, migração do modelo anterior, cancelamento e reutilização de tokens, bloqueio de acesso a contas pendentes, reversão da transação em caso de falha de SMTP e finalização.
+Execute `python -m unittest discover -s tests -v`, `npm run build --prefix frontend` e `npm run lint --prefix frontend`. O lint geral do repositório atualmente apresenta erros preexistentes em AuthContext (exportações de hooks e componentes no mesmo arquivo), ImportPage (estado em um efeito), MapPage e shared/api/errors (uso explícito de any). O lint direcionado ao novo código de perfil, serviços e roteamento não apresenta erros. A suíte de contas cobre substituição de credenciais, sessões antigas, expiração, reutilização, tentativas, titularidade e isolamento de operações dos desafios, limites de requisições e falhas de envio; confirmações simultâneas; exclusão em cascata dos dados da conta e exclusões de campos na exportação; limites de prazo e idempotência da limpeza; carência de sete dias, reativação pelo titular (login e link) e pelo administrador, rejeição após o prazo, purge por status, agendamento do job (cron, fuso, flag e falhas), autenticação do disparo manual, migração do modelo anterior, cancelamento e reutilização de tokens, bloqueio de acesso a contas pendentes, reversão da transação em caso de falha de SMTP e finalização.
 
-Antes da publicação, use um serviço SMTP de teste e duas sessões separadas de navegador: altere o e-mail e a senha, verifique se a sessão antiga é rejeitada, teste a recuperação, baixe o JSON, agende a exclusão e reative pelo login, agende de novo e cancele pelo link do e-mail, agende pelo painel de administração e reative por lá. Depois, agende novamente e valide a finalização pelo endpoint do job no prazo final em um banco de testes isolado; nunca altere datas e horários de produção para simular a expiração. Confirme que uma falha de SMTP exibe um erro em vez de informar que o PIN foi enviado. Teste separadamente o ciclo de vida do CAPTCHA com a SEFAZ e repita os testes de concorrência no PostgreSQL. A implementação não configura automaticamente os secrets do job, o SMTP ou os backups de produção.
+Antes da publicação, use um serviço SMTP de teste e duas sessões separadas de navegador: altere o e-mail e a senha, verifique se a sessão antiga é rejeitada, teste a recuperação, baixe o JSON, agende a exclusão e reative pelo login, agende de novo e cancele pelo link do e-mail, agende pelo painel de administração e reative por lá. Depois, agende novamente e valide a finalização pelo disparo manual do job no prazo final em um banco de testes isolado; nunca altere datas e horários de produção para simular a expiração. Confirme que uma falha de SMTP exibe um erro em vez de informar que o PIN foi enviado. Teste separadamente o ciclo de vida do CAPTCHA com a SEFAZ e repita os testes de concorrência no PostgreSQL. A implementação não configura automaticamente o SMTP, o `JOB_SECRET` do disparo manual ou os backups de produção.

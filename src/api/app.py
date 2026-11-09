@@ -171,14 +171,18 @@ def _ensure_schema_updates() -> None:
 def on_startup() -> None:
     Base.metadata.create_all(bind=engine)
     _ensure_schema_updates()
-    # So libera captchas/navegadores orfaos; a exclusao de contas roda no job diario.
+    # So libera captchas/navegadores orfaos; a exclusao de contas roda no job diario (APScheduler).
     from src.api.services.retention_service import cleanup_import_sessions
     cleanup_import_sessions()
     driver_pool.start()
+    from src.api.scheduler import start_scheduler
+    start_scheduler()
 
 
 @app.on_event("shutdown")
 def on_shutdown() -> None:
+    from src.api.scheduler import shutdown_scheduler
+    shutdown_scheduler()
     driver_pool.shutdown()
 
 

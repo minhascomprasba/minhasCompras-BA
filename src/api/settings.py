@@ -60,5 +60,11 @@ ACCOUNT_DELETION_AUDIT_DAYS = max(1, _get_env_int("ACCOUNT_DELETION_AUDIT_DAYS",
 # Carencia entre o pedido de exclusao e a exclusao definitiva (reativacao possivel ate o prazo).
 ACCOUNT_DELETION_GRACE_DAYS = max(1, _get_env_int("ACCOUNT_DELETION_GRACE_DAYS", 7))
 ACCOUNT_REACTIVATION_RATE_LIMIT_PER_MIN = _get_env_int("ACCOUNT_REACTIVATION_RATE_LIMIT_PER_MIN", 5)
-# Segredo do header X-Job-Secret exigido pelos endpoints /internal/jobs/*. Vazio desativa os endpoints.
+# Job diario de retencao (APScheduler, dentro do processo da API).
+RETENTION_JOB_ENABLED = os.getenv("RETENTION_JOB_ENABLED", "true").strip().lower() == "true"
+# Formato crontab "min hora dia mes dia-da-semana". Para dia da semana use nomes (mon, tue...):
+# no APScheduler 3 o numero 0 e segunda-feira, diferente do cron padrao.
+RETENTION_JOB_CRON = os.getenv("RETENTION_JOB_CRON", "0 3 * * *").strip()
+RETENTION_JOB_TIMEZONE = os.getenv("RETENTION_JOB_TIMEZONE", "America/Bahia").strip()
+# Segredo do header X-Job-Secret para disparo manual em /internal/jobs/*. Vazio desativa os endpoints.
 JOB_SECRET = os.getenv("JOB_SECRET", "").strip()

@@ -1,4 +1,4 @@
-"""Endpoints de jobs agendados, chamados pelo GitHub Actions (.github/workflows/retention-job.yml)."""
+"""Disparo manual dos jobs (o agendamento diario roda no APScheduler, ver src/api/scheduler.py)."""
 import hmac
 
 from fastapi import APIRouter, Header
