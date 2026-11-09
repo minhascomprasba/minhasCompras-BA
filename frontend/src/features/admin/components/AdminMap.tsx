@@ -1,3 +1,8 @@
+import { renderToStaticMarkup } from 'react-dom/server';
+import { MapPinIcon as MapMarker } from '@phosphor-icons/react';
+import './AdminMap.css';
+import { Badge } from '../../../components/ui/badge';
+import { Card } from '../../../components/ui/card';
 import { useEffect, useRef, useState } from 'react';
 import type { AlcanceGeografico, AlcancePonto } from '../types';
 import { MetricHead } from './MetricHead';
@@ -8,10 +13,15 @@ const TOOLTIP =
 // Centro aproximado do estado da Bahia (enquadramento inicial).
 const BAHIA_CENTER: [number, number] = [-12.5, -41.7];
 
-declare global {
-  interface Window {
-    L: any;
-  }
+interface MapMarker {
+  openPopup: () => void;
+}
+interface AdminLeafletMap {
+  remove: () => void;
+  invalidateSize: () => void;
+  removeLayer: (marker: MapMarker) => void;
+  setView: (center: [number, number], zoom: number) => void;
+  fitBounds: (bounds: unknown, options: { padding: [number, number]; maxZoom: number }) => void;
 }
 
 function escapeHtml(value: string): string {
@@ -30,8 +40,8 @@ const EMPTY_PONTOS: AlcancePonto[] = [];
 
 export function AdminMap({ alcance }: AdminMapProps) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<any>(null);
-  const markersRef = useRef<any[]>([]);
+  const mapRef = useRef<AdminLeafletMap | null>(null);
+  const markersRef = useRef<MapMarker[]>([]);
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState(false);
 
@@ -103,11 +113,7 @@ export function AdminMap({ alcance }: AdminMapProps) {
       return;
     }
 
-    const pinSvg = `
-      <svg width="28" height="36" viewBox="0 0 30 40" xmlns="http://www.w3.org/2000/svg">
-        <path d="M15 0C6.7 0 0 6.7 0 15c0 10.5 15 25 15 25s15-14.5 15-25C30 6.7 23.3 0 15 0z" fill="#17c85f"/>
-        <circle cx="15" cy="15" r="6" fill="#033876"/>
-      </svg>`;
+    const pinSvg = renderToStaticMarkup(<MapMarker width={28} height={36} weight="fill" color="#17c85f" aria-hidden="true" />);
     const pinIcon = L.divIcon({
       html: pinSvg,
       className: 'map-pin',
@@ -140,21 +146,21 @@ export function AdminMap({ alcance }: AdminMapProps) {
   }, [pontos, mapReady]);
 
   return (
-    <div className="card admin-chart-card">
+    <Card className="min-w-0 gap-4 px-4">
       <MetricHead title="Alcance Geográfico e Redes" tooltip={TOOLTIP} />
 
-      <div className="admin-map-body">
+      <div className="relative z-0 space-y-4">
         {mapError ? (
-          <div className="admin-map-empty">
+          <div className="flex min-h-64 items-center justify-center rounded-lg border border-border bg-background p-5 text-center text-sm text-destructive">
             Não foi possível carregar o mapa. Verifique a conexão e tente novamente.
           </div>
         ) : (
-          <div className="admin-map-canvas">
-            <div ref={mapContainerRef} className="admin-map-view" />
+          <div className="relative isolate min-h-64 overflow-hidden rounded-lg border border-border bg-background">
+            <div ref={mapContainerRef} role="region" aria-label="Distribuição geográfica das compras" className="h-70 w-full bg-background" />
             {pontos.length === 0 && (
-              <div className="admin-map-overlay">
-                <p>{alcance.nota}</p>
-                <p className="admin-map-placeholder-stats">
+              <div className="pointer-events-none absolute inset-0 z-[400] flex flex-col items-center justify-center gap-2 bg-background/80 p-5 text-center text-sm text-muted-foreground">
+                <div>{alcance.nota}</div>
+                <p className="m-0 text-sm text-muted-foreground">
                   Sem coordenadas disponíveis para o período
                 </p>
               </div>
@@ -162,24 +168,24 @@ export function AdminMap({ alcance }: AdminMapProps) {
           </div>
         )}
 
-        <div className="admin-map-summary">
-          <p>{alcance.nota}</p>
-          <p className="admin-map-placeholder-stats">
+        <div className="space-y-2 text-sm text-muted-foreground">
+          <div>{alcance.nota}</div>
+          <p className="m-0 text-sm text-muted-foreground">
             {alcance.totalCidades} municípios &bull; {alcance.redesMonitoradas} redes
             registradas
             {pontos.length > 0 ? ` · ${pontos.length} no mapa` : ''}
           </p>
           {alcance.redesLideres.length > 0 && (
-            <div className="admin-map-redes">
+            <div className="flex flex-wrap gap-2">
               {alcance.redesLideres.map((rede) => (
-                <span key={rede} className="admin-map-redes-chip">
+                <Badge key={rede} variant="secondary">
                   {rede}
-                </span>
+                </Badge>
               ))}
             </div>
           )}
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

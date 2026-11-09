@@ -44,7 +44,7 @@ export function useDeleteUsuario() {
   return useMutation<DeleteUsuarioResponse, AppError, { usuarioId: number }>({
     mutationFn: ({ usuarioId }) => adminService.deleteUsuario(usuarioId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'usuarios'] });
+      queryClient.invalidateQueries({ queryKey: ['admin'] });
     },
   });
 }

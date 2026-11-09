@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# shadcn shared utilities (the root ignores Python lib directories).
+!src/lib/
+!src/lib/**

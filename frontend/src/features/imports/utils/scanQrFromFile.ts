@@ -1,27 +1,56 @@
-import { Html5Qrcode } from 'html5-qrcode';
+import { decodeQrFromImage, type QrImageSource } from './decodeQr';
 
-const FILE_SCANNER_ELEMENT_ID = 'qr-file-scanner-anchor';
+type LoadedImage = {
+  source: QrImageSource;
+  width: number;
+  height: number;
+  close: () => void;
+};
 
-let fileScanner: Html5Qrcode | null = null;
-
-function getFileScanner(): Html5Qrcode {
-  if (!fileScanner) {
-    let anchor = document.getElementById(FILE_SCANNER_ELEMENT_ID);
-    if (!anchor) {
-      anchor = document.createElement('div');
-      anchor.id = FILE_SCANNER_ELEMENT_ID;
-      anchor.style.display = 'none';
-      document.body.appendChild(anchor);
+async function loadImage(file: File): Promise<LoadedImage> {
+  if (typeof createImageBitmap === 'function') {
+    try {
+      const bitmap = await createImageBitmap(file);
+      return {
+        source: bitmap,
+        width: bitmap.width,
+        height: bitmap.height,
+        close: () => bitmap.close(),
+      };
+    } catch {
+      // alguns formatos só abrem via elemento de imagem
     }
-    fileScanner = new Html5Qrcode(FILE_SCANNER_ELEMENT_ID, false);
   }
-  return fileScanner;
+
+  const url = URL.createObjectURL(file);
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const element = new Image();
+      element.onload = () => resolve(element);
+      element.onerror = () => reject(new Error('Não foi possível abrir a imagem.'));
+      element.src = url;
+    });
+    return {
+      source: image,
+      width: image.naturalWidth,
+      height: image.naturalHeight,
+      close: () => URL.revokeObjectURL(url),
+    };
+  } catch (error) {
+    URL.revokeObjectURL(url);
+    throw error;
+  }
 }
 
 export async function scanQrCodeFromFile(file: File): Promise<string> {
-  const scanner = getFileScanner();
-  if (scanner.isScanning) {
-    await scanner.stop();
+  const image = await loadImage(file);
+  try {
+    const text = await decodeQrFromImage(image.source, image.width, image.height);
+    if (!text) {
+      throw new Error('QR Code não encontrado');
+    }
+    return text;
+  } finally {
+    image.close();
   }
-  return scanner.scanFile(file, false);
 }

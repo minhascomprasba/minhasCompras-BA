@@ -1,100 +1,84 @@
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import type { GastoPorCategoria } from '../types';
+import { formatCurrency } from '../format';
 
 interface CategoryDonutChartProps {
   data: GastoPorCategoria[];
 }
 
 const CATEGORY_COLORS: { [key: string]: string } = {
-  'Mercado': '#17c85f',      // Brand green
-  'Alimentação': '#3a8fe0',  // Brand blue
-  'Combustível': '#f59e0b',  // Amber
-  'Farmácia': '#ec4899',     // Pink
-  'Vestuário': '#14b8a6',    // Teal
-  'Outros': '#64748b',       // Slate
+  'Mercado': 'var(--primary)',      // Brand green
+  'Alimentação': 'var(--chart-2)',  // Brand blue
+  'Combustível': 'var(--chart-3)',  // Amber
+  'Farmácia': 'var(--chart-4)',     // Pink
+  'Vestuário': 'var(--chart-5)',    // Teal
+  'Outros': 'var(--muted-foreground)',       // Slate
 };
 
-const DEFAULT_COLOR = '#94a3b8';
+const DEFAULT_COLOR = 'var(--muted-foreground)';
 
 export function CategoryDonutChart({ data }: CategoryDonutChartProps) {
   // Calcular total para exibir no centro do gráfico
   const total = data.reduce((acc, curr) => acc + curr.valor, 0);
 
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
-  };
-
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const item = payload[0].payload;
-      return (
-        <div className="chart-tooltip">
-          <p className="chart-tooltip-title">
-            {item.categoria}
-          </p>
-          <p className="chart-tooltip-value" style={{ color: CATEGORY_COLORS[item.categoria] || DEFAULT_COLOR }}>
-            {formatCurrency(item.valor)} ({item.percentual}%)
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
+  if (total === 0) {
+    return <div className="flex min-h-64 items-center justify-center text-sm text-muted-foreground">Nenhum gasto por categoria neste mês.</div>;
+  }
 
   return (
-    <div className="donut-chart-layout-wrapper">
+    <div data-scope="category-donut" className="flex min-h-64 w-full flex-col items-center gap-4 sm:flex-row">
       {/* Container do Gráfico */}
-      <div className="donut-chart-svg-container">
+      <div className="relative h-56 w-48 shrink-0">
         <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
+          <PieChart accessibilityLayer>
             <Pie
               data={data}
               cx="50%"
               cy="50%"
-              innerRadius={55}
-              outerRadius={75}
+              innerRadius={60}
+              outerRadius={85}
               paddingAngle={3}
               dataKey="valor"
               nameKey="categoria"
             >
               {data.map((entry, index) => (
-                <Cell 
-                   key={`cell-${index}`} 
-                   fill={CATEGORY_COLORS[entry.categoria] || DEFAULT_COLOR} 
-                   stroke="rgba(11, 15, 25, 0.5)"
+                <Cell
+                   key={`cell-${index}`}
+                   fill={CATEGORY_COLORS[entry.categoria] || DEFAULT_COLOR}
+                   stroke="var(--card)"
                    strokeWidth={2}
                 />
               ))}
             </Pie>
-            <Tooltip content={<CustomTooltip />} wrapperStyle={{ zIndex: 10 }} />
+            <Tooltip contentStyle={{ background: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', color: 'var(--popover-foreground)' }} itemStyle={{ color: 'var(--popover-foreground)' }} formatter={(value, name) => [formatCurrency(Number(value)), name]} wrapperStyle={{ zIndex: 10 }} />
           </PieChart>
         </ResponsiveContainer>
-        
+
         {/* Label Central */}
-        <div className="donut-chart-center-label">
-          <span className="label-title">
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-xs text-muted-foreground">
             Total Gasto
           </span>
-          <span className="label-value">
+          <span className="text-sm font-semibold tabular-nums">
             {formatCurrency(total)}
           </span>
         </div>
       </div>
 
       {/* Legenda Customizada */}
-      <div className="donut-legend-container">
+      <div className="flex w-full min-w-0 flex-col gap-3">
         {data.map((item, index) => (
-          <div key={index} className="donut-legend-item">
-            <div className="donut-legend-label">
-              <span 
-                className="donut-legend-color" 
+          <div key={index} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+            <div className="flex items-center gap-2">
+              <span
+                className="inline-block size-2.5 shrink-0 rounded-sm"
                 style={{ backgroundColor: CATEGORY_COLORS[item.categoria] || DEFAULT_COLOR }}
               />
               <span>{item.categoria}</span>
             </div>
-            <div className="donut-legend-values">
+            <div className="font-medium tabular-nums">
               <span>{formatCurrency(item.valor)}</span>
-              <span className="donut-legend-percentage">{item.percentual}%</span>
+              <span className="ml-2 text-xs font-normal text-muted-foreground">{item.percentual}%</span>
             </div>
           </div>
         ))}

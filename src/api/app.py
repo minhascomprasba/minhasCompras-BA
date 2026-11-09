@@ -10,6 +10,7 @@ from src.api.errors import ApiError
 from src.api.routers import router
 from src.api.admin import admin_router
 from src.api.auth import auth_router
+from src.api.account import account_router
 from src.api.schemas import ErrorResponse
 from src.api.services.import_service import driver_pool
 from src.database.connection import engine
@@ -26,6 +27,7 @@ app.add_middleware(
 )
 app.include_router(router)
 app.include_router(auth_router, prefix=settings.API_PREFIX)
+app.include_router(account_router, prefix=settings.API_PREFIX)
 app.include_router(admin_router, prefix=settings.API_PREFIX)
 
 
@@ -93,6 +95,11 @@ def _ensure_schema_updates() -> None:
 
         if inspector.has_table("usuarios"):
             usuario_columns = {column["name"] for column in inspector.get_columns("usuarios")}
+            connection.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_usuarios_email_normalized ON usuarios (lower(email))"))
+            if "deletion_scheduled_at" not in usuario_columns:
+                connection.execute(text(f"ALTER TABLE usuarios ADD COLUMN deletion_scheduled_at {column_type}"))
+            if "credential_version" not in usuario_columns:
+                connection.execute(text("ALTER TABLE usuarios ADD COLUMN credential_version INTEGER NOT NULL DEFAULT 0"))
             if "role" not in usuario_columns:
                 connection.execute(
                     text(
@@ -118,6 +125,8 @@ def _ensure_schema_updates() -> None:
 def on_startup() -> None:
     Base.metadata.create_all(bind=engine)
     _ensure_schema_updates()
+    from src.api.services.retention_service import cleanup
+    cleanup()
     driver_pool.start()
 
 
@@ -134,11 +143,11 @@ def handle_api_error(_: Request, exc: ApiError) -> JSONResponse:
 
 @app.exception_handler(RequestValidationError)
 def handle_request_validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:
-    payload = ErrorResponse(code="INVALID_REQUEST", message="Payload ou parametros invalidos.", details={"errors": str(exc.errors())})
+    payload = ErrorResponse(code="INVALID_REQUEST", message="Payload ou parametros invalidos.", details={"fields": ", ".join(".".join(map(str, e["loc"])) for e in exc.errors())})
     return JSONResponse(status_code=400, content=payload.model_dump())
 
 
 @app.exception_handler(Exception)
 def handle_generic_error(_: Request, exc: Exception) -> JSONResponse:
-    payload = ErrorResponse(code="INTERNAL_ERROR", message="Erro interno.", details={"error": str(exc)})
+    payload = ErrorResponse(code="INTERNAL_ERROR", message="Erro interno.", details={})
     return JSONResponse(status_code=500, content=payload.model_dump())

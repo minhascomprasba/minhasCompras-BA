@@ -1,0 +1,11 @@
+.status-icon {
+  font-size: 5rem;
+  margin-bottom: 1rem;
+  line-height: 1;
+}
+
+@media (max-width: 480px) {
+  .status-icon {
+    font-size: 4rem;
+  }
+}

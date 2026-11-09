@@ -2,6 +2,8 @@ import re
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Request
+from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from src.api import settings
@@ -127,14 +129,19 @@ def _issue_verification_code(db: Session, email: str, password_hash: str, backgr
     db.add(verification)
     db.commit()
 
-    if background_tasks:
-        background_tasks.add_task(send_email_verification_code, email, raw_code)
-    else:
+    try:
         send_email_verification_code(email, raw_code)
+    except Exception as exc:
+        verification.used_at = now
+        db.commit()
+        raise ApiError("EMAIL_DELIVERY_FAILED", "Não foi possível enviar o código. Tente novamente.", 503) from exc
 
 
 @auth_router.post("/register", response_model=MessageResponse, status_code=202)
 def register(payload: UserRegisterRequest, request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    payload.email = payload.email.strip().lower()
+    from src.api.services.account_service import check_email
+    check_email(db, payload.email, -1)
     _validate_password_rules(payload.password)
     _validate_password_strength(payload.password)
 
@@ -146,7 +153,7 @@ def register(payload: UserRegisterRequest, request: Request, background_tasks: B
             details={"ip": client_ip},
         )
 
-    existing_user = db.query(Usuario).filter(Usuario.email == payload.email).first()
+    existing_user = db.query(Usuario).filter(func.lower(Usuario.email) == payload.email.strip().lower()).first()
     if existing_user:
         raise ApiError("EMAIL_IN_USE", "Este e-mail já está em uso.", status_code=400)
 
@@ -166,9 +173,10 @@ def register(payload: UserRegisterRequest, request: Request, background_tasks: B
 
 @auth_router.post("/verify-email", response_model=TokenResponse, status_code=201)
 def verify_email(payload: VerifyEmailRequest, db: Session = Depends(get_db)):
+    payload.email = payload.email.strip().lower()
     now = datetime.utcnow()
 
-    existing_user = db.query(Usuario).filter(Usuario.email == payload.email).first()
+    existing_user = db.query(Usuario).filter(func.lower(Usuario.email) == payload.email.strip().lower()).first()
     if existing_user:
         raise ApiError("EMAIL_IN_USE", "Este e-mail já está em uso.", status_code=400)
 
@@ -219,10 +227,14 @@ def verify_email(payload: VerifyEmailRequest, db: Session = Depends(get_db)):
         EmailVerificationCode.id != verification.id,
         EmailVerificationCode.used_at.is_(None),
     ).update({"used_at": now})
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise ApiError("EMAIL_IN_USE", "Este e-mail já está em uso.", 409) from exc
     db.refresh(new_user)
 
-    token = create_access_token(new_user.id)
+    token = create_access_token(new_user.id, new_user.credential_version)
     return TokenResponse(
         access_token=token,
         user=UserResponse(id=new_user.id, email=new_user.email, role=new_user.role),
@@ -231,6 +243,7 @@ def verify_email(payload: VerifyEmailRequest, db: Session = Depends(get_db)):
 
 @auth_router.post("/resend-code", response_model=MessageResponse)
 def resend_code(payload: ResendCodeRequest, request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    payload.email = payload.email.strip().lower()
     client_ip = _get_client_ip(request)
     if not email_verification_rate_limiter.allow(client_ip):
         raise RateLimitError(
@@ -239,7 +252,7 @@ def resend_code(payload: ResendCodeRequest, request: Request, background_tasks: 
             details={"ip": client_ip},
         )
 
-    existing_user = db.query(Usuario).filter(Usuario.email == payload.email).first()
+    existing_user = db.query(Usuario).filter(func.lower(Usuario.email) == payload.email.strip().lower()).first()
     if existing_user:
         raise ApiError("EMAIL_IN_USE", "Este e-mail já está em uso.", status_code=400)
 
@@ -262,7 +275,7 @@ def resend_code(payload: ResendCodeRequest, request: Request, background_tasks: 
 def login(payload: UserLoginRequest, db: Session = Depends(get_db)):
     _validate_password_rules(payload.password)
 
-    user = db.query(Usuario).filter(Usuario.email == payload.email).first()
+    user = db.query(Usuario).filter(func.lower(Usuario.email) == payload.email.strip().lower()).first()
     if not user:
         raise ApiError("INVALID_CREDENTIALS", "E-mail ou senha inválidos.", status_code=401)
 
@@ -278,7 +291,10 @@ def login(payload: UserLoginRequest, db: Session = Depends(get_db)):
     if not is_valid_password:
         raise ApiError("INVALID_CREDENTIALS", "E-mail ou senha inválidos.", status_code=401)
 
-    token = create_access_token(user.id)
+    if user.deletion_scheduled_at is not None:
+        raise ApiError("ACCOUNT_PENDING_DELETION", "Sua conta tem exclusão agendada. Use o link enviado por e-mail para cancelar em até 7 dias.", 409,
+            {"scheduled_at": user.deletion_scheduled_at.isoformat()})
+    token = create_access_token(user.id, user.credential_version)
     return TokenResponse(
         access_token=token,
         user=UserResponse(id=user.id, email=user.email, role=user.role),
@@ -308,8 +324,14 @@ def forgot_password(
             details={"ip": client_ip},
         )
 
-    user = db.query(Usuario).filter(Usuario.email == payload.email).first()
+    user = db.query(Usuario).filter(func.lower(Usuario.email) == payload.email.strip().lower()).first()
     if user:
+        from src.api.services.account_service import lock_user
+        user = lock_user(db, user.id, allow_pending=True)
+        if user.deletion_scheduled_at is not None:
+            return MessageResponse(message=FORGOT_PASSWORD_SUCCESS_MESSAGE)
+        if user.email.lower() != payload.email.strip().lower():
+            return MessageResponse(message=FORGOT_PASSWORD_SUCCESS_MESSAGE)
         now = datetime.utcnow()
         db.query(PasswordResetToken).filter(
             PasswordResetToken.usuario_id == user.id,
@@ -327,7 +349,11 @@ def forgot_password(
         db.commit()
 
         reset_url = f"{settings.FRONTEND_URL}/redefinir-senha?token={raw_token}"
-        background_tasks.add_task(send_password_reset_email, user.email, reset_url)
+        try:
+            send_password_reset_email(user.email, reset_url)
+        except Exception:
+            import logging
+            logging.getLogger(__name__).warning("Falha no envio de recuperação de senha.")
 
     return MessageResponse(message=FORGOT_PASSWORD_SUCCESS_MESSAGE)
 
@@ -335,6 +361,7 @@ def forgot_password(
 @auth_router.post("/reset-password", response_model=MessageResponse)
 def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db)):
     _validate_password_rules(payload.password)
+    _validate_password_strength(payload.password)
 
     token_hash = hash_reset_token(payload.token)
     now = datetime.utcnow()
@@ -354,7 +381,11 @@ def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db))
             status_code=400,
         )
 
-    user = db.query(Usuario).filter(Usuario.id == reset_token.usuario_id).first()
+    from src.api.services.account_service import lock_user
+    user = lock_user(db, reset_token.usuario_id)
+    db.refresh(reset_token)
+    if reset_token.used_at or reset_token.expires_at <= now:
+        raise ApiError("INVALID_RESET_TOKEN", "Link de redefinição inválido ou expirado.", 400)
     if not user:
         raise ApiError("USER_NOT_FOUND", "Usuário não encontrado.", status_code=404)
 
@@ -367,6 +398,8 @@ def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db))
             {"field": "password", "reason": "hash_error"},
         ) from exc
 
+    from src.api.services.account_service import invalidate_credentials
+    invalidate_credentials(db, user)
     reset_token.used_at = now
     db.query(PasswordResetToken).filter(
         PasswordResetToken.usuario_id == user.id,

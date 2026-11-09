@@ -212,8 +212,13 @@ data/captchas/*
 !data/captchas/.gitkeep
 data/output/*
 
-#docs
-docs
+# Keep unrelated local documentation private; track privacy operations only.
+/docs/*
+!/docs/privacy-operations.md
+!/docs/operations/
+/docs/operations/*
+!/docs/operations/minhas-compras-cleanup.service
+!/docs/operations/minhas-compras-cleanup.timer
 
 # Project Status folder
 .status/

@@ -54,14 +54,6 @@ class ImportRuntimeStore:
         with self._lock:
             return self._sessions.get(import_id)
 
-    def pop_expired(self, now: datetime) -> list[tuple[str, RuntimeSession]]:
-        expired: list[tuple[str, RuntimeSession]] = []
-        with self._lock:
-            for import_id, session in list(self._sessions.items()):
-                if session.expires_at <= now:
-                    expired.append((import_id, session))
-                    del self._sessions[import_id]
-        return expired
 
 
 runtime_store = ImportRuntimeStore()
@@ -99,32 +91,8 @@ def _mask_access_key(access_key: str) -> str:
 
 
 def cleanup_expired_import_sessions() -> None:
-    now = _utcnow()
-    expired = runtime_store.pop_expired(now)
-    if not expired:
-        return
-
-    session = SessionLocal()
-    try:
-        for import_id, runtime in expired:
-            try:
-                runtime.driver.quit()
-            except Exception:
-                pass
-
-            record = session.get(NfceImport, import_id)
-            if record is None:
-                continue
-            if record.status in (ImportStatus.COMPLETED.value, ImportStatus.FAILED.value, ImportStatus.EXPIRED.value):
-                continue
-            record.status = ImportStatus.EXPIRED.value
-            record.error_message = "Captcha expirado. Inicie uma nova importacao."
-            record.updated_at = now
-            record.finished_at = now
-
-        session.commit()
-    finally:
-        session.close()
+    from src.api.services.retention_service import cleanup
+    cleanup()
 
 
 def _normalize_source(source: str | None) -> str:
@@ -161,6 +129,8 @@ def start_import(access_key: str, usuario_id: int, source: str | None = None) ->
 
     session = SessionLocal()
     try:
+        from src.api.services.account_service import lock_user
+        lock_user(session, usuario_id)
         record = NfceImport(
             id=import_id,
             usuario_id=usuario_id,
@@ -183,6 +153,7 @@ def start_import(access_key: str, usuario_id: int, source: str | None = None) ->
         runtime = runtime_store.pop(import_id)
         if runtime is not None:
             runtime.driver.quit()
+            runtime.captcha_path.unlink(missing_ok=True)
         raise
     finally:
         session.close()
@@ -272,6 +243,8 @@ def submit_captcha(import_id: str, captcha_code: str, usuario_id: int) -> dict[s
     session = SessionLocal()
     should_close_runtime = False
     try:
+        from src.api.services.account_service import lock_user
+        lock_user(session, usuario_id)
         record = session.get(NfceImport, import_id)
         if record is None or record.usuario_id != usuario_id:
             raise NotFoundError("IMPORT_NOT_FOUND", "Importacao nao encontrada.", {"import_id": import_id})
@@ -318,6 +291,7 @@ def submit_captcha(import_id: str, captcha_code: str, usuario_id: int) -> dict[s
             )
 
         record.attempts += 1
+        record.status = ImportStatus.PROCESSING.value
         session.commit()
 
         did_auth = submit_captcha_attempt(
@@ -342,6 +316,8 @@ def submit_captcha(import_id: str, captcha_code: str, usuario_id: int) -> dict[s
                 )
 
             refresh_captcha_image(runtime.driver, settings.PAGE_TIMEOUT_SECONDS, runtime.captcha_path)
+            record.status = ImportStatus.WAITING_CAPTCHA.value
+            session.commit()
             raise ConflictError(
                 code="INVALID_CAPTCHA",
                 message="Captcha invalido. Tente novamente.",
@@ -368,10 +344,6 @@ def submit_captcha(import_id: str, captcha_code: str, usuario_id: int) -> dict[s
         
         data_compra = data_compra or parsed_page.get("data_compra")
         meio_pagamento = meio_pagamento or parsed_page.get("meio_pagamento")
-        if data_compra is None or meio_pagamento is None:
-            debug_path = Path("data/debug/last_nfce_page.html")
-            debug_path.parent.mkdir(parents=True, exist_ok=True)
-            debug_path.write_text(runtime.driver.page_source, encoding="utf-8")
 
         items_count, nota_id = bulk_insert_produtos_with_nota_id(
             products,
@@ -415,13 +387,13 @@ def submit_captcha(import_id: str, captcha_code: str, usuario_id: int) -> dict[s
             message="Sessao de importacao expirada. Inicie uma nova importacao.",
             details={"import_id": import_id},
         ) from exc
-    except Exception as exc:
+    except Exception:
         if session.is_active:
             record = session.get(NfceImport, import_id)
             if record is not None:
                 failure_time = _utcnow()
                 record.status = ImportStatus.FAILED.value
-                record.error_message = str(exc)
+                record.error_message = "Falha no processamento da importação."
                 record.updated_at = failure_time
                 record.finished_at = failure_time
                 session.commit()
@@ -430,12 +402,7 @@ def submit_captcha(import_id: str, captcha_code: str, usuario_id: int) -> dict[s
     finally:
         session.close()
         if should_close_runtime:
-            runtime_to_close = runtime_store.pop(import_id)
-            if runtime_to_close is not None:
-                try:
-                    runtime_to_close.driver.quit()
-                except Exception:
-                    pass
+            release_import_resources(import_id, (Path("data/captchas") / f"{import_id}.png").as_posix())
 
 def list_imports(page: int, page_size: int, status: str | None, usuario_id: int) -> dict[str, object]:
     cleanup_expired_import_sessions()
@@ -678,3 +645,18 @@ def list_items(nota_id: int, page: int, page_size: int, usuario_id: int) -> dict
         return {"data": data, "page": page, "page_size": page_size, "total": total}
     finally:
         session.close()
+
+
+def release_import_resources(import_id: str, image_path: str | None = None) -> None:
+    runtime = runtime_store.pop(import_id)
+    if runtime:
+        try:
+            runtime.driver.quit()
+        except Exception:
+            pass
+        runtime.captcha_path.unlink(missing_ok=True)
+    if image_path:
+        path = Path(image_path)
+        root = Path("data/captchas").resolve()
+        if path.resolve().is_relative_to(root):
+            path.unlink(missing_ok=True)

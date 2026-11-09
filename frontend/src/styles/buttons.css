@@ -1,0 +1,73 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  text-decoration: none;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+  color: white;
+  box-shadow: 0 4px 14px 0 rgba(23, 200, 95, 0.39);
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(23, 200, 95, 0.4);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--bg-card-hover);
+  border-color: var(--border-light);
+}
+
+.btn-neon {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 15px var(--primary-glow);
+  transition: var(--transition);
+  animation: pulseNeon 3s infinite;
+}
+
+.btn-neon:hover {
+  box-shadow: 0 0 25px rgba(23, 200, 95, 0.6);
+  transform: translateY(-2px);
+}
+
+@keyframes pulseNeon {
+  0%, 100% {
+    box-shadow: 0 0 12px var(--primary-glow);
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(23, 200, 95, 0.5);
+  }
+}
+
+.btn-full { width: 100%; }
+
+@media (max-width: 480px) {
+  .btn {
+    font-size: 0.92rem;
+  }
+}

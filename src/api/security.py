@@ -35,9 +35,9 @@ def generate_verification_code() -> tuple[str, str]:
 def hash_verification_code(raw_code: str) -> str:
     return hashlib.sha256(raw_code.encode()).hexdigest()
 
-def create_access_token(subject: str | Any) -> str:
+def create_access_token(subject: str | Any, credential_version: int = 0) -> str:
     expire = datetime.utcnow() + timedelta(hours=settings.JWT_EXPIRATION_HOURS)
-    to_encode = {"exp": expire, "sub": str(subject)}
+    to_encode = {"exp": expire, "sub": str(subject), "cv": credential_version}
     encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
     return encoded_jwt
 
@@ -52,7 +52,12 @@ def get_current_user_id(request: Request) -> int:
         user_id_str = payload.get("sub")
         if user_id_str is None:
             raise ApiError(code="UNAUTHORIZED", message="Token inválido.", status_code=401)
-        return int(user_id_str)
+        user_id = int(user_id_str)
+        with SessionLocal() as session:
+            user = session.get(Usuario, user_id)
+            if user is None or user.deletion_scheduled_at is not None or payload.get("cv", 0) != user.credential_version:
+                raise ApiError("UNAUTHORIZED", "Sessão revogada. Entre novamente.", 401)
+        return user_id
     except jwt.ExpiredSignatureError:
         raise ApiError(code="UNAUTHORIZED", message="Token expirado.", status_code=401)
     except (jwt.PyJWTError, ValueError):

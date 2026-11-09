@@ -1,0 +1,9 @@
+[Unit]
+Description=Minhas Compras privacy retention cleanup
+
+[Service]
+Type=oneshot
+User=minhas-compras
+WorkingDirectory=/srv/minhas-compras
+EnvironmentFile=/etc/minhas-compras.env
+ExecStart=/srv/minhas-compras/.venv/bin/python -m src.api.services.retention_service

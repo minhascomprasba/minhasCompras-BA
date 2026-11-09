@@ -1,0 +1,39 @@
+@scope ([data-scope="auth"]) {
+  .auth-card {
+    --card: rgba(17, 26, 43, 0.75);
+    --card-foreground: var(--text-primary);
+    --foreground: var(--text-primary);
+    --muted-foreground: var(--text-secondary);
+    --muted: var(--bg-card-hover);
+    --input: var(--border-color);
+    --border: var(--border-color);
+    --ring: var(--brand-green);
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  .auth-password-toggle,
+  .auth-password-toggle:hover,
+  .auth-password-toggle:active {
+    background: transparent;
+    color: var(--text-primary);
+    border: none;
+    transform: none;
+    translate: none;
+    transition: none;
+    animation: none;
+    cursor: pointer;
+  }
+
+  .auth-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(100deg, #17c85f, #3a8fe0);
+  }
+}
