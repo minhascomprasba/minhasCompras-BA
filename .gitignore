@@ -223,6 +223,5 @@ data/output/*
 # Project Status folder
 .status/
 
-# Chromedriver baixado automaticamente por utils/chromedriver.py (binario por plataforma)
-drivers/*
-!drivers/.gitkeep
+# Chromedriver da epoca do Selenium (pode ser apagado localmente)
+drivers/

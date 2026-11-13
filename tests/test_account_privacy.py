@@ -378,16 +378,16 @@ class AccountTests(unittest.TestCase):
     def test_import_creation_cannot_recreate_deleted_user_data(self):
         from unittest.mock import Mock
         from src.api.services import import_service
-        driver = Mock()
+        sefaz = Mock()
         def create_browser(**kwargs):
             kwargs['captcha_output_path'].parent.mkdir(parents=True, exist_ok=True)
             kwargs['captcha_output_path'].write_bytes(b'captcha')
             with self.sessions() as db:
                 self.purge(db, 1)
-            return driver
-        with patch.object(import_service, 'SessionLocal', self.sessions), patch.object(import_service, 'cleanup_expired_import_sessions'), patch.object(import_service.driver_pool, 'acquire', return_value=driver), patch.object(import_service, 'start_auth_session', side_effect=create_browser):
+            return sefaz
+        with patch.object(import_service, 'SessionLocal', self.sessions), patch.object(import_service, 'cleanup_expired_import_sessions'), patch.object(import_service, 'start_auth_session', side_effect=create_browser):
             self.assert_error('USER_NOT_FOUND', lambda: import_service.start_import('1' * 44, 1))
-        driver.quit.assert_called_once()
+        sefaz.close.assert_called_once()
         with self.sessions() as db:
             self.assertEqual([], db.scalars(select(NfceImport)).all())
 
