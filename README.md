@@ -6,10 +6,11 @@ produtos e estabelecimentos em um banco relacional e expõe indicadores de consu
 para o usuário final.
 
 O portal da SEFAZ-BA não oferece API pública para consulta de NFC-e e protege as
-consultas com captcha. Por isso o backend embarca um **robô de navegador
-(Selenium + Google Chrome)**: ele abre o portal, preenche a chave de acesso, devolve
-a imagem do captcha para o usuário resolver e, com a sessão autenticada, raspa o
-HTML da nota.
+consultas com captcha. Como o portal é ASP.NET WebForms (formulários com
+postback), o backend conversa com ele **por HTTP puro (`requests` + BeautifulSoup)**,
+sem navegador: abre o portal mantendo o cookie de sessão, baixa a imagem do captcha
+para o usuário resolver, reenvia o formulário com a chave e o código e raspa o HTML
+da nota.
 
 ---
 
@@ -39,7 +40,7 @@ HTML da nota.
 | Web framework          | **FastAPI** ≥ 0.111                                           | Roteamento, validação e geração do OpenAPI/Swagger     |
 | ORM                    | **SQLAlchemy 2.0** (declarativo tipado)                       | Modelos, queries e transações                          |
 | Banco de dados         | **PostgreSQL 16** (produção) · **SQLite** (fallback local)    | Persistência relacional                                |
-| Automação de navegador | **Selenium** ≥ 4.21 + **Google Chrome** + `webdriver-manager` | Autenticação no portal SEFAZ e captura do captcha      |
+| Cliente do portal      | **requests** ≥ 2.32 (sessão HTTP + postbacks ASP.NET)          | Autenticação no portal SEFAZ e download do captcha     |
 | Parsing HTML           | **BeautifulSoup 4** + **lxml**                                | Extração de produtos, emitente e data de emissão       |
 | E-mail                 | **smtplib** (stdlib) + provedor SMTP (ex.: Brevo)             | Código de confirmação e link de redefinição de senha   |
 | Dados auxiliares       | **pandas**, **Pillow**                                        | Export CSV opcional e manipulação da imagem do captcha |
@@ -64,7 +65,6 @@ flowchart LR
 
     subgraph app["Container da API"]
         API["FastAPI + Uvicorn<br/>porta 10000 · 1 worker"]
-        CHR["Google Chrome headless<br/>+ ChromeDriver"]
         FS["Filesystem efêmero<br/>data/captchas · data/debug · logs/"]
     end
 
@@ -78,8 +78,7 @@ flowchart LR
     SWG -->|"HTTPS"| NGX
     NGX -->|"HTTP 127.0.0.1:10000"| API
     API <-->|"SQL via SQLAlchemy"| PG
-    API -->|"controla via DevTools"| CHR
-    CHR -->|"HTTP + captcha"| SEF
+    API -->|"HTTPS · postbacks + captcha"| SEF
     API -->|"SMTP 587 STARTTLS"| SMTP
     API <-->|"PNG do captcha · HTML de debug"| FS
 ```
@@ -113,7 +112,7 @@ flowchart TD
         P2["phase2/navigation.py<br/>navega pelas abas Produtos e Emitente"]
         P3["phase3/parser.py<br/>ProductParser · EmpresaParser"]
         P4["phase4/db_loader.py<br/>persiste nota, itens e estabelecimento"]
-        BR["utils/browser.py — fábrica do ChromeDriver"]
+        BR["phase1/sefaz_client.py — sessão HTTP e postbacks"]
         LG["utils/logger.py — log por fase"]
     end
 
@@ -151,10 +150,10 @@ flowchart TD
 | Contratos             | `src/api/schemas.py`                    | ~30 modelos Pydantic que definem exatamente o corpo do OpenAPI                                                                                                         |
 | Erros                 | `src/api/errors.py`                     | `ApiError` e as especializações `ValidationError` (422), `NotFoundError` (404), `ConflictError` (409) e `RateLimitError` (429)                                         |
 | Configuração          | `src/api/settings.py`                   | Lê o `.env` uma única vez e expõe constantes tipadas com defaults                                                                                                      |
-| Runtime de importação | `src/api/services/import_service.py`    | Coração do sistema: valida a chave, mantém as sessões Selenium vivas, aplica o TTL do captcha, dispara as fases 2–4 e escreve o estado no banco                        |
+| Runtime de importação | `src/api/services/import_service.py`    | Coração do sistema: valida a chave, mantém as sessões HTTP com o portal vivas, aplica o TTL do captcha, dispara as fases 2–4 e escreve o estado no banco                        |
 | Indicadores           | `src/api/services/dashboard_service.py` | Agregações por mês, categorização por NCM, top-5 de produtos e agrupamento de itens sem GTIN                                                                           |
 | E-mail                | `src/api/services/email_service.py`     | Monta e envia as mensagens; sem SMTP configurado, registra código/link no log em vez de falhar                                                                         |
-| Navegador             | `utils/browser.py`                      | Constrói o Chrome com as flags de container (`--no-sandbox`, `--disable-dev-shm-usage`, `--headless=new`), respeitando `CHROME_BIN` e `CHROMEDRIVER_PATH`              |
+| Cliente SEFAZ         | `src/phase1/sefaz_client.py`            | `requests.Session` com cookies ASP.NET; simula cliques reenviando o formulário (`__VIEWSTATE`, `__EVENTVALIDATION`) e confia na raiz ICP-Brasil v10 do portal          |
 | Logs                  | `utils/logger.py`                       | Logger por fase, com saída em `logs/phaseN.log` e em stdout                                                                                                            |
 
 ### 2.3 Ciclo de vida de uma requisição
@@ -262,7 +261,7 @@ Arquivo: `src/api/services/import_service.py` (611 linhas — o componente mais
 sensível do sistema).
 
 O ponto central é o **`ImportRuntimeStore`**: um dicionário em memória, protegido
-por lock, que guarda para cada `import_id` o **`WebDriver` vivo**, o caminho do PNG
+por lock, que guarda para cada `import_id` a **`SefazSession` viva** (cookies + página atual), o caminho do PNG
 do captcha e o instante de expiração. Sem ele não haveria como continuar a mesma
 sessão do portal da SEFAZ entre duas requisições HTTP diferentes.
 
@@ -272,17 +271,17 @@ sequenceDiagram
     participant C as Cliente
     participant API as FastAPI
     participant RS as ImportRuntimeStore<br/>(memória)
-    participant CH as Chrome/Selenium
+    participant CH as SefazSession (HTTP)
     participant SF as Portal SEFAZ-BA
     participant DB as PostgreSQL
 
     C->>API: POST /imports/nfce {access_key}
     API->>API: limpa sessões expiradas · rate limit 10/min<br/>valida regex \d{44}
-    API->>CH: build_chrome_driver(headless)
-    CH->>SF: GET SEFAZ_URL
-    CH->>SF: preenche #txt_chave_acesso
-    CH->>CH: screenshot de #img_captcha →<br/>data/captchas/{import_id}.png
-    API->>RS: guarda driver + path + expires_at (TTL 300 s)
+    API->>CH: start_auth_session(access_key)
+    CH->>SF: GET SEFAZ_URL (cookie ASP.NET_SessionId)
+    CH->>SF: GET src de #img_captcha (JPEG)
+    CH->>CH: converte para PNG →<br/>data/captchas/{import_id}.png
+    API->>RS: guarda sessão + path + expires_at (TTL 300 s)
     API->>DB: INSERT nfce_imports (WAITING_CAPTCHA)
     API-->>C: 202 {import_id, captcha_image_url, expires_at}
 
@@ -292,10 +291,10 @@ sequenceDiagram
 
     C->>API: POST /imports/nfce/{id}/captcha {captcha_code}
     API->>DB: attempts += 1
-    API->>CH: preenche #txt_cod_antirobo e clica #btn_consulta_completa
-    CH->>SF: POST do formulário
+    API->>CH: chave + #txt_cod_antirobo + #btn_consulta_completa
+    CH->>SF: POST do formulário (postback)
     alt captcha recusado
-        API->>CH: novo screenshot do captcha
+        API->>CH: baixa nova imagem do captcha
         API-->>C: 409 INVALID_CAPTCHA (ou FAILED ao esgotar 5 tentativas)
     else autenticado
         API->>DB: status = PROCESSING
@@ -307,7 +306,7 @@ sequenceDiagram
         API->>DB: Fase 4 — get_or_create_estabelecimento (por CNPJ)
         API->>DB: Fase 4 — nota fiscal + itens agregados
         API->>DB: status = COMPLETED (nota_id, items_count)
-        API->>RS: remove a sessão e encerra o Chrome
+        API->>RS: remove a sessão e fecha a conexão HTTP
         API-->>C: 202 {import_id, status: COMPLETED}
     end
 
@@ -332,14 +331,14 @@ stateDiagram-v2
     WAITING_CAPTCHA --> EXPIRED: TTL de 300 s vencido<br/>(CAPTCHA_TTL_SECONDS)
     PROCESSING --> COMPLETED: nota e itens persistidos
     PROCESSING --> FAILED: erro de scraping ou de persistência
-    PROCESSING --> EXPIRED: WebDriverException<br/>(navegador encerrado)
+    PROCESSING --> EXPIRED: SefazError<br/>(falha de comunicação com o portal)
     COMPLETED --> [*]
     FAILED --> [*]
     EXPIRED --> [*]
 ```
 
 A limpeza (`cleanup_expired_import_sessions`) roda no início de **toda** operação de
-importação: encerra os Chromes vencidos e marca no banco os registros ainda abertos
+importação: descarta as sessões vencidas e marca no banco os registros ainda abertos
 como `EXPIRED`. Não há job agendado — a limpeza é oportunista.
 
 #### Regras de negócio da persistência (Fase 4)
@@ -481,19 +480,18 @@ mudança de DOM na SEFAZ seja corrigida em um único lugar.
 ```mermaid
 flowchart TD
     subgraph F1["Fase 1 — src/phase1/auth_flow.py · logs/phase1.log"]
-        A1["build_chrome_driver()"] --> A2["GET SEFAZ_URL"]
-        A2 --> A3["preenche #txt_chave_acesso"]
-        A3 --> A4["screenshot de #img_captcha<br/>→ data/captchas/{import_id}.png"]
+        A1["SefazSession()"] --> A2["GET SEFAZ_URL"]
+        A2 --> A4["GET de #img_captcha (JPEG → PNG)<br/>→ data/captchas/{import_id}.png"]
         A4 --> A5["usuário resolve o captcha"]
-        A5 --> A6["#txt_cod_antirobo + clique em #btn_consulta_completa"]
+        A5 --> A6["POST com #txt_chave_acesso + #txt_cod_antirobo<br/>+ #btn_consulta_completa"]
         A6 --> A7{"URL mudou ou<br/>campo da chave desapareceu?"}
     end
 
     subgraph F2["Fase 2 — src/phase2/navigation.py · logs/phase2.log"]
-        B1["clique em #btn_visualizar_abas"] --> B2["aguarda NFCEC_consulta_abas.aspx"]
+        B1["postback de #btn_visualizar_abas"] --> B2["página NFCEC_consulta_abas.aspx"]
         B2 --> B3["tenta extrair a data de emissão<br/>na página e nas abas de identificação"]
         B3 --> B4["clique em #btn_aba_produtos"]
-        B4 --> B5["wait_for_products_content<br/>(.table_produtos no DOM)"]
+        B4 --> B5["wait_for_products_content<br/>(.table_produtos no HTML)"]
         B5 --> B6["clique em #btn_aba_emitente"]
     end
 
@@ -526,7 +524,7 @@ flowchart TD
 | Constante                      | ID no DOM               | Uso                                             |
 | :----------------------------- | :---------------------- | :---------------------------------------------- |
 | `ACCESS_KEY_INPUT_ID`          | `txt_chave_acesso`      | Campo da chave de 44 dígitos                    |
-| `CAPTCHA_IMAGE_ID`             | `img_captcha`           | Imagem capturada por screenshot                 |
+| `CAPTCHA_IMAGE_ID`             | `img_captcha`           | Imagem baixada pelo `src` (mesma sessão)        |
 | `CAPTCHA_INPUT_ID`             | `txt_cod_antirobo`      | Campo do código do captcha                      |
 | `SUBMIT_BUTTON_ID`             | `btn_consulta_completa` | Botão de consulta                               |
 | `VISUALIZAR_ABAS_BUTTON_ID`    | `btn_visualizar_abas`   | Alterna para a visão em abas                    |
@@ -555,9 +553,9 @@ flowchart TD
 ### 4.3 Execução do fluxo em CLI
 
 `src/phase1/auth_flow.py` mantém a função `run_phase1_auth_flow()`, que roda o fluxo
-pelo terminal (lê `NFE_ACCESS_KEY` do `.env`, abre a imagem do captcha no visualizador
-padrão e pede o código via `input()`). É útil para depurar mudanças de DOM sem subir
-a API — **funciona apenas em ambiente com interface gráfica**.
+pelo terminal (lê `NFE_ACCESS_KEY` do `.env`, salva o captcha em
+`data/captchas/current_captcha.png` e pede o código via `input()`). É útil para
+depurar mudanças de DOM sem subir a API.
 
 ---
 
@@ -756,7 +754,7 @@ Prefixo comum: **`/api/v1`**. “Auth” = exige `Authorization: Bearer <token>`
 
 | Método | Rota                                      | Sucesso         | Observações                                                                                                         |
 | :----- | :---------------------------------------- | :-------------- | :------------------------------------------------------------------------------------------------------------------ |
-| POST   | `/imports/nfce`                           | 202             | Body `{"access_key":"<44 dígitos>"}`. Rate limit 10/min. Abre o Chrome e devolve `captcha_image_url` + `expires_at` |
+| POST   | `/imports/nfce`                           | 202             | Body `{"access_key":"<44 dígitos>"}`. Rate limit 10/min. Abre o portal e devolve `captcha_image_url` + `expires_at` |
 | GET    | `/imports/nfce/{import_id}/captcha-image` | 200 `image/png` | Só enquanto o status for `WAITING_CAPTCHA` e dentro do TTL                                                          |
 | POST   | `/imports/nfce/{import_id}/captcha`       | 202             | Body `{"captcha_code":"..."}`. Executa todo o scraping e a persistência                                             |
 | GET    | `/imports/nfce/{import_id}`               | 200             | Status, `nota_id`, `items_count` e `error_message`                                                                  |
@@ -794,7 +792,7 @@ Prefixo comum: **`/api/v1`**. “Auth” = exige `Authorization: Bearer <token>`
 | `USER_NOT_FOUND`                        | 404  | Usuário do token não existe mais                                                            |
 | `INVALID_IMPORT_STATUS`                 | 409  | Operação incompatível com o estado atual da importação                                      |
 | `CAPTCHA_EXPIRED`                       | 409  | TTL do captcha (`CAPTCHA_TTL_SECONDS`) vencido                                              |
-| `SESSION_EXPIRED`                       | 409  | Sessão Selenium não está mais em memória (reinício do processo, TTL ou navegador encerrado) |
+| `SESSION_EXPIRED`                       | 409  | Sessão do portal não está mais em memória (reinício do processo, TTL ou falha de rede)      |
 | `INVALID_CAPTCHA`                       | 409  | Portal recusou o código; uma nova imagem já foi gerada                                      |
 | `MAX_CAPTCHA_ATTEMPTS_REACHED`          | 409  | Excedeu `MAX_CAPTCHA_ATTEMPTS`                                                              |
 | `INVALID_PASSWORD`                      | 422  | Senha fora de 8–128 caracteres ou falha ao hashear/verificar                                |
@@ -868,7 +866,7 @@ flowchart TB
         direction TB
         NG["Nginx :80/:443<br/>+ Certbot (Let's Encrypt)"]
         subgraph dc["Docker Compose"]
-            C1["minhascompras_api<br/>FastAPI + Chrome · :10000"]
+            C1["minhascompras_api<br/>FastAPI · :10000"]
             C2["minhascompras_db<br/>postgres:16-alpine · :5432<br/>volume postgres_data"]
         end
         NG --> C1
@@ -877,7 +875,7 @@ flowchart TB
 
     subgraph cloud["Opção B — Nuvem gerenciada"]
         direction TB
-        RND["Render · Web Service (Docker)<br/>FastAPI + Chrome"]
+        RND["Render · Web Service (Docker)<br/>FastAPI"]
         NEON[("Neon · PostgreSQL serverless<br/>sslmode=require")]
         RND --> NEON
     end
@@ -899,7 +897,7 @@ flowchart TB
 
 | Componente | Serviço                                                                | Papel                                    | Observações operacionais                                                                      |
 | :--------- | :--------------------------------------------------------------------- | :--------------------------------------- | :-------------------------------------------------------------------------------------------- |
-| API        | VM própria (AWS EC2, DigitalOcean, GCE, VPS) **ou** Render Web Service | Executa o container com FastAPI + Chrome | Chrome consome bastante RAM; planos com menos de ~1 GB tendem a sofrer OOM durante o scraping |
+| API        | VM própria (AWS EC2, DigitalOcean, GCE, VPS) **ou** Render Web Service | Executa o container com FastAPI          | Sem navegador: cada importação aberta ocupa poucos KB; roda em VMs de 1 GB                    |
 | Banco      | Container `postgres:16-alpine` **ou** Neon (PostgreSQL serverless)     | Persistência                             | No Neon, use `?sslmode=require` na `DATABASE_URL`                                             |
 | Proxy/TLS  | Nginx + Certbot (só na VM)                                             | HTTPS e proxy para `127.0.0.1:10000`     | No Render, o TLS é gerenciado pela plataforma                                                 |
 | E-mail     | Brevo (`smtp-relay.brevo.com`) ou equivalente                          | Código de confirmação e reset de senha   | Remetente precisa estar verificado no provedor                                                |
@@ -908,22 +906,18 @@ flowchart TB
 
 ### 7.2 Imagem Docker
 
-O `Dockerfile` parte de `python:3.12-slim` e instala **Google Chrome estável** com
-todas as bibliotecas de sistema necessárias (`libnss3`, `libgtk-3-0`, `libgbm1`,
-`libasound2`, fontes etc.). É por isso que a imagem é grande — o navegador faz parte
-do runtime, não é um detalhe de desenvolvimento.
+O `Dockerfile` parte de `python:3.12-slim` e instala só `ca-certificates` e as
+dependências Python (todas com wheels). Não há navegador na imagem.
 
 ```dockerfile
-ENV CHROME_BIN=/usr/bin/google-chrome-stable \
-    HEADLESS=true \
-    PORT=10000
+ENV PORT=10000
 CMD ["sh", "-c", "uvicorn src.api.app:app --host 0.0.0.0 --port ${PORT:-10000}"]
 ```
 
 Pontos de atenção:
 
 - **Um único worker.** O comando não passa `--workers`; isso é intencional. As
-  sessões Selenium e os contadores de rate limit vivem na memória do processo —
+  sessões com o portal e os contadores de rate limit vivem na memória do processo —
   com dois workers, o `POST .../captcha` pode cair em um processo que não conhece
   aquele `import_id` (`409 SESSION_EXPIRED`).
 - **Filesystem efêmero.** `data/captchas/`, `data/debug/` e `logs/` são recriados a
@@ -967,18 +961,15 @@ marcadas como obrigatórias em produção.
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:5173` | Lista separada por vírgula das origens autorizadas                                |
 | `FRONTEND_URL`         | `http://localhost:5173` | Base do link de redefinição de senha (`{FRONTEND_URL}/redefinir-senha?token=...`) |
 
-### Scraping / Selenium
+### Scraping
 
 | Variável                    | Default                               | Descrição                                                                       |
 | :-------------------------- | :------------------------------------ | :------------------------------------------------------------------------------ |
 | `SEFAZ_URL`                 | URL de consulta por chave da SEFAZ-BA | Página inicial do fluxo                                                         |
-| `HEADLESS`                  | `true` (no `.env.example`, `false`)   | `true` em servidor; `false` no local para ver o navegador                       |
-| `PAGE_TIMEOUT_SECONDS`      | `20`                                  | Timeout dos `WebDriverWait`                                                     |
+| `PAGE_TIMEOUT_SECONDS`      | `20`                                  | Timeout de cada requisição HTTP ao portal                                       |
 | `MAX_CAPTCHA_ATTEMPTS`      | `5`                                   | Tentativas de captcha antes de `FAILED`                                         |
 | `CAPTCHA_TTL_SECONDS`       | `300`                                 | Tempo de vida da sessão de importação                                           |
 | `IMPORT_RATE_LIMIT_PER_MIN` | `10`                                  | Importações por IP por minuto                                                   |
-| `CHROME_BIN`                | —                                     | Binário do navegador (definido como `/usr/bin/google-chrome-stable` na imagem)  |
-| `CHROMEDRIVER_PATH`         | —                                     | ChromeDriver fixo; sem ele, usa o Selenium Manager e cai no `webdriver-manager` |
 | `NFE_ACCESS_KEY`            | —                                     | Usada **apenas** pelo fluxo em CLI (`run_phase1_auth_flow`)                     |
 
 ### E-mail (SMTP)
@@ -1022,7 +1013,7 @@ docker compose logs -f api
 
 API em `http://localhost:10000`, Swagger em `http://localhost:10000/docs`.
 
-### 9.2 Com ambiente virtual (permite ver o navegador)
+### 9.2 Com ambiente virtual
 
 ```bash
 python -m venv .venv
@@ -1030,7 +1021,7 @@ python -m venv .venv
 source .venv/bin/activate       # Linux/macOS
 
 pip install -r requirements.txt
-cp .env.example .env            # HEADLESS=false para acompanhar o Chrome
+cp .env.example .env
 
 # sem DATABASE_URL, o SQLite de desenvolvimento é usado
 mkdir -p data/output
@@ -1039,9 +1030,7 @@ uvicorn src.api.app:app --host 0.0.0.0 --port 10000 --reload
 # ou: python -m src.run_api
 ```
 
-Requisitos: Python 3.12+ e Google Chrome instalado (o ChromeDriver é resolvido
-automaticamente e persistido em `drivers/` na primeira importação, sendo baixado de
-novo quando o Chrome atualizar). O schema é criado no startup — não há passo de migration.
+Requisitos: Python 3.12+. O schema é criado no startup — não há passo de migration.
 
 > Não use `--workers > 1` nem múltiplas réplicas: o estado das importações é local
 > ao processo.
@@ -1128,12 +1117,12 @@ sudo docker compose logs -f api                 # acompanhar logs
 1. Crie um **Web Service** apontando para o repositório.
 2. Em _Language/Runtime_, escolha **Docker** (o Render usa o `Dockerfile` da raiz).
 3. Preencha as variáveis de ambiente da [seção 8](#8-variáveis-de-ambiente) —
-   `DATABASE_URL` (ex.: Neon), `JWT_SECRET`, `CORS_ALLOWED_ORIGINS`, `FRONTEND_URL`,
-   `HEADLESS=true` e o bloco `SMTP_*`.
+   `DATABASE_URL` (ex.: Neon), `JWT_SECRET`, `CORS_ALLOWED_ORIGINS`, `FRONTEND_URL`
+   e o bloco `SMTP_*`.
 4. O Render publica a URL (ex.: `https://nome-da-api.onrender.com`) e gerencia o TLS.
 
 Restrições a considerar: disco efêmero, _cold start_ em planos gratuitos (a primeira
-importação após a hibernação é lenta) e memória limitada frente ao consumo do Chrome.
+importação após a hibernação é lenta).
 
 ### 10.4 Runbook — mudança de URL
 
@@ -1176,11 +1165,10 @@ Use `/health` e `/ready` como _health check_ do orquestrador ou do monitor exter
 | `409 SESSION_EXPIRED` logo após iniciar | Processo reiniciou, TTL de 300 s venceu ou há mais de um worker/instância | Iniciar nova importação; garantir 1 worker e 1 réplica                                    |
 | `409 INVALID_CAPTCHA` recorrente        | Código digitado errado ou imagem antiga                                   | Recarregar `captcha-image` (uma nova é gerada a cada recusa)                              |
 | `504` no `POST .../captcha`             | Timeout do proxy/cliente antes do fim do scraping                         | Aumentar `proxy_read_timeout` (seção 10.2.2) e o timeout do cliente                       |
-| Chrome morre / `WebDriverException`     | Memória insuficiente ou `/dev/shm` pequeno                                | Subir o plano/RAM; as flags `--disable-dev-shm-usage` e `--no-sandbox` já estão aplicadas |
+| `SESSION_EXPIRED` durante o scraping    | Portal fora do ar, timeout ou erro TLS (`SefazError` no log)              | Ver o log; se for TLS, conferir se a raiz em `src/phase1/certs/` ainda é a do portal      |
 | Nenhum produto extraído                 | DOM do portal mudou                                                       | Comparar `data/debug/*.html` com `src/phase2/selectors.py` e `src/phase3/parser.py`       |
 | `data_compra` nula nas notas            | Cascata de extração da data falhou                                        | Inspecionar `data/debug/last_nfce_abas.html`; consultas continuam usando `created_at`     |
 | E-mail não chega                        | SMTP ausente/incorreto ou remetente não verificado                        | Conferir `SMTP_*`; sem SMTP, o código aparece como `WARNING` no log                       |
-| Captcha não é gerado no local           | `HEADLESS=false` em máquina sem interface gráfica                         | Definir `HEADLESS=true`                                                                   |
 | `500 INTERNAL_ERROR`                    | Exceção não tratada                                                       | Ler `details.error` na resposta e o traceback no log                                      |
 
 ---
@@ -1228,7 +1216,7 @@ Use `/health` e `/ready` como _health check_ do orquestrador ou do monitor exter
 
 | Limitação                                                                                   | Impacto                                                                                                                 | Encaminhamento sugerido                                                                  |
 | :------------------------------------------------------------------------------------------ | :---------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------- |
-| Estado das importações e rate limits em memória                                             | Impede múltiplos workers e escala horizontal; reinício derruba importações em andamento                                 | Externalizar em Redis, ou usar Selenium Grid / navegador remoto com sessão compartilhada |
+| Estado das importações e rate limits em memória                                             | Impede múltiplos workers e escala horizontal; reinício derruba importações em andamento                                 | Externalizar em Redis (cookies e página atual da `SefazSession` são serializáveis)       |
 | Scraping síncrono dentro do `POST .../captcha`                                              | Requisições longas e sensíveis a timeout de proxy                                                                       | Fila de tarefas (Celery/RQ/ARQ) com o cliente acompanhando por `GET /imports/nfce/{id}`  |
 | Sem migrations (Alembic)                                                                    | `create_all` não altera tabelas existentes; só `data_compra` e `sem_gtin` são corrigidas por `_ensure_schema_updates()` | Adotar Alembic e converter o helper na migration inicial                                 |
 | Sem testes automatizados                                                                    | Refatorações do parser e do fluxo de importação não têm rede de proteção                                                | `pytest` com HTMLs de `data/debug/` como fixtures para os parsers                        |
@@ -1246,7 +1234,7 @@ Use `/health` e `/ready` como _health check_ do orquestrador ou do monitor exter
 
 ```
 .
-├── Dockerfile                  # imagem Python 3.12 + Google Chrome
+├── Dockerfile                  # imagem Python 3.12 (sem navegador)
 ├── docker-compose.yml          # API + PostgreSQL 16
 ├── requirements.txt            # dependências de runtime
 ├── pyproject.toml              # metadados do projeto
@@ -1257,7 +1245,6 @@ Use `/health` e `/ready` como _health check_ do orquestrador ou do monitor exter
 │   └── output/                 # SQLite de desenvolvimento e CSVs
 ├── logs/                       # phase1..phase4.log (efêmero)
 ├── utils/
-│   ├── browser.py              # fábrica do ChromeDriver
 │   └── logger.py               # logger por fase
 └── src/
     ├── run_api.py              # entrypoint alternativo do Uvicorn

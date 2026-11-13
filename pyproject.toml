@@ -2,11 +2,11 @@
 name = "minhascompras-ba"
 version = "0.1.0"
 dependencies = [
-    "selenium>=4.21.0",
+    "requests>=2.32.3",
     "python-dotenv>=1.0.1",
-    "webdriver-manager>=4.0.2",
     "Pillow>=10.3.0",
     "beautifulsoup4>=4.12.3",
+    "lxml>=5.2.2",
     "pandas>=2.2.2",
     "sqlalchemy>=2.0.31",
     "fastapi>=0.111.0",

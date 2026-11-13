@@ -7,8 +7,6 @@ from pathlib import Path
 from threading import Lock
 from uuid import uuid4
 
-from selenium.common.exceptions import WebDriverException
-from selenium.webdriver.remote.webdriver import WebDriver
 from sqlalchemy import func, select
 
 from src.api import settings
@@ -23,8 +21,8 @@ from src.database.models import (
     NotaFiscal,
     Produto,
 )
-from src.phase1.auth_flow import open_consulta_page, refresh_captcha_image, start_auth_session, submit_captcha_attempt
-from src.phase1.driver_pool import WarmDriverPool
+from src.phase1.auth_flow import refresh_captcha_image, start_auth_session, submit_captcha_attempt
+from src.phase1.sefaz_client import SefazError, SefazSession
 from src.phase2.navigation import Maps_to_Emitente_tab, Maps_to_products_tab, wait_for_products_content
 from src.phase3.parser import EmpresaParser, ProductParser
 from src.phase4.db_loader import bulk_insert_produtos_with_nota_id, get_or_create_estabelecimento
@@ -32,7 +30,7 @@ from src.phase4.db_loader import bulk_insert_produtos_with_nota_id, get_or_creat
 
 @dataclass
 class RuntimeSession:
-    driver: WebDriver
+    sefaz: SefazSession
     captcha_path: Path
     expires_at: datetime
 
@@ -58,11 +56,6 @@ class ImportRuntimeStore:
 
 runtime_store = ImportRuntimeStore()
 
-driver_pool = WarmDriverPool(
-    size=settings.DRIVER_POOL_SIZE,
-    max_age_seconds=settings.DRIVER_POOL_MAX_AGE_SECONDS,
-    factory=lambda: open_consulta_page(settings.PAGE_TIMEOUT_SECONDS, settings.HEADLESS),
-)
 
 
 def _validate_access_key(access_key: str) -> str:
@@ -117,15 +110,13 @@ def start_import(access_key: str, usuario_id: int, source: str | None = None) ->
     expires_at = now + timedelta(seconds=settings.CAPTCHA_TTL_SECONDS)
 
     captcha_path = Path("data/captchas") / f"{import_id}.png"
-    driver = start_auth_session(
+    sefaz = start_auth_session(
         access_key=normalized_key,
         timeout_seconds=settings.PAGE_TIMEOUT_SECONDS,
-        headless=settings.HEADLESS,
         captcha_output_path=captcha_path,
-        driver=driver_pool.acquire(),
     )
 
-    runtime_store.set(import_id, RuntimeSession(driver=driver, captcha_path=captcha_path, expires_at=expires_at))
+    runtime_store.set(import_id, RuntimeSession(sefaz=sefaz, captcha_path=captcha_path, expires_at=expires_at))
 
     session = SessionLocal()
     try:
@@ -152,7 +143,7 @@ def start_import(access_key: str, usuario_id: int, source: str | None = None) ->
     except Exception:
         runtime = runtime_store.pop(import_id)
         if runtime is not None:
-            runtime.driver.quit()
+            runtime.sefaz.close()
             runtime.captcha_path.unlink(missing_ok=True)
         raise
     finally:
@@ -295,7 +286,7 @@ def submit_captcha(import_id: str, captcha_code: str, usuario_id: int) -> dict[s
         session.commit()
 
         did_auth = submit_captcha_attempt(
-            driver=runtime.driver,
+            session=runtime.sefaz,
             captcha_code=captcha_code,
             timeout_seconds=settings.PAGE_TIMEOUT_SECONDS,
         )
@@ -315,7 +306,7 @@ def submit_captcha(import_id: str, captcha_code: str, usuario_id: int) -> dict[s
                     details={"max_attempts": str(settings.MAX_CAPTCHA_ATTEMPTS)},
                 )
 
-            refresh_captcha_image(runtime.driver, settings.PAGE_TIMEOUT_SECONDS, runtime.captcha_path)
+            refresh_captcha_image(runtime.sefaz, settings.PAGE_TIMEOUT_SECONDS, runtime.captcha_path)
             record.status = ImportStatus.WAITING_CAPTCHA.value
             session.commit()
             raise ConflictError(
@@ -330,14 +321,14 @@ def submit_captcha(import_id: str, captcha_code: str, usuario_id: int) -> dict[s
 
 
         # Produtos
-        page_meta = Maps_to_products_tab(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
+        page_meta = Maps_to_products_tab(runtime.sefaz, settings.PAGE_TIMEOUT_SECONDS)
         data_compra = page_meta.get("data_compra")
         meio_pagamento = page_meta.get("meio_pagamento")
-        wait_for_products_content(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
-        parsed_page = ProductParser.parse_page(runtime.driver.page_source)
+        wait_for_products_content(runtime.sefaz, settings.PAGE_TIMEOUT_SECONDS)
+        parsed_page = ProductParser.parse_page(runtime.sefaz.page_source)
 
         # Dados do Emitente
-        empresa_data = Maps_to_Emitente_tab(runtime.driver, settings.PAGE_TIMEOUT_SECONDS)
+        empresa_data = Maps_to_Emitente_tab(runtime.sefaz, settings.PAGE_TIMEOUT_SECONDS)
         estabelecimento_id = get_or_create_estabelecimento(empresa_data)
 
         products = parsed_page["produtos"]
@@ -369,15 +360,15 @@ def submit_captcha(import_id: str, captcha_code: str, usuario_id: int) -> dict[s
         return {"import_id": import_id, "status": ImportStatus.COMPLETED.value}
     except (NotFoundError, ConflictError, ValidationError):
         raise
-    except WebDriverException as exc:
-        # A sessao do navegador morreu (Chrome fechou / perdeu conexao com o
-        # DevTools). Tratamos como sessao expirada para o usuario reiniciar.
+    except SefazError as exc:
+        # Falha de rede/resposta inesperada do portal no meio do fluxo: a sessao
+        # ASP.NET nao e confiavel; o usuario reinicia a importacao.
         if session.is_active:
             record = session.get(NfceImport, import_id)
             if record is not None:
                 failure_time = _utcnow()
                 record.status = ImportStatus.EXPIRED.value
-                record.error_message = "Sessao do navegador encerrada. Inicie uma nova importacao."
+                record.error_message = "Falha de comunicacao com a SEFAZ. Inicie uma nova importacao."
                 record.updated_at = failure_time
                 record.finished_at = failure_time
                 session.commit()
@@ -651,7 +642,7 @@ def release_import_resources(import_id: str, image_path: str | None = None) -> N
     runtime = runtime_store.pop(import_id)
     if runtime:
         try:
-            runtime.driver.quit()
+            runtime.sefaz.close()
         except Exception:
             pass
         runtime.captcha_path.unlink(missing_ok=True)
