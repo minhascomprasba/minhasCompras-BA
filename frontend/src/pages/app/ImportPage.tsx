@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useStartImport, useSubmitCaptcha } from '../../features/imports/hooks/useImportMutations';
 import { importsService } from '../../features/imports/services/importsService';
 import { QrCodeScanner } from '../../features/imports/components/QrCodeScanner';
+import { AccessKeyInput } from '../../features/imports/components/AccessKeyInput';
 import { extractAccessKeyFromQrContent, validateAccessKey } from '../../features/imports/utils/extractAccessKey';
 import { scanQrCodeFromFile } from '../../features/imports/utils/scanQrFromFile';
 import { consumeQuickScan } from '../../features/imports/utils/quickScanStorage';
@@ -21,8 +22,10 @@ import { Label } from '../../components/ui/label';
 const accessKeySchema = z.object({
   access_key: z
     .string()
-    .length(44, 'A chave de acesso deve conter exatamente 44 dígitos.')
-    .regex(/^\d+$/, 'A chave de acesso deve conter apenas números.'),
+    .transform((value) => value.replace(/\s/g, ''))
+    .pipe(z.string()
+      .length(44, 'A chave de acesso deve conter exatamente 44 dígitos.')
+      .regex(/^\d+$/, 'A chave de acesso deve conter apenas números.')),
 });
 
 const captchaSchema = z.object({
@@ -304,25 +307,24 @@ export function ImportPage() {
               )}
 
               <form onSubmit={keyForm.handleSubmit(onKeySubmit)} className="space-y-5">
-                <div className="grid gap-2">
-                  <Label htmlFor="access_key">Chave de acesso (44 dígitos)</Label>
-                  <Input
-                    id="access_key"
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="Digite a chave de 44 dígitos"
-                    className="font-mono text-foreground"
-                    maxLength={44}
-                    aria-invalid={!!keyForm.formState.errors.access_key}
-                    aria-describedby={keyForm.formState.errors.access_key ? 'access-key-error' : undefined}
-                    {...keyForm.register('access_key', {
-                      onChange: () => { setQrFeedback(null); setSource('MANUAL'); },
-                    })}
-                  />
-                  {keyForm.formState.errors.access_key && (
-                    <span id="access-key-error" role="alert" className="text-sm text-destructive">{keyForm.formState.errors.access_key.message}</span>
+                <Controller
+                  name="access_key"
+                  control={keyForm.control}
+                  render={({ field, fieldState }) => (
+                    <AccessKeyInput
+                      value={field.value}
+                      onChange={(value) => {
+                        field.onChange(value);
+                        setQrFeedback(null);
+                        setSource('MANUAL');
+                      }}
+                      onBlur={field.onBlur}
+                      inputRef={field.ref}
+                      error={fieldState.error?.message}
+                      disabled={isBusy}
+                    />
                   )}
-                </div>
+                />
                 {startImportMutation.isError && <Alert variant="destructive">{startImportMutation.error.message}</Alert>}
                 <Button type="submit" className="min-h-11 w-full text-white" disabled={isBusy}>
                   {startImportMutation.isPending && <LoaderCircle className="animate-spin" aria-hidden="true" />}
