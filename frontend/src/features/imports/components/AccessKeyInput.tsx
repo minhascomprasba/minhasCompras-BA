@@ -104,7 +104,7 @@ export function AccessKeyInput({ value, onChange, onBlur, inputRef, error, disab
         <ClipboardTextIcon aria-hidden="true" />
         {isPasting ? 'Colando...' : 'Colar chave'}
       </Button>
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap justify-center gap-3">
         {groups.map((group, index) => (
           <div key={index} onPasteCapture={(event) => {
             // Intercept before Input OTP limits the paste to this four-digit block.
