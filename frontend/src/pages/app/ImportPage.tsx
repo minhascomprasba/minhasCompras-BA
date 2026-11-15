@@ -258,7 +258,7 @@ export function ImportPage() {
   return (
     <div className="page-layout">
       <header className="page-header"><h1 className="page-title">Nova Importação</h1></header>
-      <div className="page-form space-y-6">
+      <div className="page-form mx-auto space-y-6">
 
         <QrCodeScanner
           isOpen={isScannerOpen}
