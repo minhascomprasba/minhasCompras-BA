@@ -9,7 +9,7 @@ Fluxo de páginas: `ImportPage` → `ImportStatusPage` (`/importacoes/:importId`
 ```
 imports/
 ├── components/
-│   ├── AccessKeyInput.tsx       # Campo expansível com 11 blocos OTP de quatro dígitos
+│   ├── AccessKeyInput.tsx       # Chave em 11 blocos OTP e botão de colar
 │   └── QrCodeScanner.tsx        # Modal/overlay de leitura de QR pela câmera (html5-qrcode)
 ├── hooks/
 │   ├── useImportMutations.ts    # Mutations: iniciar importação, submeter captcha
@@ -29,7 +29,7 @@ imports/
 
 ### Digitação da chave
 
-`AccessKeyInput` alterna entre um campo único para colagem e 11 blocos de quatro dígitos, usando os componentes shadcn/ui Input OTP e Collapsible. Aceita espaços e quebras de linha; a validação do formulário remove esses separadores antes de enviar os 44 dígitos para a API. Colar a chave completa em qualquer bloco preenche todos os blocos. O valor é preservado ao alternar o modo de entrada, e o envio continua dependendo do botão Avançar.
+`AccessKeyInput` exibe 11 blocos de quatro dígitos usando o componente shadcn/ui Input OTP. O botão Colar chave lê a área de transferência e preenche os blocos com uma chave completa de 44 dígitos. Aceita espaços e quebras de linha; a validação do formulário remove esses separadores antes de enviar os dígitos para a API. Colar a chave completa diretamente em qualquer bloco também preenche todos os blocos. Se o acesso à área de transferência falhar, o formulário orienta a colar diretamente nos blocos e preserva o valor existente. O envio continua dependendo do botão Avançar.
 
 ### Hooks
 
