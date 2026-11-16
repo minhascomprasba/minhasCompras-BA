@@ -12,7 +12,6 @@ from src.api.admin import admin_router
 from src.api.auth import auth_router
 from src.api.account import account_router
 from src.api.schemas import ErrorResponse
-from src.api.services.import_service import driver_pool
 from src.database.connection import engine
 from src.database.models import Base, UserRole
 from src.api import settings
@@ -169,10 +168,9 @@ def _ensure_schema_updates() -> None:
 def on_startup() -> None:
     Base.metadata.create_all(bind=engine)
     _ensure_schema_updates()
-    # So libera captchas/navegadores orfaos; a exclusao de contas roda no job diario (APScheduler).
+    # So libera sessoes de importacao/captchas orfaos; a exclusao de contas roda no job diario (APScheduler).
     from src.api.services.retention_service import cleanup_import_sessions
     cleanup_import_sessions()
-    driver_pool.start()
     from src.api.scheduler import start_scheduler
     start_scheduler()
 
@@ -181,7 +179,6 @@ def on_startup() -> None:
 def on_shutdown() -> None:
     from src.api.scheduler import shutdown_scheduler
     shutdown_scheduler()
-    driver_pool.shutdown()
 
 
 @app.exception_handler(ApiError)

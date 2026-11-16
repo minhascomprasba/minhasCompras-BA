@@ -1,6 +1,6 @@
 """Rotinas de retencao idempotentes.
 
-- ``cleanup_import_sessions``: expira importacoes e libera captchas/navegadores. Barata;
+- ``cleanup_import_sessions``: expira importacoes e libera captchas/sessoes SEFAZ. Barata;
   roda no startup e nas rotas de importacao.
 - ``cleanup_auth_records`` e ``purge_expired_accounts``: rodam apenas pelo job diario
   (APScheduler, ver ``src/api/scheduler.py``) ou manualmente via

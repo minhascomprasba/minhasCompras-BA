@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 import unicodedata
 from datetime import datetime
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -11,19 +12,92 @@ from bs4 import BeautifulSoup, Tag
 
 from utils.logger import setup_logger
 
+_INDEX_CACHE_ATTR = "_minhascompras_index"
+
+
+def _normalize_text(value: str) -> str:
+    return " ".join(value.split()).strip()
+
+
+@lru_cache(maxsize=4096)
+def _normalize_label_key(value: str) -> str:
+    text = _normalize_text(value).rstrip(":")
+    if not text.isascii():
+        text = unicodedata.normalize("NFKD", text)
+        text = "".join(ch for ch in text if not unicodedata.combining(ch))
+    return text.casefold()
+
+
+def _container_cache(container: Tag) -> dict[str, Any]:
+    """Cache guardado no proprio Tag: some junto com o soup (decompose)."""
+    cache = container.__dict__.get(_INDEX_CACHE_ATTR)
+    if cache is None:
+        cache = {}
+        container.__dict__[_INDEX_CACHE_ATTR] = cache
+    return cache
+
+
+def _label_index(container: Tag) -> dict[str, list[Tag]]:
+    """<label> do conteiner agrupados pela chave normalizada, em ordem de documento."""
+    cache = _container_cache(container)
+    index = cache.get("labels")
+    if index is None:
+        index = {}
+        for label in container.find_all("label"):
+            key = _normalize_label_key(label.get_text(" ", strip=True))
+            index.setdefault(key, []).append(label)
+        cache["labels"] = index
+    return index
+
+
+def _label_position(container: Tag):
+    """Chave de ordenacao: posicao de cada <label> no documento."""
+    cache = _container_cache(container)
+    positions = cache.get("label_positions")
+    if positions is None:
+        positions = {id(label): number for number, label in enumerate(container.find_all("label"))}
+        cache["label_positions"] = positions
+    return lambda label: positions[id(label)]
+
+
+def _row_cell_index(container: Tag) -> tuple[dict[str, list[tuple[int, int]]], list[tuple[list[Tag], list[str]]]]:
+    """Celulas de cada <tr> (td/th/label) com o texto ja normalizado.
+
+    Retorna (chave -> [(linha, celula)] em ordem de documento, linhas). Uma
+    celula de tabela aninhada aparece em mais de uma linha, como no find_all.
+    """
+    cache = _container_cache(container)
+    cached = cache.get("rows")
+    if cached is None:
+        text_by_cell: dict[int, str] = {}
+        rows: list[tuple[list[Tag], list[str]]] = []
+        index: dict[str, list[tuple[int, int]]] = {}
+        for row in container.find_all("tr"):
+            cells = row.find_all(["td", "th", "label"])
+            texts = []
+            for cell in cells:
+                text = text_by_cell.get(id(cell))
+                if text is None:
+                    text = _normalize_text(cell.get_text(" ", strip=True))
+                    text_by_cell[id(cell)] = text
+                texts.append(text)
+            row_number = len(rows)
+            rows.append((cells, texts))
+            for cell_number, text in enumerate(texts):
+                index.setdefault(_normalize_label_key(text), []).append((row_number, cell_number))
+        cached = (index, rows)
+        cache["rows"] = cached
+    return cached
+
 
 class ProductParser:
     @staticmethod
     def _normalize_text(value: str) -> str:
-        return " ".join(value.split()).strip()
+        return _normalize_text(value)
 
-    @classmethod
-    def _normalize_label_key(cls, value: str) -> str:
-        text = cls._normalize_text(value)
-        text = text.rstrip(":")
-        text = unicodedata.normalize("NFKD", text)
-        text = "".join(ch for ch in text if not unicodedata.combining(ch))
-        return text.casefold()
+    @staticmethod
+    def _normalize_label_key(value: str) -> str:
+        return _normalize_label_key(value)
 
     @classmethod
     def _to_float(cls, value: str) -> float | None:
@@ -64,11 +138,7 @@ class ProductParser:
     def _extract_value_by_label(cls, container: Tag, label_text: str) -> str:
         target_label_key = cls._normalize_label_key(label_text)
 
-        for label in container.find_all("label"):
-            current_label = cls._normalize_label_key(label.get_text(" ", strip=True))
-            if current_label != target_label_key:
-                continue
-
+        for label in _label_index(container).get(target_label_key, ()):
             candidate = label.find_next("span")
             if candidate:
                 return cls._normalize_text(candidate.get_text(" ", strip=True))
@@ -133,22 +203,17 @@ class ProductParser:
     @classmethod
     def _extract_value_by_label_from_rows(cls, container: Tag, label_text: str) -> str:
         target_label_key = cls._normalize_label_key(label_text)
+        index, rows = _row_cell_index(container)
 
-        for row in container.find_all("tr"):
-            cells = row.find_all(["td", "th", "label"])
-            for index, cell in enumerate(cells):
-                current_label = cls._normalize_label_key(cell.get_text(" ", strip=True))
-                if current_label != target_label_key:
-                    continue
+        for row_number, cell_number in index.get(target_label_key, ()):
+            cells, texts = rows[row_number]
+            for value in texts[cell_number + 1 :]:
+                if value:
+                    return value
 
-                for candidate in cells[index + 1 :]:
-                    value = cls._normalize_text(candidate.get_text(" ", strip=True))
-                    if value:
-                        return value
-
-                next_span = cell.find_next("span")
-                if next_span:
-                    return cls._normalize_text(next_span.get_text(" ", strip=True))
+            next_span = cells[cell_number].find_next("span")
+            if next_span:
+                return cls._normalize_text(next_span.get_text(" ", strip=True))
 
         return ""
 
@@ -751,15 +816,11 @@ class ProductParser:
 class EmpresaParser:
     @staticmethod
     def _normalize_text(value: str) -> str:
-        return " ".join(value.split()).strip()
+        return _normalize_text(value)
 
-    @classmethod
-    def _normalize_label_key(cls, value: str) -> str:
-        text = cls._normalize_text(value)
-        text = text.rstrip(":")
-        text = unicodedata.normalize("NFKD", text)
-        text = "".join(ch for ch in text if not unicodedata.combining(ch))
-        return text.casefold()
+    @staticmethod
+    def _normalize_label_key(value: str) -> str:
+        return _normalize_label_key(value)
 
     @classmethod
     def _extract_value_by_label(cls, container: Tag, label_text: list[str] | str) -> str:
@@ -768,12 +829,14 @@ class EmpresaParser:
         de strings para tratar variações do portal da Sefaz.
         """
         labels_to_check = [label_text] if isinstance(label_text, str) else label_text
-        target_keys = [cls._normalize_label_key(lbl) for lbl in labels_to_check]
+        target_keys = {cls._normalize_label_key(lbl) for lbl in labels_to_check}
+        index = _label_index(container)
+        matching = sorted(
+            (label for key in target_keys for label in index.get(key, ())),
+            key=_label_position(container),
+        )
 
-        for label in container.find_all("label"):
-            current_label = cls._normalize_label_key(label.get_text(" ", strip=True))
-            if current_label not in target_keys:
-                continue
+        for label in matching:
 
             # Tenta pegar o span irmão ou próximo elemento com o dado
             candidate = label.find_next("span")
