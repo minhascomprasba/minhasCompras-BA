@@ -14,6 +14,7 @@ interface AdminUsersTableProps {
   pendingUsuarioId: number | null;
   onRoleChange: (usuario: AdminUsuario, role: UserRole) => void;
   onDelete: (usuario: AdminUsuario) => void;
+  onReactivate: (usuario: AdminUsuario) => void;
 }
 
 const formatDate = (value: string | null) => {
@@ -31,6 +32,7 @@ export function AdminUsersTable({
   pendingUsuarioId,
   onRoleChange,
   onDelete,
+  onReactivate,
 }: AdminUsersTableProps) {
   return (
     <div className="min-w-0 overflow-x-auto">
@@ -95,10 +97,21 @@ export function AdminUsersTable({
                   <TableCell>{formatDate(usuario.created_at)}</TableCell>
                   <TableCell>{formatDate(usuario.ultima_atividade)}</TableCell>
                   <TableCell className="text-right tabular-nums">
+                    {usuario.status === 'PENDING_DELETION' ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={isRowPending}
+                        title="Cancelar a exclusão agendada e reativar a conta"
+                        onClick={() => onReactivate(usuario)}
+                      >
+                        Reativar
+                      </Button>
+                    ) : (
                     <Button
                       type="button"
                       variant="destructive"
-                      disabled={isSelf || isRowPending || usuario.status === 'PENDING_DELETION'}
+                      disabled={isSelf || isRowPending}
                       title={
                         isSelf
                           ? 'Você não pode apagar o seu próprio usuário.'
@@ -108,6 +121,7 @@ export function AdminUsersTable({
                     >
                       Excluir
                     </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               );

@@ -48,4 +48,9 @@ export const adminService = {
     const response = await apiClient.delete<DeleteUsuarioResponse>(`/admin/usuarios/${usuarioId}`);
     return response.data;
   },
+
+  async reactivateUsuario(usuarioId: number): Promise<AdminUsuario> {
+    const response = await apiClient.post<AdminUsuario>(`/admin/usuarios/${usuarioId}/reactivate`);
+    return response.data;
+  },
 };

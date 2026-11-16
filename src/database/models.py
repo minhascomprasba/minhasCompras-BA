@@ -20,6 +20,17 @@ class UserRole(str, Enum):
 ADMIN_ROLES = (UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value)
 
 
+class AccountStatus(str, Enum):
+    ACTIVE = "ACTIVE"
+    # Exclusao solicitada: conta bloqueada, dados preservados ate o fim da carencia.
+    PENDING_DELETION = "PENDING_DELETION"
+
+
+# Carencia (dias) entre o pedido de exclusao e a exclusao definitiva. Fixa de proposito:
+# os textos do frontend (perfil e /privacidade) informam "7 dias" ao titular.
+ACCOUNT_DELETION_GRACE_DAYS = 7
+
+
 class Usuario(Base):
     __tablename__ = "usuarios"
 
@@ -29,7 +40,12 @@ class Usuario(Base):
     role: Mapped[str] = mapped_column(String(20), nullable=False, default=UserRole.USER.value, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
-    deletion_scheduled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default=AccountStatus.ACTIVE.value,
+        server_default=AccountStatus.ACTIVE.value, index=True,
+    )
+    # Inicio da carencia; o prazo final e deletion_requested_at + ACCOUNT_DELETION_GRACE_DAYS.
+    deletion_requested_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     credential_version: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
 
     notas: Mapped[list[NotaFiscal]] = relationship(back_populates="usuario", cascade="all, delete-orphan")

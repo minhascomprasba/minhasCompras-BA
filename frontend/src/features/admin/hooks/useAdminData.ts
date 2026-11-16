@@ -38,6 +38,17 @@ export function useUpdateUsuarioRole() {
   });
 }
 
+export function useReactivateUsuario() {
+  const queryClient = useQueryClient();
+
+  return useMutation<AdminUsuario, AppError, { usuarioId: number }>({
+    mutationFn: ({ usuarioId }) => adminService.reactivateUsuario(usuarioId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'usuarios'] });
+    },
+  });
+}
+
 export function useDeleteUsuario() {
   const queryClient = useQueryClient();
 
