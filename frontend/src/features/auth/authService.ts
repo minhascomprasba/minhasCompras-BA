@@ -33,6 +33,10 @@ export const authService = {
   async deleteAccount(password: string) {
     return apiClient.delete('/auth/me', { data: { password } });
   },
+  /** Reativa a própria conta durante o prazo de exclusão (sessões foram revogadas, por isso usa e-mail e senha). */
+  async reactivateAccount(data: { email: string; password: string }): Promise<AuthResponse> {
+    return (await apiClient.post<AuthResponse>('/auth/account/reactivate', data)).data;
+  },
   async exportAccount(password: string) {
     return (await apiClient.post('/auth/me/export', { password }, { responseType: 'blob' })).data as Blob;
   },

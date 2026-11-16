@@ -7,9 +7,11 @@ from sqlalchemy import update, func, select
 from sqlalchemy.orm import Session
 
 from src.api.errors import ApiError, ConflictError, NotFoundError, ValidationError
+from src.api.services.account_service import deletion_deadline
 from src.api.services.dashboard_service import PORTUGUESE_MONTHS
 from src.database.connection import SessionLocal
 from src.database.models import (
+    AccountStatus,
     Estabelecimento,
     ImportSource,
     ImportStatus,
@@ -900,8 +902,9 @@ def _serialize_usuario(
         "notas_count": notas_count,
         "itens_count": itens_count,
         "ultima_atividade": ultima_atividade,
-        "status": "PENDING_DELETION" if usuario.deletion_scheduled_at else "ACTIVE",
-        "deletion_scheduled_at": usuario.deletion_scheduled_at,
+        "status": usuario.status,
+        "deletion_requested_at": usuario.deletion_requested_at,
+        "deletion_scheduled_at": deletion_deadline(usuario),
     }
 
 
@@ -998,7 +1001,7 @@ def update_usuario_role(target_id: int, new_role: str, actor_id: int) -> dict[st
                 session.execute(
                     select(func.count())
                     .select_from(Usuario)
-                    .where(Usuario.role == UserRole.SUPER_ADMIN.value, Usuario.deletion_scheduled_at.is_(None))
+                    .where(Usuario.role == UserRole.SUPER_ADMIN.value, Usuario.status == AccountStatus.ACTIVE.value)
                 ).scalar()
                 or 0
             )
@@ -1042,7 +1045,7 @@ def delete_usuario_admin(target_id: int, actor_id: int) -> dict[str, object]:
     session = SessionLocal()
     try:
         ator = session.get(Usuario, actor_id)
-        if ator is None or ator.role != UserRole.SUPER_ADMIN.value or ator.deletion_scheduled_at is not None:
+        if ator is None or ator.role != UserRole.SUPER_ADMIN.value or ator.status != AccountStatus.ACTIVE.value:
             raise ApiError(
                 status_code=403,
                 code="FORBIDDEN",
@@ -1068,6 +1071,22 @@ def delete_usuario_admin(target_id: int, actor_id: int) -> dict[str, object]:
         session.close()
 
     return {**removido, "deleted": False, "status": scheduled["status"], "scheduled_at": scheduled["scheduled_at"], "resumo_perfis": get_role_summary()}
+
+
+def reactivate_usuario_admin(target_id: int) -> dict[str, object]:
+    """Super admin reativa qualquer conta com exclusao agendada, antes do fim da carencia."""
+    from src.api.services.account_service import reactivate_account
+    with SessionLocal() as session:
+        try:
+            usuario = reactivate_account(session, target_id)
+        except ApiError as exc:
+            session.rollback()
+            if exc.code == "USER_NOT_FOUND":
+                raise NotFoundError(code="USER_NOT_FOUND", message="Usuário não encontrado.",
+                    details={"usuario_id": str(target_id)}) from exc
+            raise
+        return _serialize_usuario(usuario)
+
 
 def list_account_deletions(page: int, page_size: int) -> dict[str, object]:
     from src.database.models import AccountDeletionEvent

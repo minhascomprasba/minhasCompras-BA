@@ -18,7 +18,7 @@ from src.api.errors import ApiError
 from src.api.services import account_service as accounts, retention_service
 from src.api.services.export_service import export_account
 from src.database.models import (
-    AccountChallenge, AccountDeletionEvent, Base, EmailVerificationCode, Estabelecimento, ItemNotaFiscal,
+    ACCOUNT_DELETION_GRACE_DAYS, AccountChallenge, AccountDeletionEvent, Base, EmailVerificationCode, Estabelecimento, ItemNotaFiscal,
     NfceImport, NotaFiscal, PasswordResetToken, PendingAccountDeletion, Produto, Usuario,
 )
 
@@ -58,9 +58,8 @@ class AccountTests(unittest.TestCase):
     def purge(self, db, user_id):
         with patch('src.api.services.email_service.send_account_deletion_scheduled'):
             accounts.schedule_account_deletion(db, user_id)
-        due = datetime.utcnow() - timedelta(seconds=1)
-        db.get(PendingAccountDeletion, user_id).scheduled_at = due
-        db.get(Usuario, user_id).deletion_scheduled_at = due
+        # Retroage o pedido para que a carencia ja tenha vencido.
+        db.get(Usuario, user_id).deletion_requested_at = datetime.utcnow() - timedelta(days=ACCOUNT_DELETION_GRACE_DAYS, seconds=1)
         db.commit()
         accounts.delete_account(db, user_id)
 
@@ -176,7 +175,8 @@ class AccountTests(unittest.TestCase):
         with self.sessions() as db, patch('src.api.services.email_service.send_account_deletion_scheduled', side_effect=OSError()):
             self.assert_error('EMAIL_DELIVERY_FAILED', lambda: accounts.schedule_account_deletion(db, 1, PASSWORD))
         with self.sessions() as db:
-            self.assertIsNone(db.get(Usuario, 1).deletion_scheduled_at)
+            self.assertEqual('ACTIVE', db.get(Usuario, 1).status)
+            self.assertIsNone(db.get(Usuario, 1).deletion_requested_at)
             self.assertIsNone(db.get(PendingAccountDeletion, 1))
         self.assertEqual(1, self.authenticate(old_token))
 
@@ -200,7 +200,8 @@ class AccountTests(unittest.TestCase):
             self.assert_error('INVALID_DELETION_TOKEN', lambda: accounts.cancel_account_deletion(db, 'wrong-token'))
             db.rollback()
             accounts.cancel_account_deletion(db, raw_token)
-            self.assertIsNone(db.get(Usuario, 1).deletion_scheduled_at)
+            self.assertEqual('ACTIVE', db.get(Usuario, 1).status)
+            self.assertIsNone(db.get(Usuario, 1).deletion_requested_at)
             self.assertIsNone(db.get(PendingAccountDeletion, 1))
             self.assert_error('INVALID_DELETION_TOKEN', lambda: accounts.cancel_account_deletion(db, raw_token))
         self.assert_error('UNAUTHORIZED', lambda: self.authenticate(old_token))

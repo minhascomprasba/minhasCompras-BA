@@ -126,8 +126,22 @@ def _ensure_schema_updates() -> None:
         if inspector.has_table("usuarios"):
             usuario_columns = {column["name"] for column in inspector.get_columns("usuarios")}
             connection.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_usuarios_email_normalized ON usuarios (lower(email))"))
-            if "deletion_scheduled_at" not in usuario_columns:
-                connection.execute(text(f"ALTER TABLE usuarios ADD COLUMN deletion_scheduled_at {column_type}"))
+            if "status" not in usuario_columns:
+                connection.execute(text("ALTER TABLE usuarios ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE'"))
+            connection.execute(text("CREATE INDEX IF NOT EXISTS ix_usuarios_status ON usuarios (status)"))
+            if "deletion_requested_at" not in usuario_columns:
+                connection.execute(text(f"ALTER TABLE usuarios ADD COLUMN deletion_requested_at {column_type}"))
+            # Migra exclusoes agendadas no modelo anterior (deletion_scheduled_at + pending_account_deletions)
+            # para status/deletion_requested_at. Idempotente: so toca contas ainda ACTIVE.
+            if "deletion_scheduled_at" in usuario_columns and inspector.has_table("pending_account_deletions"):
+                connection.execute(text(
+                    "UPDATE usuarios SET status = 'PENDING_DELETION', deletion_requested_at = "
+                    "(SELECT p.requested_at FROM pending_account_deletions p WHERE p.usuario_id = usuarios.id) "
+                    "WHERE status = 'ACTIVE' AND deletion_scheduled_at IS NOT NULL "
+                    "AND EXISTS (SELECT 1 FROM pending_account_deletions p WHERE p.usuario_id = usuarios.id)"
+                ))
+                # deletion_scheduled_at fica como coluna legada (sem uso) para permitir rollback;
+                # pode ser removida depois que esta versao estiver estavel em producao.
             if "credential_version" not in usuario_columns:
                 connection.execute(text("ALTER TABLE usuarios ADD COLUMN credential_version INTEGER NOT NULL DEFAULT 0"))
             if "role" not in usuario_columns:
@@ -155,13 +169,18 @@ def _ensure_schema_updates() -> None:
 def on_startup() -> None:
     Base.metadata.create_all(bind=engine)
     _ensure_schema_updates()
-    from src.api.services.retention_service import cleanup
-    cleanup()
+    # So libera captchas/navegadores orfaos; a exclusao de contas roda no job diario (APScheduler).
+    from src.api.services.retention_service import cleanup_import_sessions
+    cleanup_import_sessions()
     driver_pool.start()
+    from src.api.scheduler import start_scheduler
+    start_scheduler()
 
 
 @app.on_event("shutdown")
 def on_shutdown() -> None:
+    from src.api.scheduler import shutdown_scheduler
+    shutdown_scheduler()
     driver_pool.shutdown()
 
 
